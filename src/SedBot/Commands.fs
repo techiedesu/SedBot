@@ -23,6 +23,30 @@ let reverse (stream: Stream) =
             return ValueNone
     }
 
+let hFlip (stream: Stream) =
+    task {
+        if stream.CanRead then
+            use ms = new MemoryStream()
+            do! stream.CopyToAsync(ms)
+            let tcs = TaskCompletionSource<byte[] voption>()
+            do! ffmpegHflipChannel.Writer.WriteAsync({ Stream = ms; Tcs = tcs })
+            return! tcs.Task
+        else
+            return ValueNone
+    }
+
+let vFlip (stream: Stream) =
+    task {
+        if stream.CanRead then
+            use ms = new MemoryStream()
+            do! stream.CopyToAsync(ms)
+            let tcs = TaskCompletionSource<byte[] voption>()
+            do! ffmpegVflipChannel.Writer.WriteAsync({ Stream = ms; Tcs = tcs })
+            return! tcs.Task
+        else
+            return ValueNone
+    }
+
 let distort (stream: Stream) =
     task {
         if stream.CanRead then

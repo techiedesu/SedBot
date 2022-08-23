@@ -46,6 +46,46 @@ let startGifMagicDistortion() =
             do! Task.Delay(40)
     }
 
+type FfmpegVflipGifItem = {
+    Stream: MemoryStream
+    Tcs: TaskCompletionSource<byte[] voption>
+}
+
+let ffmpegVflipChannel = Channel.CreateUnbounded<FfmpegVflipGifItem>()
+
+let startVflipGifFfmpeg() =
+    task {
+        while true do
+            let! { Tcs = tcs; Stream = stream } = ffmpegVflipChannel.Reader.ReadAsync()
+            let srcName = Utilities.Path.getSynthName ".mp4"
+            let resName = Utilities.Path.getSynthName ".mp4"
+            do! File.WriteAllBytesAsync(srcName, stream.ToArray())
+            let prams = ([$"-i {srcName} -y -vf vflip -qscale 0 -an {resName}"], false)
+            let! res = Utilities.runStreamProcess "ffmpeg" prams resName
+            tcs.SetResult(res)
+            do! Task.Delay(40)
+    }
+
+type FfmpegHflipGifItem = {
+    Stream: MemoryStream
+    Tcs: TaskCompletionSource<byte[] voption>
+}
+
+let ffmpegHflipChannel = Channel.CreateUnbounded<FfmpegHflipGifItem>()
+
+let startHflipGifFfmpeg() =
+    task {
+        while true do
+            let! { Tcs = tcs; Stream = stream } = ffmpegHflipChannel.Reader.ReadAsync()
+            let srcName = Utilities.Path.getSynthName ".mp4"
+            let resName = Utilities.Path.getSynthName ".mp4"
+            do! File.WriteAllBytesAsync(srcName, stream.ToArray())
+            let prams = ([$"-i {srcName} -y -vf hflip -qscale 0 -an {resName}"], false)
+            let! res = Utilities.runStreamProcess "ffmpeg" prams resName
+            tcs.SetResult(res)
+            do! Task.Delay(40)
+    }
+
 let mutable private cts = TaskCompletionSource()
 
 let private spawn (lambda: Unit -> Task<_>) =
@@ -60,7 +100,11 @@ let start() =
     if cts.Task.IsCompleted then
         cts <- TaskCompletionSource()
     if cts.Task.Status = TaskStatus.Running |> not then
-        [ startGifFfmpeg; startGifMagicDistortion ] |> List.iter spawn
+        [ startGifFfmpeg
+          startGifMagicDistortion
+          startVflipGifFfmpeg
+          startHflipGifFfmpeg
+        ] |> List.iter spawn
 
 let stop() =
     cts.SetCanceled()

@@ -49,7 +49,38 @@ let updateArrived (ctx: UpdateContext) =
                 | _ -> ()
                 ()
             | _ -> ()
-            ()
+        | VflipCommand (chatId, msgId, fileId) ->
+            let! file = Api.getFile fileId |> api ctx.Config
+            match file with
+            | Ok { FilePath = Some filePath } ->
+                use hc = new HttpClient()
+                let! srcStream = hc.GetStreamAsync($"https://api.telegram.org/file/bot{ctx.Config.Token}/{filePath}")
+                match! Commands.vFlip srcStream with
+                | ValueSome resStream ->
+                    let synthName = Utilities.Path.getSynthName ".mp4"
+                    let ms = new MemoryStream(resStream)
+                    ms.Position <- 0
+                    let ani = InputFile.File (synthName, ms)
+                    do! Api.sendAnimationReply chatId ani msgId |> api ctx.Config |> Async.Ignore
+                | _ -> ()
+                ()
+            | _ -> ()
+        | HflipCommand (chatId, msgId, fileId) ->
+            let! file = Api.getFile fileId |> api ctx.Config
+            match file with
+            | Ok { FilePath = Some filePath } ->
+                use hc = new HttpClient()
+                let! srcStream = hc.GetStreamAsync($"https://api.telegram.org/file/bot{ctx.Config.Token}/{filePath}")
+                match! Commands.hFlip srcStream with
+                | ValueSome resStream ->
+                    let synthName = Utilities.Path.getSynthName ".mp4"
+                    let ms = new MemoryStream(resStream)
+                    ms.Position <- 0
+                    let ani = InputFile.File (synthName, ms)
+                    do! Api.sendAnimationReply chatId ani msgId |> api ctx.Config |> Async.Ignore
+                | _ -> ()
+                ()
+            | _ -> ()
         | DistortCommand (chatId, msgId, fileId) ->
             let! file = Api.getFile fileId |> api ctx.Config
             match file with
@@ -77,10 +108,12 @@ let main args =
         Environment.Exit(-1)
     let token = args[0]
 
+    ProcessingChannels.start()
     while true do
         try
             task {
                 let config = { Config.defaultConfig with Token = token }
+                let! _ = Api.deleteWebhookBase () |> api config
                 return! startBot config updateArrived None
             } |> fun x -> x.ConfigureAwait(false).GetAwaiter().GetResult()
         with

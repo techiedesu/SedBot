@@ -12,7 +12,7 @@ module ActivePatterns =
     let private isSedTelegramCommand (text: string) =
         text.StartsWith("s/")
     
-    let (|SedCommand|ReverseCommand|DistortCommand|JqCommand|None|) (message: Types.Message option) =
+    let (|SedCommand|VflipCommand|HflipCommand|ReverseCommand|DistortCommand|JqCommand|None|) (message: Types.Message option) =
         match message with
         | Some
             {
@@ -43,6 +43,38 @@ module ActivePatterns =
                 }
             } when mimeType = "video/mp4" && command.Trim() = "t!rev" ->
             ReverseCommand (chatId, msgId, fileId)
+        | Some
+            {
+                Chat = {
+                    Id = chatId
+                }
+                Text = Some command
+                ReplyToMessage = Some {
+                    MessageId = msgId
+                    Document = Some {
+                        MimeType = Some mimeType
+                        FileSize = Some _
+                        FileId = fileId
+                    }
+                }
+            } when mimeType = "video/mp4" && command.Trim() = "t!vflip" ->
+            VflipCommand (chatId, msgId, fileId)
+        | Some
+            {
+                Chat = {
+                    Id = chatId
+                }
+                Text = Some command
+                ReplyToMessage = Some {
+                    MessageId = msgId
+                    Document = Some {
+                        MimeType = Some mimeType
+                        FileSize = Some _
+                        FileId = fileId
+                    }
+                }
+            } when mimeType = "video/mp4" && command.Trim() = "t!hflip" ->
+            HflipCommand (chatId, msgId, fileId)
         | Some
             {
                 Chat = {
