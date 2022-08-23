@@ -5,14 +5,24 @@ open SedBot.Utilities
 open Funogram.Telegram
 open Funogram.Telegram.Types
 
-module ActivePatterns =
+type Command =
+    | SedCommand of chatId: int64 * msgId: int64 * expression: string * text: string
+    | VflipCommand of chatId: int64 * msgId: int64 * fileId: string
+    | HflipCommand of chatId: int64 * msgId: int64 * fileId: string
+    | ReverseCommand of chatId: int64 * msgId: int64 * fileId: string
+    | DistortCommand of chatId: int64 * msgId: int64 * fileId: string
+    | JqCommand of chatId: int64 * msgId: int64 * expression: string * text: string
+    | ClownCommand of chatId: int64
+    | Nope
+
+module CommandParser =
     let private hasReplyText (msg: Types.Message) =
         Option.isSome msg.Text
 
     let private isSedTelegramCommand (text: string) =
         text.StartsWith("s/")
-    
-    let (|SedCommand|VflipCommand|HflipCommand|ReverseCommand|DistortCommand|JqCommand|None|) (message: Types.Message option) =
+
+    let parse (message: Types.Message option) =
         match message with
         | Some
             {
@@ -26,7 +36,7 @@ module ActivePatterns =
                         MessageId = msgId
                     }
             } when isSedTelegramCommand expression ->
-            SedCommand (chatId, msgId, expression, text)
+            Command.SedCommand (chatId, msgId, expression, text)
         | Some
             {
                 Chat = {
@@ -42,7 +52,7 @@ module ActivePatterns =
                     }
                 }
             } when mimeType = "video/mp4" && command.Trim() = "t!rev" ->
-            ReverseCommand (chatId, msgId, fileId)
+            Command.ReverseCommand (chatId, msgId, fileId)
         | Some
             {
                 Chat = {
@@ -58,7 +68,7 @@ module ActivePatterns =
                     }
                 }
             } when mimeType = "video/mp4" && command.Trim() = "t!vflip" ->
-            VflipCommand (chatId, msgId, fileId)
+            Command.VflipCommand (chatId, msgId, fileId)
         | Some
             {
                 Chat = {
@@ -74,7 +84,7 @@ module ActivePatterns =
                     }
                 }
             } when mimeType = "video/mp4" && command.Trim() = "t!hflip" ->
-            HflipCommand (chatId, msgId, fileId)
+            Command.HflipCommand (chatId, msgId, fileId)
         | Some
             {
                 Chat = {
@@ -90,7 +100,7 @@ module ActivePatterns =
                     }
                 }
             } when mimeType = "video/mp4" && command.Trim() = "t!dist" ->
-            DistortCommand (chatId, msgId, fileId)
+            Command.DistortCommand (chatId, msgId, fileId)
         | Some
             {
                 Chat = {
@@ -102,7 +112,22 @@ module ActivePatterns =
                     Text = Some data
                 }
             } when command.Trim().StartsWith("t!jq") ->
-            JqCommand (chatId, msgId, data, command |> String.removeFromStart "t!jq")
+            Command.JqCommand (chatId, msgId, data, command |> String.removeFromStart "t!jq")
+        | Some
+            {
+                Chat = {
+                    Id = chatId
+                }
+                Text = Some command
+            } when command.Trim().Contains("🤡") ->
+            Command.ClownCommand chatId
+        | Some
+            {
+                Chat = {
+                    Id = chatId
+                }
+                Sticker = Some { Emoji = Some emoji }
+            } when emoji.Contains("🤡") ->
+            Command.ClownCommand chatId
         | _ ->
-            None
-
+            Command.Nope

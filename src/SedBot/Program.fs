@@ -8,16 +8,15 @@ open Funogram.Telegram
 open Funogram.Telegram.Bot
 open Funogram.Telegram.Types
 open SedBot
+open SedBot.ChatCommands
 
 module Api =
     let sendAnimationReply chatId animation replyToMessageId = Req.SendAnimation.Make(ChatId.Int chatId, animation, replyToMessageId = replyToMessageId)
     let sendTextMarkupReply chatId text replyToMessageId parseMode = Req.SendMessage.Make(ChatId.Int chatId, text, replyToMessageId = replyToMessageId, parseMode = parseMode)
 
-open SedBot.ChatCommands.ActivePatterns
-
 let updateArrived (ctx: UpdateContext) =
     task {
-        match ctx.Update.Message with
+        match CommandParser.parse ctx.Update.Message with
         | SedCommand (chatId, replyMsgId, exp, text) ->
             let! res = Commands.sed text exp
             match res with
@@ -98,8 +97,10 @@ let updateArrived (ctx: UpdateContext) =
                 ()
             | _ -> ()
             ()
+        | ClownCommand(chatId) ->
+            do! Api.sendMessage chatId "🤡" |> api ctx.Config |> Async.Ignore
         | _ -> ()
-    } |> fun x -> x.ConfigureAwait(false).GetAwaiter().GetResult()
+    } |> ignore
 
 [<EntryPoint>]
 let main args =
