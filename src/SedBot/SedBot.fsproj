@@ -1,0 +1,23 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <OutputType>Exe</OutputType>
+        <TargetFramework>net6.0</TargetFramework>
+        <RootNamespace>SetBot</RootNamespace>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <Compile Include="Utilities.fs" />
+        <Compile Include="ProcessingChannels.fs" />
+        <Compile Include="ChatCommands.fs" />
+        <Compile Include="Commands.fs" />
+        <Compile Include="Program.fs" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <PackageReference Include="CliWrap" Version="3.4.4" />
+      <PackageReference Include="Funogram" Version="2.0.5" />
+      <PackageReference Include="Funogram.Telegram" Version="6.1.0.2" />
+    </ItemGroup>
+
+</Project>
