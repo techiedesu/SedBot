@@ -4,21 +4,19 @@ open SedBot.Utilities
 
 open Funogram.Telegram
 open Funogram.Telegram.Types
+open SedBot
 
 type Command =
     | SedCommand of chatId: int64 * msgId: int64 * expression: string * text: string
-    | VflipCommand of chatId: int64 * msgId: int64 * fileId: string
-    | HflipCommand of chatId: int64 * msgId: int64 * fileId: string
-    | ReverseCommand of chatId: int64 * msgId: int64 * fileId: string
-    | DistortCommand of chatId: int64 * msgId: int64 * fileId: string
+    | VflipCommand of chatId: int64 * msgId: int64 * fileId: string * FileType: FileType
+    | HflipCommand of chatId: int64 * msgId: int64 * fileId: string * FileType: FileType
+    | ReverseCommand of chatId: int64 * msgId: int64 * fileId: string * FileType: FileType
+    | DistortCommand of chatId: int64 * msgId: int64 * fileId: string * FileType: FileType
     | JqCommand of chatId: int64 * msgId: int64 * expression: string * text: string
     | ClownCommand of chatId: int64
     | Nope
 
 module CommandParser =
-    let private hasReplyText (msg: Types.Message) =
-        Option.isSome msg.Text
-
     let private isSedTelegramCommand (text: string) =
         text.StartsWith("s/")
 
@@ -45,14 +43,15 @@ module CommandParser =
                 Text = Some command
                 ReplyToMessage = Some {
                     MessageId = msgId
-                    Document = Some {
-                        MimeType = Some mimeType
-                        FileSize = Some _
-                        FileId = fileId
-                    }
+                    Document = Some
+                        {
+                            MimeType = Some mimeType
+                            FileSize = Some _
+                            FileId = fileId
+                        }
                 }
             } when mimeType = "video/mp4" && command.Trim() = "t!rev" ->
-            Command.ReverseCommand (chatId, msgId, fileId)
+            Command.ReverseCommand (chatId, msgId, fileId, FileType.Gif)
         | Some
             {
                 Chat = {
@@ -61,14 +60,15 @@ module CommandParser =
                 Text = Some command
                 ReplyToMessage = Some {
                     MessageId = msgId
-                    Document = Some {
-                        MimeType = Some mimeType
-                        FileSize = Some _
-                        FileId = fileId
-                    }
+                    Document = Some
+                        {
+                            MimeType = Some mimeType
+                            FileSize = Some _
+                            FileId = fileId
+                        }
                 }
             } when mimeType = "video/mp4" && command.Trim() = "t!vflip" ->
-            Command.VflipCommand (chatId, msgId, fileId)
+            Command.VflipCommand (chatId, msgId, fileId, FileType.Gif)
         | Some
             {
                 Chat = {
@@ -77,14 +77,83 @@ module CommandParser =
                 Text = Some command
                 ReplyToMessage = Some {
                     MessageId = msgId
-                    Document = Some {
-                        MimeType = Some mimeType
-                        FileSize = Some _
-                        FileId = fileId
-                    }
+                    Photo = Some photos // Collection of photos. Thank you.
+                }
+            } when command.Trim() = "t!vflip" ->
+            let photo = photos
+                        |> Array.sortBy ^ fun p -> p.Width
+                        |> Array.rev
+                        |> Array.head
+            Command.VflipCommand (chatId, msgId, photo.FileId, FileType.Picture)
+        | Some
+            {
+                Chat = {
+                    Id = chatId
+                }
+                Text = Some command
+                ReplyToMessage = Some {
+                    MessageId = msgId
+                    Video = Some { FileId = fileId }
+                }
+            } when command.Trim() = "t!vflip" ->
+            Command.VflipCommand (chatId, msgId, fileId, FileType.Video)
+        | Some
+            {
+                Chat = {
+                    Id = chatId
+                }
+                Text = Some command
+                ReplyToMessage = Some {
+                    MessageId = msgId
+                    Video = Some { FileId = fileId }
+                }
+            } when command.Trim() = "t!rev" ->
+            Command.ReverseCommand (chatId, msgId, fileId, FileType.Video)
+        | Some
+            {
+                Chat = {
+                    Id = chatId
+                }
+                Text = Some command
+                ReplyToMessage = Some {
+                    MessageId = msgId
+                    Video = Some { FileId = fileId }
+                }
+            } when command.Trim() = "t!hflip" ->
+            Command.HflipCommand (chatId, msgId, fileId, FileType.Video)
+        | Some
+            {
+                Chat = {
+                    Id = chatId
+                }
+                Text = Some command
+                ReplyToMessage = Some {
+                    MessageId = msgId
+                    Photo = Some photos
+                }
+            } when command.Trim() = "t!hflip" ->
+            let photo = photos
+                        |> Array.sortBy ^ fun p -> p.Width
+                        |> Array.rev
+                        |> Array.head
+            Command.HflipCommand (chatId, msgId, photo.FileId, FileType.Picture)
+        | Some
+            {
+                Chat = {
+                    Id = chatId
+                }
+                Text = Some command
+                ReplyToMessage = Some {
+                    MessageId = msgId
+                    Document = Some
+                        {
+                            MimeType = Some mimeType
+                            FileSize = Some _
+                            FileId = fileId
+                        }
                 }
             } when mimeType = "video/mp4" && command.Trim() = "t!hflip" ->
-            Command.HflipCommand (chatId, msgId, fileId)
+            Command.HflipCommand (chatId, msgId, fileId, FileType.Gif)
         | Some
             {
                 Chat = {
@@ -93,14 +162,79 @@ module CommandParser =
                 Text = Some command
                 ReplyToMessage = Some {
                     MessageId = msgId
-                    Document = Some {
-                        MimeType = Some mimeType
-                        FileSize = Some _
-                        FileId = fileId
-                    }
+                    Document = Some
+                        {
+                            MimeType = Some mimeType
+                            FileSize = Some _
+                            FileId = fileId
+                        }
                 }
             } when mimeType = "video/mp4" && command.Trim() = "t!dist" ->
-            Command.DistortCommand (chatId, msgId, fileId)
+            Command.DistortCommand (chatId, msgId, fileId, FileType.Gif)
+        | Some
+            {
+                Chat = {
+                    Id = chatId
+                }
+                Text = Some command
+                ReplyToMessage = Some {
+                    MessageId = msgId
+                    Photo = Some photos
+                }
+            } when command.Trim() = "t!dist" ->
+            let photo = photos
+                        |> Array.sortBy ^ fun p -> p.Width
+                        |> Array.rev
+                        |> Array.head
+            Command.DistortCommand (chatId, msgId, photo.FileId, FileType.Picture)
+        | Some
+            {
+                Chat = {
+                    Id = chatId
+                }
+                Text = Some command
+                ReplyToMessage = Some {
+                    MessageId = msgId
+                    Video = Some { FileId = fileId }
+                }
+            } when command.Trim() = "t!dist" ->
+            Command.DistortCommand (chatId, msgId, fileId, FileType.Video)
+        | Some
+            {
+                Chat = {
+                    Id = chatId
+                }
+                Text = Some command
+                ReplyToMessage = Some {
+                    MessageId = msgId
+                    Sticker = Some { FileId = fileId }
+                }
+            } when command.Trim() = "t!dist" ->
+            Command.DistortCommand (chatId, msgId, fileId, FileType.Sticker)
+        | Some
+            {
+                Chat = {
+                    Id = chatId
+                }
+                Text = Some command
+                ReplyToMessage = Some {
+                    MessageId = msgId
+                    Sticker = Some { FileId = fileId }
+                }
+            } when command.Trim() = "t!vflip" ->
+            Command.VflipCommand (chatId, msgId, fileId, FileType.Sticker)
+        | Some
+            {
+                Chat = {
+                    Id = chatId
+                }
+                Text = Some command
+                ReplyToMessage = Some {
+                    MessageId = msgId
+                    Sticker = Some { FileId = fileId }
+                }
+            } when command.Trim() = "t!hflip" ->
+            Command.HflipCommand (chatId, msgId, fileId, FileType.Sticker)
         | Some
             {
                 Chat = {

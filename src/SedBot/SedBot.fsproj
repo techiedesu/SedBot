@@ -3,10 +3,11 @@
     <PropertyGroup>
         <OutputType>Exe</OutputType>
         <TargetFramework>net6.0</TargetFramework>
-        <RootNamespace>SetBot</RootNamespace>
+        <RootNamespace>SedBot</RootNamespace>
     </PropertyGroup>
 
     <ItemGroup>
+        <Compile Include="Common.fs" />
         <Compile Include="Utilities.fs" />
         <Compile Include="ProcessingChannels.fs" />
         <Compile Include="ChatCommands.fs" />

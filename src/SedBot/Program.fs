@@ -12,7 +12,9 @@ open SedBot.ChatCommands
 
 module Api =
     let sendAnimationReply chatId animation replyToMessageId = Req.SendAnimation.Make(ChatId.Int chatId, animation, replyToMessageId = replyToMessageId)
+    let sendVideoReply chatId animation replyToMessageId = Req.SendVideo.Make(ChatId.Int chatId, animation, replyToMessageId = replyToMessageId)
     let sendTextMarkupReply chatId text replyToMessageId parseMode = Req.SendMessage.Make(ChatId.Int chatId, text, replyToMessageId = replyToMessageId, parseMode = parseMode)
+    let sendPhotoReply chatId photo replyToMessageId = Req.SendPhoto.Make(ChatId.Int chatId, photo, replyToMessageId = replyToMessageId)
 
 let updateArrived (ctx: UpdateContext) =
     task {
@@ -32,69 +34,93 @@ let updateArrived (ctx: UpdateContext) =
                 do! Api.sendTextMarkupReply chatId res msgId ParseMode.Markdown |> api ctx.Config |> Async.Ignore
             | _ ->
                 ()
-        | ReverseCommand (chatId, msgId, fileId) ->
+        | ReverseCommand (chatId, msgId, fileId, fileType) ->
             let! file = Api.getFile fileId |> api ctx.Config
             match file with
             | Ok { FilePath = Some filePath } ->
                 use hc = new HttpClient()
                 let! srcStream = hc.GetStreamAsync($"https://api.telegram.org/file/bot{ctx.Config.Token}/{filePath}")
-                match! Commands.reverse srcStream with
+                match! Commands.reverse srcStream fileType with
                 | ValueSome resStream ->
-                    let synthName = Utilities.Path.getSynthName ".mp4"
+                    let extension = extension fileType
+                    let synthName = Utilities.Path.getSynthName extension
                     let ms = new MemoryStream(resStream)
                     ms.Position <- 0
                     let ani = InputFile.File (synthName, ms)
-                    do! Api.sendAnimationReply chatId ani msgId |> api ctx.Config |> Async.Ignore
+                    match fileType with
+                    | Gif | Sticker ->
+                        do! Api.sendAnimationReply chatId ani msgId |> api ctx.Config |> Async.Ignore
+                    | Video ->
+                        do! Api.sendVideoReply chatId ani msgId |> api ctx.Config |> Async.Ignore
+                    | _ ->
+                        do! Api.sendPhotoReply chatId ani msgId |> api ctx.Config |> Async.Ignore
                 | _ -> ()
-                ()
             | _ -> ()
-        | VflipCommand (chatId, msgId, fileId) ->
+        | VflipCommand (chatId, msgId, fileId, fileType) ->
             let! file = Api.getFile fileId |> api ctx.Config
             match file with
             | Ok { FilePath = Some filePath } ->
                 use hc = new HttpClient()
                 let! srcStream = hc.GetStreamAsync($"https://api.telegram.org/file/bot{ctx.Config.Token}/{filePath}")
-                match! Commands.vFlip srcStream with
+                match! Commands.vFlip srcStream fileType with
                 | ValueSome resStream ->
-                    let synthName = Utilities.Path.getSynthName ".mp4"
+                    let extension = extension fileType
+                    let synthName = Utilities.Path.getSynthName extension
                     let ms = new MemoryStream(resStream)
                     ms.Position <- 0
                     let ani = InputFile.File (synthName, ms)
-                    do! Api.sendAnimationReply chatId ani msgId |> api ctx.Config |> Async.Ignore
+                    match fileType with
+                    | Gif | Sticker ->
+                        do! Api.sendAnimationReply chatId ani msgId |> api ctx.Config |> Async.Ignore
+                    | Video ->
+                        do! Api.sendVideoReply chatId ani msgId |> api ctx.Config |> Async.Ignore
+                    | _ ->
+                        do! Api.sendPhotoReply chatId ani msgId |> api ctx.Config |> Async.Ignore
                 | _ -> ()
-                ()
             | _ -> ()
-        | HflipCommand (chatId, msgId, fileId) ->
+        | HflipCommand (chatId, msgId, fileId, fileType) ->
             let! file = Api.getFile fileId |> api ctx.Config
             match file with
             | Ok { FilePath = Some filePath } ->
                 use hc = new HttpClient()
                 let! srcStream = hc.GetStreamAsync($"https://api.telegram.org/file/bot{ctx.Config.Token}/{filePath}")
-                match! Commands.hFlip srcStream with
+                match! Commands.hFlip srcStream fileType with
                 | ValueSome resStream ->
-                    let synthName = Utilities.Path.getSynthName ".mp4"
+                    let extension = extension fileType
+                    let synthName = Utilities.Path.getSynthName extension
                     let ms = new MemoryStream(resStream)
                     ms.Position <- 0
                     let ani = InputFile.File (synthName, ms)
-                    do! Api.sendAnimationReply chatId ani msgId |> api ctx.Config |> Async.Ignore
+                    match fileType with
+                    | Gif | Sticker ->
+                        do! Api.sendAnimationReply chatId ani msgId |> api ctx.Config |> Async.Ignore
+                    | Video ->
+                        do! Api.sendVideoReply chatId ani msgId |> api ctx.Config |> Async.Ignore
+                    | _ ->
+                        do! Api.sendPhotoReply chatId ani msgId |> api ctx.Config |> Async.Ignore
                 | _ -> ()
-                ()
             | _ -> ()
-        | DistortCommand (chatId, msgId, fileId) ->
+        | DistortCommand (chatId, msgId, fileId, fileType) ->
             let! file = Api.getFile fileId |> api ctx.Config
             match file with
             | Ok { FilePath = Some filePath } ->
                 use hc = new HttpClient()
                 let! srcStream = hc.GetStreamAsync($"https://api.telegram.org/file/bot{ctx.Config.Token}/{filePath}")
-                match! Commands.distort srcStream with
+                match! Commands.distort srcStream fileType with
                 | ValueSome resStream ->
-                    let synthName = Guid.NewGuid().ToString().Replace("-", "") + ".mp4"
+                    let extension = extension fileType
+                    let synthName = Utilities.Path.getSynthName extension
                     let ms = new MemoryStream(resStream)
                     ms.Position <- 0
                     let ani = InputFile.File (synthName, ms)
-                    do! Api.sendAnimationReply chatId ani msgId |> api ctx.Config |> Async.Ignore
+                    match fileType with
+                    | Gif | Sticker ->
+                        do! Api.sendAnimationReply chatId ani msgId |> api ctx.Config |> Async.Ignore
+                    | Video ->
+                        do! Api.sendVideoReply chatId ani msgId |> api ctx.Config |> Async.Ignore
+                    | _ ->
+                        do! Api.sendPhotoReply chatId ani msgId |> api ctx.Config |> Async.Ignore
                 | _ -> ()
-                ()
             | _ -> ()
             ()
         | ClownCommand(chatId) ->
