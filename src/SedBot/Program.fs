@@ -1,5 +1,6 @@
 ﻿open System
 open System.IO
+open System.Linq
 open System.Net.Http
 
 open System.Threading
@@ -123,8 +124,8 @@ let updateArrived (ctx: UpdateContext) =
                 | _ -> ()
             | _ -> ()
             ()
-        | ClownCommand(chatId) ->
-            do! Api.sendMessage chatId "🤡" |> api ctx.Config |> Async.Ignore
+        | ClownCommand(chatId, count) ->
+            do! Api.sendMessage chatId (System.String.Concat(Enumerable.Repeat("🤡", count))) |> api ctx.Config |> Async.Ignore
         | _ -> ()
     } |> ignore
 

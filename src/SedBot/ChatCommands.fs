@@ -13,7 +13,7 @@ type Command =
     | ReverseCommand of chatId: int64 * msgId: int64 * fileId: string * FileType: FileType
     | DistortCommand of chatId: int64 * msgId: int64 * fileId: string * FileType: FileType
     | JqCommand of chatId: int64 * msgId: int64 * expression: string * text: string
-    | ClownCommand of chatId: int64
+    | ClownCommand of chatId: int64 * count: int
     | Nope
 
 module CommandParser =
@@ -254,7 +254,7 @@ module CommandParser =
                 }
                 Text = Some command
             } when command.Trim().Contains("🤡") ->
-            Command.ClownCommand chatId
+            Command.ClownCommand (chatId, command.Split("🤡").Length - 1)
         | Some
             {
                 Chat = {
@@ -262,6 +262,6 @@ module CommandParser =
                 }
                 Sticker = Some { Emoji = Some emoji }
             } when emoji.Contains("🤡") ->
-            Command.ClownCommand chatId
+            Command.ClownCommand (chatId, 1)
         | _ ->
             Command.Nope
