@@ -131,12 +131,12 @@ module CommandParser =
                     MessageId = msgId
                     Photo = Some photos
                 }
-            } when command.Trim() = "t!hflip" ->
+            } when command.Trim() = "t!vflip" ->
             let photo = photos
                         |> Array.sortBy ^ fun p -> p.Width
                         |> Array.rev
                         |> Array.head
-            Command.HflipCommand (chatId, msgId, photo.FileId, FileType.Picture)
+            Command.VflipCommand (chatId, msgId, photo.FileId, FileType.Picture)
         | Some
             {
                 Chat = {
