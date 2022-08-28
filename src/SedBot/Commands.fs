@@ -4,12 +4,13 @@ open System.IO
 open System.Threading.Tasks
 
 open SedBot.ProcessingChannels
+open SedBot.Utilities
 
 let sed data expression =
-    Utilities.runTextProcess "sed" [| "-E"; expression |] data
+    Process.runTextProcess "sed" [| "-E"; expression |] data
 
 let jq data expression =
-    Utilities.runTextProcess "jq" [| "-M"; expression |] data
+    Process.runTextProcess "jq" [| "-M"; expression |] data
 
 let reverse (stream: Stream) fileType =
     task {

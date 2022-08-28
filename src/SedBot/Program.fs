@@ -10,6 +10,8 @@ open Funogram.Telegram.Bot
 open Funogram.Telegram.Types
 open SedBot
 open SedBot.ChatCommands
+open SedBot.Utilities
+open Microsoft.Extensions.Logging
 
 module Api =
     let sendAnimationReply chatId animation replyToMessageId = Req.SendAnimation.Make(ChatId.Int chatId, animation, replyToMessageId = replyToMessageId)
@@ -131,8 +133,9 @@ let updateArrived (ctx: UpdateContext) =
 
 [<EntryPoint>]
 let main args =
+    let logger = Logger.get "EntryPoint"
     if args.Length = 0 then
-        printfn "Usage: %s yourtelegramtoken" AppDomain.CurrentDomain.FriendlyName
+        logger.LogCritical("Usage: {execName} yourtelegramtoken", AppDomain.CurrentDomain.FriendlyName)
         Environment.Exit(-1)
     let token = args[0]
 
@@ -146,6 +149,6 @@ let main args =
             } |> fun x -> x.ConfigureAwait(false).GetAwaiter().GetResult()
         with
         | e ->
-            printfn "Something goes wrong: %s" (e.ToString())
+            logger.LogCritical("Something goes wrong: {error}", e)
             Thread.Sleep(5000)
     0
