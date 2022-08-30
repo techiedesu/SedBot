@@ -4,10 +4,12 @@ open System.Linq
 open System.Net.Http
 
 open System.Threading
+open System.Threading.Tasks
 open Funogram.Api
 open Funogram.Telegram
 open Funogram.Telegram.Bot
 open Funogram.Telegram.Types
+open Newtonsoft.Json
 open SedBot
 open SedBot.ChatCommands
 open SedBot.Utilities
@@ -129,7 +131,17 @@ let updateArrived (ctx: UpdateContext) =
             ()
         | ClownCommand(chatId, count) ->
             do! Api.sendMessage chatId (System.String.Concat(Enumerable.Repeat("🤡", count))) |> api ctx.Config |> Async.Ignore
-        | _ -> ()
+        | InfoCommand(chatId, msgId, reply) ->
+            do! Api.deleteMessage chatId msgId |> api ctx.Config |> Async.Ignore
+            let res =  $"```\n{JsonConvert.SerializeObject(reply, Formatting.Indented, JsonSerializerSettings(NullValueHandling = NullValueHandling.Ignore))}\n```"
+            let! x = Api.sendTextMarkupReply chatId res reply.MessageId ParseMode.Markdown |> api ctx.Config
+            match x with
+            | Ok { MessageId = msgId } ->
+                do! Task.Delay(6000)
+                do! Api.deleteMessage chatId msgId |> api ctx.Config |> Async.Ignore
+            | _ -> ()
+        | Nope ->
+            ()
     } |> ignore
 
 [<EntryPoint>]

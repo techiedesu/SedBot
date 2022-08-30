@@ -14,6 +14,7 @@ type Command =
     | DistortCommand of chatId: int64 * msgId: int64 * fileId: string * FileType: FileType
     | JqCommand of chatId: int64 * msgId: int64 * expression: string * text: string
     | ClownCommand of chatId: int64 * count: int
+    | InfoCommand of chatId: int64 * msgId: int64 * replyMsgId: Message
     | Nope
 
 module CommandParser =
@@ -22,6 +23,16 @@ module CommandParser =
 
     let parse (message: Types.Message option) =
         match message with
+        | Some
+            {
+                MessageId = msgId
+                Chat = {
+                    Id = chatId
+                }
+                Text = Some text
+                ReplyToMessage = Some replyToMessage
+            } when text.Trim() = "t!info" ->
+            Command.InfoCommand (chatId, msgId, replyToMessage)
         | Some
             {
                 MessageId = srcMsgId
