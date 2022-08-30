@@ -7,7 +7,7 @@ open Funogram.Telegram.Types
 open SedBot
 
 type Command =
-    | SedCommand of chatId: int64 * msgId: int64 * expression: string * text: string
+    | SedCommand of chatId: int64 * msgId: int64 * srcMsgId: int64 * expression: string * text: string
     | VflipCommand of chatId: int64 * msgId: int64 * fileId: string * FileType: FileType
     | HflipCommand of chatId: int64 * msgId: int64 * fileId: string * FileType: FileType
     | ReverseCommand of chatId: int64 * msgId: int64 * fileId: string * FileType: FileType
@@ -24,6 +24,7 @@ module CommandParser =
         match message with
         | Some
             {
+                MessageId = srcMsgId
                 Chat = {
                     Id = chatId
                 }
@@ -34,7 +35,7 @@ module CommandParser =
                         MessageId = msgId
                     }
             } when isSedTelegramCommand expression ->
-            Command.SedCommand (chatId, msgId, expression, text)
+            Command.SedCommand (chatId, msgId, srcMsgId, expression, text)
         | Some
             {
                 Chat = {

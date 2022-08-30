@@ -15,17 +15,18 @@ open Microsoft.Extensions.Logging
 
 module Api =
     let sendAnimationReply chatId animation replyToMessageId = Req.SendAnimation.Make(ChatId.Int chatId, animation, replyToMessageId = replyToMessageId)
-    let sendVideoReply chatId animation replyToMessageId = Req.SendVideo.Make(ChatId.Int chatId, animation, replyToMessageId = replyToMessageId)
+    let sendVideoReply chatId videoFile replyToMessageId = Req.SendVideo.Make(ChatId.Int chatId, videoFile, replyToMessageId = replyToMessageId)
     let sendTextMarkupReply chatId text replyToMessageId parseMode = Req.SendMessage.Make(ChatId.Int chatId, text, replyToMessageId = replyToMessageId, parseMode = parseMode)
     let sendPhotoReply chatId photo replyToMessageId = Req.SendPhoto.Make(ChatId.Int chatId, photo, replyToMessageId = replyToMessageId)
 
 let updateArrived (ctx: UpdateContext) =
     task {
         match CommandParser.parse ctx.Update.Message with
-        | SedCommand (chatId, replyMsgId, exp, text) ->
+        | SedCommand (chatId, replyMsgId, srcMsgId, exp, text) ->
             let! res = Commands.sed text exp
             match res with
             | Some res ->
+                do! Api.deleteMessage chatId srcMsgId |> api ctx.Config |> Async.Ignore
                 do! Api.sendMessageReply chatId res replyMsgId |> api ctx.Config |> Async.Ignore
             | _ ->
                 ()
