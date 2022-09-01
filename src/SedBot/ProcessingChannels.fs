@@ -25,7 +25,7 @@ let startGifFfmpeg() = // TODO: Use pipes
             let extension = extension fileType
             let srcName = Utilities.Path.getSynthName extension
             let resName = Utilities.Path.getSynthName extension
-            log.LogDebug("srcName: {srcName};; resName: {resName}")
+            log.LogDebug("srcName: {srcName};; resName: {resName}", srcName, resName)
             do! File.WriteAllBytesAsync(srcName, stream.ToArray())
             let sound =
                 if fileType = FileType.Video then

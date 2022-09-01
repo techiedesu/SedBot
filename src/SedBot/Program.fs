@@ -137,7 +137,7 @@ let updateArrived (ctx: UpdateContext) =
             let! x = Api.sendTextMarkupReply chatId res reply.MessageId ParseMode.Markdown |> api ctx.Config
             match x with
             | Ok { MessageId = msgId } ->
-                do! Task.Delay(6000)
+                do! Task.Delay(30000)
                 do! Api.deleteMessage chatId msgId |> api ctx.Config |> Async.Ignore
             | _ -> ()
         | Nope ->
