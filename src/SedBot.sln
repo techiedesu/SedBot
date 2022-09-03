@@ -1,6 +1,14 @@
-﻿
-Microsoft Visual Studio Solution File, Format Version 12.00
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "SedBot", "SedBot\SedBot.fsproj", "{27ABDDCC-42B0-4D49-B26C-72217FBB41C6}"
+﻿Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.3.32825.248
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "SedBot", "SedBot\SedBot.fsproj", "{27ABDDCC-42B0-4D49-B26C-72217FBB41C6}"
+EndProject
+Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "Funogram.Telegram", "paket-files\github.com\techiedesu\Funogram\src\Funogram.Telegram\Funogram.Telegram.fsproj", "{65849D1B-1DBF-463A-B6A0-E2BA94CA3359}"
+EndProject
+Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "Funogram", "paket-files\github.com\techiedesu\Funogram\src\Funogram\Funogram.fsproj", "{B92955A7-67FE-4030-A4AA-8D6D34DDCF0E}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Deps", "Deps", "{B6981106-2892-4B68-AFFD-41B51BFF72D4}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -12,5 +20,23 @@ Global
 		{27ABDDCC-42B0-4D49-B26C-72217FBB41C6}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{27ABDDCC-42B0-4D49-B26C-72217FBB41C6}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{27ABDDCC-42B0-4D49-B26C-72217FBB41C6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{65849D1B-1DBF-463A-B6A0-E2BA94CA3359}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{65849D1B-1DBF-463A-B6A0-E2BA94CA3359}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{65849D1B-1DBF-463A-B6A0-E2BA94CA3359}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{65849D1B-1DBF-463A-B6A0-E2BA94CA3359}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B92955A7-67FE-4030-A4AA-8D6D34DDCF0E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B92955A7-67FE-4030-A4AA-8D6D34DDCF0E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B92955A7-67FE-4030-A4AA-8D6D34DDCF0E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B92955A7-67FE-4030-A4AA-8D6D34DDCF0E}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{65849D1B-1DBF-463A-B6A0-E2BA94CA3359} = {B6981106-2892-4B68-AFFD-41B51BFF72D4}
+		{B92955A7-67FE-4030-A4AA-8D6D34DDCF0E} = {B6981106-2892-4B68-AFFD-41B51BFF72D4}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {52A2E3C8-1642-44B8-B9F6-63FB9827D0BD}
 	EndGlobalSection
 EndGlobal
