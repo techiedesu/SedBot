@@ -52,15 +52,13 @@ let startGifMagicDistortion() =
         log.LogDebug("Spawned!")
         while true do
             let! { Tcs = tcs; Stream = stream; FileType = fileType } = magicChannel.Reader.ReadAsync()
+            stream.Position <- 0
+
             let extension = extension fileType
 
             if fileType = Video |> not then
-                let srcName = Utilities.Path.getSynthName extension
-                let resName = Utilities.Path.getSynthName extension
-                log.LogDebug("srcName: {srcName};; resName: {resName}")
-                do! File.WriteAllBytesAsync(srcName, stream.ToArray())
-                let prams = ([$"{srcName} -liquid-rescale 320x640 -implode 0.25 {resName}"], false)
-                let! res = Process.runStreamProcess "magick" prams resName
+                let prams = (["mp4:- -liquid-rescale 320x640 -implode 0.25 mp4:-"], false)
+                let! res = Process.runPipedStreamProcess "magick" stream prams
                 tcs.SetResult(res)
             else
                 let srcName = Utilities.Path.getSynthName extension

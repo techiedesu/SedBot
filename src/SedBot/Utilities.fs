@@ -108,3 +108,34 @@ module Process =
                 )
                 return ValueNone
         }
+
+    let runPipedStreamProcess procName inputStream (args: string seq, escape) =
+        task {
+            log.LogDebug(
+                "runStreamProcess: proccess name: {procName};; args: {args};; escape: {escape}",
+                procName, args, escape
+            )
+
+            let stderr = StringBuilder()
+            let stdout = new MemoryStream()
+            let! executionResult =
+                Cli
+                    .Wrap(procName)
+                    .WithArguments(args, escape)
+                    .WithValidation(CommandResultValidation.None)
+                    .WithStandardInputPipe(PipeSource.FromStream(inputStream))
+                    .WithStandardErrorPipe(PipeTarget.ToStringBuilder(stderr))
+                    .WithStandardOutputPipe(PipeTarget.ToStream(stdout))
+                    .ExecuteBufferedAsync()
+
+            let exitCode = executionResult.ExitCode
+            if exitCode = 0 then
+                stdout.Position <- 0
+                return stdout.ToArray() |> ValueSome
+            else
+                log.LogError(
+                    "runStreamProcess: wrong exit code: {exitCode};; stderr: {stdErr}",
+                    exitCode, stderr.ToString()
+                )
+                return ValueNone
+        }
