@@ -16,3 +16,13 @@ Build and run:
 docker build -t sed_bot .
 docker run --rm -it -e BOT_TOKEN='tgtoken' sed_bot
 ```
+
+## Host
+
+```bash
+cd src/
+dotnet tool restore
+dotnet paket install
+```
+
+then, open `SedBot.sln`
