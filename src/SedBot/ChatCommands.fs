@@ -1,7 +1,5 @@
 module SedBot.ChatCommands
 
-open SedBot.Utilities
-
 open Funogram.Telegram
 open Funogram.Telegram.Types
 open SedBot
@@ -21,17 +19,19 @@ module CommandParser =
     let private isSedTelegramCommand (text: string) =
         text.StartsWith("s/")
 
-    let parse (message: Types.Message option) =
+    let parse (message: Types.Message option) botUsername =
+        let prefix mType prefix = if mType = SuperGroup then prefix else ""
         match message with
         | Some
             {
                 MessageId = msgId
                 Chat = {
                     Id = chatId
+                    Type = cType
                 }
                 Text = Some text
                 ReplyToMessage = Some replyToMessage
-            } when text.Trim() = "t!info" ->
+            } when text.Trim().AnyOf(["t!info"; "/info" + (prefix cType botUsername)]) ->
             Command.InfoCommand (chatId, msgId, replyToMessage)
         | Some
             {
@@ -51,6 +51,7 @@ module CommandParser =
             {
                 Chat = {
                     Id = chatId
+                    Type = cType
                 }
                 Text = Some command
                 ReplyToMessage = Some {
@@ -62,12 +63,13 @@ module CommandParser =
                             FileId = fileId
                         }
                 }
-            } when mimeType = "video/mp4" && command.Trim() = "t!rev" ->
+            } when mimeType = "video/mp4" && command.Trim().AnyOf(["t!rev"; "/rev" + (prefix cType botUsername)]) ->
             Command.ReverseCommand (chatId, msgId, fileId, FileType.Gif)
         | Some
             {
                 Chat = {
                     Id = chatId
+                    Type = cType
                 }
                 Text = Some command
                 ReplyToMessage = Some {
@@ -79,19 +81,20 @@ module CommandParser =
                             FileId = fileId
                         }
                 }
-            } when mimeType = "video/mp4" && command.Trim() = "t!vflip" ->
+            } when mimeType = "video/mp4" && command.Trim().AnyOf(["t!vflip"; "/vflip" + (prefix cType botUsername)]) ->
             Command.VflipCommand (chatId, msgId, fileId, FileType.Gif)
         | Some
             {
                 Chat = {
                     Id = chatId
+                    Type = cType
                 }
                 Text = Some command
                 ReplyToMessage = Some {
                     MessageId = msgId
                     Photo = Some photos // Collection of photos. Thank you.
                 }
-            } when command.Trim() = "t!vflip" ->
+            } when command.Trim().AnyOf(["t!vflip"; "/vflip" + (prefix cType botUsername)]) ->
             let photo = photos
                         |> Array.sortBy ^ fun p -> p.Width
                         |> Array.rev
@@ -101,49 +104,53 @@ module CommandParser =
             {
                 Chat = {
                     Id = chatId
+                    Type = cType
                 }
                 Text = Some command
                 ReplyToMessage = Some {
                     MessageId = msgId
                     Video = Some { FileId = fileId }
                 }
-            } when command.Trim() = "t!vflip" ->
+            } when command.Trim().AnyOf(["t!vflip"; "/vflip" + (prefix cType botUsername)]) ->
             Command.VflipCommand (chatId, msgId, fileId, FileType.Video)
         | Some
             {
                 Chat = {
                     Id = chatId
+                    Type = cType
                 }
                 Text = Some command
                 ReplyToMessage = Some {
                     MessageId = msgId
                     Video = Some { FileId = fileId }
                 }
-            } when command.Trim() = "t!rev" ->
+            } when command.Trim().AnyOf(["t!rev"; "/rev" + (prefix cType botUsername)]) ->
             Command.ReverseCommand (chatId, msgId, fileId, FileType.Video)
         | Some
             {
                 Chat = {
                     Id = chatId
+                    Type = cType
                 }
                 Text = Some command
                 ReplyToMessage = Some {
                     MessageId = msgId
                     Video = Some { FileId = fileId }
                 }
-            } when command.Trim() = "t!hflip" ->
+            } when command.Trim().AnyOf(["t!hflip"; "/hflip" + (prefix cType botUsername)]) ->
             Command.HflipCommand (chatId, msgId, fileId, FileType.Video)
         | Some
             {
                 Chat = {
                     Id = chatId
+                    Type = cType
                 }
                 Text = Some command
                 ReplyToMessage = Some {
                     MessageId = msgId
                     Photo = Some photos
                 }
-            } when command.Trim() = "t!vflip" ->
+            } when command.Trim().AnyOf(["t!vflip"; "/vflip" + (prefix cType botUsername)]) ->
             let photo = photos
                         |> Array.sortBy ^ fun p -> p.Width
                         |> Array.rev
@@ -153,6 +160,7 @@ module CommandParser =
             {
                 Chat = {
                     Id = chatId
+                    Type = cType
                 }
                 Text = Some command
                 ReplyToMessage = Some {
@@ -164,12 +172,13 @@ module CommandParser =
                             FileId = fileId
                         }
                 }
-            } when mimeType = "video/mp4" && command.Trim() = "t!hflip" ->
+            } when mimeType = "video/mp4" && command.Trim().AnyOf(["t!hflip"; "/hflip" + (prefix cType botUsername)]) ->
             Command.HflipCommand (chatId, msgId, fileId, FileType.Gif)
         | Some
             {
                 Chat = {
                     Id = chatId
+                    Type = cType
                 }
                 Text = Some command
                 ReplyToMessage = Some {
@@ -181,19 +190,20 @@ module CommandParser =
                             FileId = fileId
                         }
                 }
-            } when mimeType = "video/mp4" && command.Trim() = "t!dist" ->
+            } when mimeType = "video/mp4" && command.Trim().AnyOf(["t!dist"; "/dist" + (prefix cType botUsername)]) ->
             Command.DistortCommand (chatId, msgId, fileId, FileType.Gif)
         | Some
             {
                 Chat = {
                     Id = chatId
+                    Type = cType
                 }
                 Text = Some command
                 ReplyToMessage = Some {
                     MessageId = msgId
                     Photo = Some photos
                 }
-            } when command.Trim() = "t!dist" ->
+            } when command.Trim().AnyOf(["t!dist"; "/dist" + (prefix cType botUsername)]) ->
             let photo = photos
                         |> Array.sortBy ^ fun p -> p.Width
                         |> Array.rev
@@ -215,50 +225,54 @@ module CommandParser =
             {
                 Chat = {
                     Id = chatId
+                    Type = cType
                 }
                 Text = Some command
                 ReplyToMessage = Some {
                     MessageId = msgId
                     Sticker = Some { FileId = fileId }
                 }
-            } when command.Trim() = "t!dist" ->
+            } when command.Trim().AnyOf(["t!dist"; "/dist" + (prefix cType botUsername)]) ->
             Command.DistortCommand (chatId, msgId, fileId, FileType.Sticker)
         | Some
             {
                 Chat = {
                     Id = chatId
+                    Type = cType
                 }
                 Text = Some command
                 ReplyToMessage = Some {
                     MessageId = msgId
                     Sticker = Some { FileId = fileId }
                 }
-            } when command.Trim() = "t!vflip" ->
+            } when command.Trim().AnyOf(["t!vflip"; "/vflip" + (prefix cType botUsername)]) ->
             Command.VflipCommand (chatId, msgId, fileId, FileType.Sticker)
         | Some
             {
                 Chat = {
                     Id = chatId
+                    Type = cType
                 }
                 Text = Some command
                 ReplyToMessage = Some {
                     MessageId = msgId
                     Sticker = Some { FileId = fileId }
                 }
-            } when command.Trim() = "t!hflip" ->
+            } when command.Trim().AnyOf(["t!hflip"; "/hflip" + (prefix cType botUsername)]) ->
             Command.HflipCommand (chatId, msgId, fileId, FileType.Sticker)
         | Some
             {
                 Chat = {
                     Id = chatId
+                    Type = cType
                 }
                 Text = Some command
                 MessageId = msgId
                 ReplyToMessage = Some {
                     Text = Some data
                 }
-            } when command.Trim().StartsWith("t!jq") ->
-            Command.JqCommand (chatId, msgId, data, command |> String.removeFromStart "t!jq")
+            } when command.Trim().StartsWithAnyOf(["t!jq"; "/jq" + (prefix cType botUsername)]) ->
+            Command.JqCommand (chatId, msgId, data, command.Trim().RemoveAnyOf(["t!jq"; "/jq" + (prefix cType botUsername)]))
         | Some
             {
                 Chat = {

@@ -21,9 +21,23 @@ module Api =
     let sendTextMarkupReply chatId text replyToMessageId parseMode = Req.SendMessage.Make(ChatId.Int chatId, text, replyToMessageId = replyToMessageId, parseMode = parseMode)
     let sendPhotoReply chatId photo replyToMessageId = Req.SendPhoto.Make(ChatId.Int chatId, photo, replyToMessageId = replyToMessageId)
 
+let mutable myUserName : string = null
+let me ctx = task {
+    if myUserName = null then
+        let! gotMe = Api.getMe |> api ctx.Config
+        match gotMe with
+        | Ok res ->
+            myUserName <- $"@{res.Username.Value}"
+            return myUserName
+        | _ -> return raise <| Exception("Can't get username")
+    else
+        return myUserName
+}
+
 let updateArrived (ctx: UpdateContext) =
     task {
-        match CommandParser.parse ctx.Update.Message with
+        let! botUsername = me ctx
+        match CommandParser.parse ctx.Update.Message botUsername with
         | SedCommand (chatId, replyMsgId, srcMsgId, exp, text) ->
             let! res = Commands.sed text exp
             match res with

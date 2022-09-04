@@ -31,16 +31,6 @@ module Logger =
     let get name =
         factory.CreateLogger(name)
 
-module String =
-    let private logger = Logger.get "SedBot.Utilities.String"
-
-    let removeFromStart (input: string) (text: string) =
-        if input = null || text = null then
-            logger.LogError("removeFromStart: unextected null. input: {input} ;; text: {text}", input, text)
-            text
-        else
-            text.Trim().Substring(input.Length)
-
 module Path =
     let getSynthName extension =
         Guid.NewGuid().ToString().Replace("-", "") + extension
