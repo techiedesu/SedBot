@@ -626,6 +626,6 @@ NUGET
       System.Threading (>= 4.3) - restriction: && (< monoandroid) (< monotouch) (< net46) (>= netstandard1.3) (< xamarinios) (< xamarinmac) (< xamarintvos) (< xamarinwatchos)
       System.Xml.ReaderWriter (>= 4.3) - restriction: && (< monoandroid) (< monotouch) (< net46) (>= netstandard1.3) (< xamarinios) (< xamarinmac) (< xamarintvos) (< xamarinwatchos)
 GIT
-  remote: https://github.com/techiedesu/Funogram.git
-     (25ad104f104efc2debaa039ad6892b4c38073751)
+  remote: https://github.com/Dolfik1/Funogram.git
+     (c00076b338aa99f0d59dba996f0074e177265b22)
       build: dotnet restore ./src/Funogram.Telegram/Funogram.Telegram.fsproj

@@ -1,6 +1,6 @@
 source https://www.nuget.org/api/v2
 
-git https://github.com/techiedesu/Funogram.git utf8json-empty-type-fix build: dotnet restore ./src/Funogram.Telegram/Funogram.Telegram.fsproj
+git https://github.com/Dolfik1/Funogram.git master build: dotnet restore ./src/Funogram.Telegram/Funogram.Telegram.fsproj
 nuget CliWrap 3.4.4
 nuget Microsoft.Extensions.Logging 6.0.0
 nuget Newtonsoft.Json 13.0.1
