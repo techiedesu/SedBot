@@ -34,3 +34,12 @@ type System.String with
         | Some value ->
             String.removeFromStart value this
         | _ -> this
+
+module Option =
+    let anyOf (a: 'a option) (b: 'a option) =
+        if a |> Option.isSome then
+            a
+        elif b |> Option.isSome then
+            b
+        else
+            None

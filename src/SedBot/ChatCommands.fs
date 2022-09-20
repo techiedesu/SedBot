@@ -42,11 +42,16 @@ module CommandParser =
                 Text = Some expression
                 ReplyToMessage = Some
                     {
-                        Text = Some text
+                        Text = text
                         MessageId = msgId
+                        Caption = caption
                     }
             } when isSedTelegramCommand expression ->
-            Command.SedCommand (chatId, msgId, srcMsgId, expression, text)
+            let text = Option.anyOf text caption
+            if text |> Option.isSome then
+                Command.SedCommand (chatId, msgId, srcMsgId, expression, text |> Option.get)
+            else
+                Command.Nope
         | Some
             {
                 Chat = {
