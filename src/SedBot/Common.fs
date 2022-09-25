@@ -20,7 +20,7 @@ let extension (ft: FileType) =
     | Sticker -> ".webp"
 
 module String =
-    let removeFromStart (text: string) (input: string) =
+    let removeFromStart (input: string) (text: string) =
         if input = null || text = null then
             text
         else

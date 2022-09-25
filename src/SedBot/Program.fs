@@ -71,8 +71,8 @@ let updateArrived (ctx: UpdateContext) =
             let! res = Commands.sed text exp
             match res with
             | Some res ->
-                do! Api.deleteMessage chatId srcMsgId |> api ctx.Config |> asyncIgnore
-                do! Api.sendMessageReply chatId res replyMsgId |> api ctx.Config |> asyncIgnore
+                do! Api.deleteMessage chatId srcMsgId |> api ctx.Config |> Async.Ignore
+                do! Api.sendMessageReply chatId res replyMsgId |> api ctx.Config |> Async.Ignore
             | _ ->
                 ()
         | JqCommand (chatId, msgId, data, expression) ->
