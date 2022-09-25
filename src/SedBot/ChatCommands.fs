@@ -48,7 +48,7 @@ module CommandParser =
                         Caption = caption
                     }
             } when isSedTelegramCommand expression ->
-            let text = Option.anyOf text caption
+            let text = Option.anyOf2 text caption
             if text |> Option.isSome then
                 Command.SedCommand (chatId, msgId, srcMsgId, expression, text |> Option.get)
             else

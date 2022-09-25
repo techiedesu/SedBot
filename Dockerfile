@@ -4,7 +4,7 @@ COPY ./src/ ./app
 WORKDIR /app/
 
 # Have to make explicit call, because Funogram's projects don't exist.
-RUN dotnet tool restore && dotnet paket install
+RUN dotnet tool restore
 RUN dotnet publish SedBot/SedBot.fsproj -c Release -o output --sc --os linux
 
 FROM debian:bullseye as host

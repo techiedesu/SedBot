@@ -1,8 +1,9 @@
 module [<AutoOpen>] SedBot.Common
 
 open System.IO
+open System.Text.Json
 open Microsoft.Extensions.Logging
-open Newtonsoft.Json
+open Microsoft.FSharp.Core
 
 let inline (^) f x = f(x)
 
@@ -19,7 +20,7 @@ let extension (ft: FileType) =
     | Sticker -> ".webp"
 
 module String =
-    let removeFromStart (input: string) (text: string) =
+    let removeFromStart (text: string) (input: string) =
         if input = null || text = null then
             text
         else
@@ -27,32 +28,49 @@ module String =
 
 type System.String with
     member this.AnyOf(prams: string seq) =
-        prams |> Seq.tryFind (fun p -> p = this) |> Option.isSome
+        prams
+        |> Seq.tryFind (fun p -> p = this)
+        |> Option.isSome
 
     member this.StartsWithAnyOf(prams: string seq) =
-        prams |> Seq.tryFind this.StartsWith |> Option.isSome
+        prams
+        |> Seq.tryFind this.StartsWith
+        |> Option.isSome
 
     member this.RemoveAnyOf(prams: string seq) =
-        let matched = prams |> Seq.tryFind this.StartsWith
-        match matched with
-        | Some value ->
-            String.removeFromStart value this
-        | _ -> this
+        prams
+        |> Seq.tryFind this.StartsWith
+        |> Option.map (String.removeFromStart this)
+        |> Option.defaultValue this
 
 module Option =
-    let anyOf (a: 'a option) (b: 'a option) =
-        if a |> Option.isSome then
-            a
-        elif b |> Option.isSome then
-            b
-        else
-            None
+    let anyOfList<'a> (items: Option<'a> list) =
+        items |> List.find Option.isSome
+
+    let anyOf2 a b =
+        [a; b] |> anyOfList
+
+module Json =
+    open System.Text.Json.Serialization
+
+    let settings =
+        let options = JsonSerializerOptions()
+        options.Converters.Add(JsonFSharpConverter())
+        options
+
+    let serialize<'a> (t: 'a) =
+        settings.WriteIndented <- false
+        JsonSerializer.Serialize(t, settings)
+
+    let serializeNicely (t: 'a) =
+        settings.WriteIndented <- true
+        JsonSerializer.Serialize(t, settings)
 
 module Async =
     let logAndIgnore<'a> (logger: ILogger) (at: 'a Async) =
         async {
             let! res = at
-            logger.LogDebug("Ignored value: {res}", res |> JsonConvert.SerializeObject)
+            logger.LogDebug("Ignored value: {res}", res |> Json.serialize)
         }
 
 module ActivePatterns =
