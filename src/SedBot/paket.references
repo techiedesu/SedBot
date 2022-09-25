@@ -1,0 +1,7 @@
+FSharp.SystemTextJson
+CliWrap
+Microsoft.Extensions.Logging
+Newtonsoft.Json
+Serilog.Extensions.Logging
+Serilog.Sinks.Console
+Funogram.Telegram

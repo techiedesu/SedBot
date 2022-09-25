@@ -1,8 +1,11 @@
 source https://www.nuget.org/api/v2
 
-git https://github.com/Dolfik1/Funogram.git master build: dotnet restore ./src/Funogram.Telegram/Funogram.Telegram.fsproj
+git https://github.com/Dolfik1/Funogram.git master build: dotnet pack ./src/Funogram.Telegram/Funogram.Telegram.fsproj -c Release --nologo, Packages: /src/Funogram.Telegram/bin/Release/
+nuget Funogram.Telegram
+
 nuget CliWrap 3.4.4
 nuget Microsoft.Extensions.Logging 6.0.0
 nuget Newtonsoft.Json 13.0.1
 nuget Serilog.Extensions.Logging 3.1.0
 nuget Serilog.Sinks.Console 4.0.1
+nuget FSharp.SystemTextJson
