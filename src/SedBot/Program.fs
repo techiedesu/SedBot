@@ -175,7 +175,10 @@ let main args =
                 return! startBot config updateArrived None
             } |> fun x -> x.ConfigureAwait(false).GetAwaiter().GetResult()
         with
-        | e ->
-            logger.LogCritical("Something goes wrong: {error}", e)
+         | ex when ex.Message.Contains("Unauthorized") ->
+            logger.LogCritical("Wrong token? Error: {error}", ex)
+            Environment.Exit(-1)
+         | ex ->
+            logger.LogError("Something goes wrong: {error}", ex)
             Thread.Sleep(5000)
     0
