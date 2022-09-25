@@ -26,8 +26,8 @@
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\paket-files\github.com\techiedesu\Funogram\src\Funogram.Telegram\Funogram.Telegram.fsproj" />
-      <ProjectReference Include="..\paket-files\github.com\techiedesu\Funogram\src\Funogram\Funogram.fsproj" />
+      <ProjectReference Include="..\paket-files\github.com\Dolfik1\Funogram\src\Funogram.Telegram\Funogram.Telegram.fsproj" />
+      <ProjectReference Include="..\paket-files\github.com\Dolfik1\Funogram\src\Funogram\Funogram.fsproj" />
     </ItemGroup>
 
 </Project>

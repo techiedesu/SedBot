@@ -4,9 +4,9 @@ VisualStudioVersion = 17.3.32825.248
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "SedBot", "SedBot\SedBot.fsproj", "{27ABDDCC-42B0-4D49-B26C-72217FBB41C6}"
 EndProject
-Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "Funogram.Telegram", "paket-files\github.com\techiedesu\Funogram\src\Funogram.Telegram\Funogram.Telegram.fsproj", "{65849D1B-1DBF-463A-B6A0-E2BA94CA3359}"
+Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "Funogram.Telegram", "paket-files\github.com\Dolfik1\Funogram\src\Funogram.Telegram\Funogram.Telegram.fsproj", "{65849D1B-1DBF-463A-B6A0-E2BA94CA3359}"
 EndProject
-Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "Funogram", "paket-files\github.com\techiedesu\Funogram\src\Funogram\Funogram.fsproj", "{B92955A7-67FE-4030-A4AA-8D6D34DDCF0E}"
+Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "Funogram", "paket-files\github.com\Dolfik1\Funogram\src\Funogram\Funogram.fsproj", "{B92955A7-67FE-4030-A4AA-8D6D34DDCF0E}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Deps", "Deps", "{B6981106-2892-4B68-AFFD-41B51BFF72D4}"
 EndProject
