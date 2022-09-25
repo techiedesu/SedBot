@@ -13,6 +13,7 @@ type Command =
     | JqCommand of chatId: int64 * msgId: int64 * expression: string * text: string
     | ClownCommand of chatId: int64 * count: int
     | InfoCommand of chatId: int64 * msgId: int64 * replyMsgId: Message
+    | CreateKick of chatId: int64 * victimUserId: int64 * msgId: int64
     | Nope
 
 module CommandParser =
@@ -294,5 +295,17 @@ module CommandParser =
                 Sticker = Some { Emoji = Some emoji }
             } when emoji.Contains("🤡") ->
             Command.ClownCommand (chatId, 1)
+        | Some
+            {
+                MessageId = msgId
+                Chat = {
+                    Id = chatId
+                }
+                ReplyToMessage = Some {
+                    From = Some { Id = victimUserId }
+                }
+                Text = Some command
+            } when command.Trim().StartsWith("t!9") ->
+            Command.CreateKick(chatId, victimUserId, msgId)
         | _ ->
             Command.Nope

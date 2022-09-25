@@ -1,5 +1,9 @@
 module [<AutoOpen>] SedBot.Common
 
+open System.IO
+open Microsoft.Extensions.Logging
+open Newtonsoft.Json
+
 let inline (^) f x = f(x)
 
 type FileType =
@@ -10,7 +14,7 @@ type FileType =
 
 let extension (ft: FileType) =
     match ft with
-    | Gif | Video  -> ".mp4"
+    | Gif | Video -> ".mp4"
     | Picture -> ".png"
     | Sticker -> ".webp"
 
@@ -43,3 +47,24 @@ module Option =
             b
         else
             None
+
+module Async =
+    let logAndIgnore<'a> (logger: ILogger) (at: 'a Async) =
+        async {
+            let! res = at
+            logger.LogDebug("Ignored value: {res}", res |> JsonConvert.SerializeObject)
+        }
+
+module ActivePatterns =
+    let (|NonEmptySeq|_|) a = if Seq.isEmpty a then Some () else None
+
+module File =
+    let rec deleteOrNotUnit (files: string list) =
+        match files with
+        | [] -> ()
+        | head :: tail ->
+            try
+                File.Delete(head)
+            with
+            | _ -> ()
+            deleteOrNotUnit tail

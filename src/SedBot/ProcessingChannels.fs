@@ -35,6 +35,7 @@ let startGifFfmpeg() = // TODO: Use pipes
             let prams = ([$"-i {srcName} -y -qscale 0 {sound} -vf reverse {resName}"], false)
             let! res = Process.runStreamProcess "ffmpeg" prams resName
             tcs.SetResult(res)
+            File.deleteOrNotUnit [srcName; resName]
             do! Task.Delay(40)
     }
 
@@ -56,11 +57,12 @@ let startGifMagicDistortion() =
 
             let extension = extension fileType
 
-            if fileType = Video |> not then
+            match fileType with
+            | Video ->
                 let prams = (["mp4:- -liquid-rescale 320x640 -implode 0.25 mp4:-"], false)
                 let! res = Process.runPipedStreamProcess "magick" stream prams
                 tcs.SetResult(res)
-            else
+            | _ ->
                 let srcName = Utilities.Path.getSynthName extension
                 let resNoSoundName = Utilities.Path.getSynthName extension
                 let resSoundName = Utilities.Path.getSynthName extension
@@ -77,8 +79,10 @@ let startGifMagicDistortion() =
                     | ValueSome _ ->
                         let! res = Process.runStreamProcess "ffmpeg" ([|$"-i {resNoSoundName} -i {soundName} -map 0 -map 1:a -c:v copy -shortest {resSoundName}"|], false) resSoundName
                         tcs.SetResult(res)
+                        File.deleteOrNotUnit [resNoSoundName; soundName; resSoundName]
                     | _ ->
                         tcs.SetResult(ValueNone)
+                        File.deleteOrNotUnit [srcName; resNoSoundName; resSoundName]
                 | _ ->
                     tcs.SetResult(res)
             do! Task.Delay(40)
@@ -101,7 +105,7 @@ let startVflipGifFfmpeg() =
             let extension = extension fileType
             let srcName = Utilities.Path.getSynthName extension
             let resName = Utilities.Path.getSynthName extension
-            log.LogDebug("srcName: {srcName};; resName: {resName}")
+            log.LogDebug("srcName: {srcName};; resName: {resName}", srcName, resName)
             do! File.WriteAllBytesAsync(srcName, stream.ToArray())
             let sound =
                 if fileType = FileType.Gif then
@@ -132,7 +136,7 @@ let startHflipGifFfmpeg() =
             let extension = extension fileType
             let srcName = Utilities.Path.getSynthName extension
             let resName = Utilities.Path.getSynthName extension
-            log.LogDebug("srcName: {srcName};; resName: {resName}")
+            log.LogDebug("srcName: {srcName};; resName: {resName}", srcName, resName)
 
             do! File.WriteAllBytesAsync(srcName, stream.ToArray())
             let sound =
@@ -147,6 +151,7 @@ let startHflipGifFfmpeg() =
             let prams = ([$"-i {srcName} -y -vf hflip -qscale 0 {sound} {resName}"], false)
             let! res = Process.runStreamProcess "ffmpeg" prams resName
             tcs.SetResult(res)
+            File.deleteOrNotUnit [sound; resName]
             do! Task.Delay(40)
     }
 

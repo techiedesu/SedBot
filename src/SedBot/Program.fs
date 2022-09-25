@@ -14,14 +14,42 @@ open SedBot
 open SedBot.ChatCommands
 open SedBot.Utilities
 open Microsoft.Extensions.Logging
+open Serilog
 
 module Api =
-    let sendAnimationReply chatId animation replyToMessageId = Req.SendAnimation.Make(ChatId.Int chatId, animation, replyToMessageId = replyToMessageId)
-    let sendVideoReply chatId videoFile replyToMessageId = Req.SendVideo.Make(ChatId.Int chatId, videoFile, replyToMessageId = replyToMessageId)
-    let sendTextMarkupReply chatId text replyToMessageId parseMode = Req.SendMessage.Make(ChatId.Int chatId, text, replyToMessageId = replyToMessageId, parseMode = parseMode)
-    let sendPhotoReply chatId photo replyToMessageId = Req.SendPhoto.Make(ChatId.Int chatId, photo, replyToMessageId = replyToMessageId)
+    let mutable hc = new HttpClient()
+
+    let sendAnimationReply chatId animation replyToMessageId =
+        Req.SendAnimation.Make(ChatId.Int chatId, animation, replyToMessageId = replyToMessageId)
+
+    let sendVideoReply chatId videoFile replyToMessageId =
+        Req.SendVideo.Make(ChatId.Int chatId, videoFile, replyToMessageId = replyToMessageId)
+
+    let sendTextMarkupReply chatId text replyToMessageId parseMode =
+        Req.SendMessage.Make(ChatId.Int chatId, text, replyToMessageId = replyToMessageId, parseMode = parseMode)
+
+    let sendTextMarkup chatId text parseMode =
+        Req.SendMessage.Make(ChatId.Int chatId, text, parseMode = parseMode)
+
+    let sendPhotoReply chatId photo replyToMessageId =
+        Req.SendPhoto.Make(ChatId.Int chatId, photo, replyToMessageId = replyToMessageId)
+
+    /// Try to get file stream by telegram FileId
+    let tryGetFileAsStream ctx fileId = task {
+        let! file = Api.getFile fileId |> api ctx.Config
+        match file with
+        | Ok { FilePath = Some path } ->
+            try
+                let! res = hc.GetStreamAsync($"https://api.telegram.org/file/bot{ctx.Config.Token}/{path}")
+                return res |> ValueSome
+            with
+            | _ -> return ValueNone
+        | _ -> return ValueNone
+    }
 
 let mutable myUserName : string = null
+
+/// Extract telegram bot username and cache
 let me ctx = task {
     if myUserName = null then
         let! gotMe = Api.getMe |> api ctx.Config
@@ -34,6 +62,7 @@ let me ctx = task {
         return myUserName
 }
 
+let log = Logger.get "updateArrived"
 let updateArrived (ctx: UpdateContext) =
     task {
         let! botUsername = me ctx
@@ -42,8 +71,8 @@ let updateArrived (ctx: UpdateContext) =
             let! res = Commands.sed text exp
             match res with
             | Some res ->
-                do! Api.deleteMessage chatId srcMsgId |> api ctx.Config |> Async.Ignore
-                do! Api.sendMessageReply chatId res replyMsgId |> api ctx.Config |> Async.Ignore
+                do! Api.deleteMessage chatId srcMsgId |> api ctx.Config |> Async.logAndIgnore log
+                do! Api.sendMessageReply chatId res replyMsgId |> api ctx.Config |> Async.logAndIgnore log
             | _ ->
                 ()
         | JqCommand (chatId, msgId, data, exp) ->
@@ -51,15 +80,13 @@ let updateArrived (ctx: UpdateContext) =
             match res with
             | Some res ->
                 let res = $"```\n{res}\n```"
-                do! Api.sendTextMarkupReply chatId res msgId ParseMode.Markdown |> api ctx.Config |> Async.Ignore
+                do! Api.sendTextMarkupReply chatId res msgId ParseMode.Markdown |> api ctx.Config |> Async.logAndIgnore log
             | _ ->
                 ()
         | ReverseCommand (chatId, msgId, fileId, fileType) ->
-            let! file = Api.getFile fileId |> api ctx.Config
+            let! file = fileId |> Api.tryGetFileAsStream ctx
             match file with
-            | Ok { FilePath = Some filePath } ->
-                use hc = new HttpClient()
-                let! srcStream = hc.GetStreamAsync($"https://api.telegram.org/file/bot{ctx.Config.Token}/{filePath}")
+            | ValueSome srcStream ->
                 match! Commands.reverse srcStream fileType with
                 | ValueSome resStream ->
                     let extension = extension fileType
@@ -69,13 +96,13 @@ let updateArrived (ctx: UpdateContext) =
                     let ani = InputFile.File (synthName, ms)
                     match fileType with
                     | Gif | Sticker ->
-                        do! Api.sendAnimationReply chatId ani msgId |> api ctx.Config |> Async.Ignore
+                        do! Api.sendAnimationReply chatId ani msgId |> api ctx.Config |> Async.logAndIgnore log
                     | Video ->
-                        do! Api.sendVideoReply chatId ani msgId |> api ctx.Config |> Async.Ignore
+                        do! Api.sendVideoReply chatId ani msgId |> api ctx.Config |> Async.logAndIgnore log
                     | _ ->
-                        do! Api.sendPhotoReply chatId ani msgId |> api ctx.Config |> Async.Ignore
+                        do! Api.sendPhotoReply chatId ani msgId |> api ctx.Config |> Async.logAndIgnore log
                 | _ -> ()
-            | _ -> ()
+            | ValueNone -> ()
         | VflipCommand (chatId, msgId, fileId, fileType) ->
             let! file = Api.getFile fileId |> api ctx.Config
             match file with
@@ -91,12 +118,12 @@ let updateArrived (ctx: UpdateContext) =
                     let ani = InputFile.File (synthName, ms)
                     match fileType with
                     | Gif | Sticker ->
-                        do! Api.sendAnimationReply chatId ani msgId |> api ctx.Config |> Async.Ignore
+                        do! Api.sendAnimationReply chatId ani msgId |> api ctx.Config |> Async.logAndIgnore log
                     | Video ->
-                        do! Api.sendVideoReply chatId ani msgId |> api ctx.Config |> Async.Ignore
+                        do! Api.sendVideoReply chatId ani msgId |> api ctx.Config |> Async.logAndIgnore log
                     | _ ->
-                        do! Api.sendPhotoReply chatId ani msgId |> api ctx.Config |> Async.Ignore
-                | _ -> ()
+                        do! Api.sendPhotoReply chatId ani msgId |> api ctx.Config |> Async.logAndIgnore log
+                | ValueNone -> ()
             | _ -> ()
         | HflipCommand (chatId, msgId, fileId, fileType) ->
             let! file = Api.getFile fileId |> api ctx.Config
@@ -113,11 +140,11 @@ let updateArrived (ctx: UpdateContext) =
                     let ani = InputFile.File (synthName, ms)
                     match fileType with
                     | Gif | Sticker ->
-                        do! Api.sendAnimationReply chatId ani msgId |> api ctx.Config |> Async.Ignore
+                        do! Api.sendAnimationReply chatId ani msgId |> api ctx.Config |> Async.logAndIgnore log
                     | Video ->
-                        do! Api.sendVideoReply chatId ani msgId |> api ctx.Config |> Async.Ignore
+                        do! Api.sendVideoReply chatId ani msgId |> api ctx.Config |> Async.logAndIgnore log
                     | _ ->
-                        do! Api.sendPhotoReply chatId ani msgId |> api ctx.Config |> Async.Ignore
+                        do! Api.sendPhotoReply chatId ani msgId |> api ctx.Config |> Async.logAndIgnore log
                 | _ -> ()
             | _ -> ()
         | DistortCommand (chatId, msgId, fileId, fileType) ->
@@ -135,24 +162,32 @@ let updateArrived (ctx: UpdateContext) =
                     let ani = InputFile.File (synthName, ms)
                     match fileType with
                     | Gif | Sticker ->
-                        do! Api.sendAnimationReply chatId ani msgId |> api ctx.Config |> Async.Ignore
+                        do! Api.sendAnimationReply chatId ani msgId |> api ctx.Config |> Async.logAndIgnore log
                     | Video ->
-                        do! Api.sendVideoReply chatId ani msgId |> api ctx.Config |> Async.Ignore
+                        do! Api.sendVideoReply chatId ani msgId |> api ctx.Config |> Async.logAndIgnore log
                     | _ ->
-                        do! Api.sendPhotoReply chatId ani msgId |> api ctx.Config |> Async.Ignore
+                        do! Api.sendPhotoReply chatId ani msgId |> api ctx.Config |> Async.logAndIgnore log
                 | _ -> ()
             | _ -> ()
             ()
         | ClownCommand(chatId, count) ->
-            do! Api.sendMessage chatId (System.String.Concat(Enumerable.Repeat("🤡", count))) |> api ctx.Config |> Async.Ignore
+            do! Api.sendMessage chatId (System.String.Concat(Enumerable.Repeat("🤡", count))) |> api ctx.Config |> Async.logAndIgnore log
         | InfoCommand(chatId, msgId, reply) ->
-            do! Api.deleteMessage chatId msgId |> api ctx.Config |> Async.Ignore
+            do! Api.deleteMessage chatId msgId |> api ctx.Config |> Async.logAndIgnore log
             let res =  $"```\n{JsonConvert.SerializeObject(reply, Formatting.Indented, JsonSerializerSettings(NullValueHandling = NullValueHandling.Ignore))}\n```"
             let! x = Api.sendTextMarkupReply chatId res reply.MessageId ParseMode.Markdown |> api ctx.Config
             match x with
             | Ok { MessageId = msgId } ->
                 do! Task.Delay(30000)
-                do! Api.deleteMessage chatId msgId |> api ctx.Config |> Async.Ignore
+                do! Api.deleteMessage chatId msgId |> api ctx.Config |> Async.logAndIgnore log
+            | _ -> ()
+        | CreateKick(chatId, victimUserId, msgId) ->
+            do! Api.deleteMessage chatId msgId |> api ctx.Config |> Async.logAndIgnore log
+            let! x = Api.sendTextMarkup chatId $"`/banid {victimUserId}`" ParseMode.Markdown |> api ctx.Config
+            match x with
+            | Ok { MessageId = msgId } ->
+                do! Task.Delay(10000)
+                do! Api.deleteMessage chatId msgId |> api ctx.Config |> Async.logAndIgnore log
             | _ -> ()
         | Nope ->
             ()

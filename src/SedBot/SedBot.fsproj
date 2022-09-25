@@ -1,8 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <!-- https://github.com/dotnet/fsharp/issues/12839 -->
-        <NoWarn>FS3511</NoWarn>
         <OutputType>Exe</OutputType>
         <TargetFramework>net6.0</TargetFramework>
         <RootNamespace>SedBot</RootNamespace>
