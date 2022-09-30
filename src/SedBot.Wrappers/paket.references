@@ -1,0 +1,6 @@
+CliWrap
+
+## Tests deps
+NUnit
+Microsoft.NET.Test.Sdk
+FSharp.Core

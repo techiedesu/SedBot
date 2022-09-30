@@ -14,37 +14,6 @@ open SedBot.ChatCommands
 open SedBot.Utilities
 open Microsoft.Extensions.Logging
 
-module Api =
-    let mutable hc = new HttpClient()
-
-    let sendAnimationReply chatId animation replyToMessageId =
-        Req.SendAnimation.Make(ChatId.Int chatId, animation, replyToMessageId = replyToMessageId)
-
-    let sendVideoReply chatId videoFile replyToMessageId =
-        Req.SendVideo.Make(ChatId.Int chatId, videoFile, replyToMessageId = replyToMessageId)
-
-    let sendTextMarkupReply chatId text replyToMessageId parseMode =
-        Req.SendMessage.Make(ChatId.Int chatId, text, replyToMessageId = replyToMessageId, parseMode = parseMode)
-
-    let sendTextMarkup chatId text parseMode =
-        Req.SendMessage.Make(ChatId.Int chatId, text, parseMode = parseMode)
-
-    let sendPhotoReply chatId photo replyToMessageId =
-        Req.SendPhoto.Make(ChatId.Int chatId, photo, replyToMessageId = replyToMessageId)
-
-    /// Try to get file stream by telegram FileId
-    let tryGetFileAsStream ctx fileId = task {
-        let! file = Api.getFile fileId |> api ctx.Config
-        match file with
-        | Ok { FilePath = Some path } ->
-            try
-                let! res = hc.GetStreamAsync($"https://api.telegram.org/file/bot{ctx.Config.Token}/{path}")
-                return res |> ValueSome
-            with
-            | _ -> return ValueNone
-        | _ -> return ValueNone
-    }
-
 let mutable myUserName : string = null
 
 /// Extract telegram bot username and cache

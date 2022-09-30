@@ -8,11 +8,16 @@
   <ItemGroup>
     <Compile Include="Common.fs" />
     <Compile Include="Utilities.fs" />
+    <Compile Include="Api.fs" />
     <Compile Include="ProcessingChannels.fs" />
     <Compile Include="ChatCommands.fs" />
     <Compile Include="Commands.fs" />
+    <Compile Include="CommandActors.fs" />
     <Compile Include="Program.fs" />
     <Content Include="paket.references" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\SedBot.Shared\SedBot.Shared.fsproj" />
   </ItemGroup>
   <Import Project="..\.paket\Paket.Restore.targets" />
 </Project>
