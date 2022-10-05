@@ -4,7 +4,6 @@ open System.Linq
 open System.Net.Http
 
 open System.Threading
-open System.Threading.Tasks
 open Funogram.Api
 open Funogram.Telegram
 open Funogram.Telegram.Bot
@@ -14,37 +13,6 @@ open SedBot.Actors
 open SedBot.ChatCommands
 open SedBot.Utilities
 open Microsoft.Extensions.Logging
-
-module Api =
-    let mutable hc = new HttpClient()
-
-    let sendAnimationReply chatId animation replyToMessageId =
-        Req.SendAnimation.Make(ChatId.Int chatId, animation, replyToMessageId = replyToMessageId)
-
-    let sendVideoReply chatId videoFile replyToMessageId =
-        Req.SendVideo.Make(ChatId.Int chatId, videoFile, replyToMessageId = replyToMessageId)
-
-    let sendTextMarkupReply chatId text replyToMessageId parseMode =
-        Req.SendMessage.Make(ChatId.Int chatId, text, replyToMessageId = replyToMessageId, parseMode = parseMode)
-
-    let sendTextMarkup chatId text parseMode =
-        Req.SendMessage.Make(ChatId.Int chatId, text, parseMode = parseMode)
-
-    let sendPhotoReply chatId photo replyToMessageId =
-        Req.SendPhoto.Make(ChatId.Int chatId, photo, replyToMessageId = replyToMessageId)
-
-    /// Try to get file stream by telegram FileId
-    let tryGetFileAsStream ctx fileId = task {
-        let! file = Api.getFile fileId |> api ctx.Config
-        match file with
-        | Ok { FilePath = Some path } ->
-            try
-                let! res = hc.GetStreamAsync($"https://api.telegram.org/file/bot{ctx.Config.Token}/{path}")
-                return res |> ValueSome
-            with
-            | _ -> return ValueNone
-        | _ -> return ValueNone
-    }
 
 let mutable myUserName : string = null
 
@@ -77,12 +45,7 @@ let updateArrived (ctx: UpdateContext) =
                 ()
         | JqCommand (chatId, msgId, data, expression) ->
             let! res = expression |> Commands.jq data
-            match res with
-            | Some res ->
-                let res = $"```\n{res}\n```"
-                TgApi.sendMarkupMessageReply chatId res msgId ParseMode.Markdown
-            | _ ->
-                ()
+            res |> Option.iter (fun res -> TgApi.sendMarkupMessageReply chatId $"```\n{res}\n```" msgId ParseMode.Markdown)
         | ReverseCommand (chatId, msgId, fileId, fileType) ->
             let! file = fileId |> Api.tryGetFileAsStream ctx
             match file with
@@ -194,26 +157,12 @@ let updateArrived (ctx: UpdateContext) =
         | ClownCommand(chatId, count) ->
             TgApi.sendMessage chatId (System.String.Concat(Enumerable.Repeat("🤡", count)))
         | InfoCommand(chatId, msgId, reply) ->
-            do! Api.deleteMessage chatId msgId |> api ctx.Config |> Async.Ignore
+            TgApi.deleteMessage chatId msgId
             let res =  $"```\n{reply |> Json.serializeNicely}\n```"
-            let! x = Api.sendTextMarkupReply chatId res reply.MessageId ParseMode.Markdown |> api ctx.Config
-            match x with
-            | Ok { MessageId = msgId } ->
-                do! Task.Delay(5000)
-                do! Api.deleteMessage chatId msgId |> api ctx.Config |> Async.Ignore
-            | _ -> ()
+            TgApi.sendMarkupMessageReplyAndDeleteAfter chatId res ParseMode.Markdown reply.MessageId 5000
         | CreateKick(chatId, victimUserId, msgId) ->
             TgApi.deleteMessage chatId msgId
-            let! apiResponse =
-                Api.sendTextMarkup chatId $"`/banid {victimUserId}`" ParseMode.Markdown
-                |> api ctx.Config
-            match apiResponse with
-            | Ok { MessageId = msgId } ->
-                do! Task.Delay(10000)
-                do! Api.deleteMessage chatId msgId
-                    |> api ctx.Config
-                    |> Async.Ignore
-            | _ -> ()
+            TgApi.sendMarkupMessageAndDeleteAfter chatId $"`/banid {victimUserId}`" ParseMode.Markdown 5000
         | Nope ->
             ()
     } |> ignore

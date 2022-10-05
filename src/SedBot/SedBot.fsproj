@@ -9,6 +9,7 @@
   <ItemGroup>
     <Compile Include="Common.fs" />
     <Compile Include="Utilities.fs" />
+    <Compile Include="Api.fs" />
     <Compile Include="Actors.fs" />
     <Compile Include="ProcessingChannels.fs" />
     <Compile Include="ChatCommands.fs" />
