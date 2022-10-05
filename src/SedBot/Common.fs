@@ -66,13 +66,6 @@ module Json =
         settings.WriteIndented <- true
         JsonSerializer.Serialize(t, settings)
 
-module Async =
-    let logAndIgnore<'a> (logger: ILogger) (at: 'a Async) =
-        async {
-            let! res = at
-            logger.LogDebug("Ignored value: {res}", res |> Json.serialize)
-        }
-
 module ActivePatterns =
     let (|NonEmptySeq|_|) a = if Seq.isEmpty a then Some () else None
 

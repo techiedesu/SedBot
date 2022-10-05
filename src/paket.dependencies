@@ -8,3 +8,6 @@ nuget Microsoft.Extensions.Logging 6.0.0
 nuget Serilog.Extensions.Logging 3.1.0
 nuget Serilog.Sinks.Console 4.0.1
 nuget FSharp.SystemTextJson
+nuget Akka.FSharp
+nuget NUnit
+nuget Microsoft.NET.Test.Sdk

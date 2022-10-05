@@ -4,10 +4,12 @@
     <OutputType>Exe</OutputType>
     <TargetFramework>net6.0</TargetFramework>
     <RootNamespace>SedBot</RootNamespace>
+    <GenerateProgramFile>false</GenerateProgramFile>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Common.fs" />
     <Compile Include="Utilities.fs" />
+    <Compile Include="Actors.fs" />
     <Compile Include="ProcessingChannels.fs" />
     <Compile Include="ChatCommands.fs" />
     <Compile Include="Commands.fs" />

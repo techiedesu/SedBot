@@ -4,3 +4,6 @@ Microsoft.Extensions.Logging
 Serilog.Extensions.Logging
 Serilog.Sinks.Console
 Funogram.Telegram
+Akka.FSharp
+NUnit
+Microsoft.NET.Test.Sdk

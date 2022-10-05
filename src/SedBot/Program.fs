@@ -10,6 +10,7 @@ open Funogram.Telegram
 open Funogram.Telegram.Bot
 open Funogram.Telegram.Types
 open SedBot
+open SedBot.Actors
 open SedBot.ChatCommands
 open SedBot.Utilities
 open Microsoft.Extensions.Logging
@@ -61,7 +62,6 @@ let me ctx = task {
 }
 
 let log = Logger.get "updateArrived"
-let asyncIgnore (a: _ Async) = a |> Async.logAndIgnore log
 
 let updateArrived (ctx: UpdateContext) =
     task {
@@ -71,8 +71,8 @@ let updateArrived (ctx: UpdateContext) =
             let! res = Commands.sed text exp
             match res with
             | Some res ->
-                do! Api.deleteMessage chatId srcMsgId |> api ctx.Config |> Async.Ignore
-                do! Api.sendMessageReply chatId res replyMsgId |> api ctx.Config |> Async.Ignore
+                TgApi.deleteMessage chatId srcMsgId
+                TgApi.sendMessageReply chatId res replyMsgId
             | _ ->
                 ()
         | JqCommand (chatId, msgId, data, expression) ->
@@ -80,7 +80,7 @@ let updateArrived (ctx: UpdateContext) =
             match res with
             | Some res ->
                 let res = $"```\n{res}\n```"
-                do! Api.sendTextMarkupReply chatId res msgId ParseMode.Markdown |> api ctx.Config |> asyncIgnore
+                TgApi.sendMarkupMessageReply chatId res msgId ParseMode.Markdown
             | _ ->
                 ()
         | ReverseCommand (chatId, msgId, fileId, fileType) ->
@@ -98,15 +98,15 @@ let updateArrived (ctx: UpdateContext) =
                     | Gif | Sticker ->
                         do! Api.sendAnimationReply chatId ani msgId
                             |> api ctx.Config
-                            |> asyncIgnore
+                            |> Async.Ignore
                     | Video ->
                         do! Api.sendVideoReply chatId ani msgId
                             |> api ctx.Config
-                            |> asyncIgnore
+                            |> Async.Ignore
                     | _ ->
                         do! Api.sendPhotoReply chatId ani msgId
                             |> api ctx.Config
-                            |> asyncIgnore
+                            |> Async.Ignore
                 | _ -> ()
             | ValueNone -> ()
         | VflipCommand (chatId, msgId, fileId, fileType) ->
@@ -125,15 +125,15 @@ let updateArrived (ctx: UpdateContext) =
                     | Sticker ->
                         do! Api.sendAnimationReply chatId ani msgId
                             |> api ctx.Config
-                            |> asyncIgnore
+                            |> Async.Ignore
                     | Video ->
                         do! Api.sendVideoReply chatId ani msgId
                             |> api ctx.Config
-                            |> asyncIgnore
+                            |> Async.Ignore
                     | _ ->
                         do! Api.sendPhotoReply chatId ani msgId
                             |> api ctx.Config
-                            |> asyncIgnore
+                            |> Async.Ignore
                 | ValueNone -> ()
             | _ -> ()
         | HflipCommand (chatId, msgId, fileId, fileType) ->
@@ -153,15 +153,15 @@ let updateArrived (ctx: UpdateContext) =
                     | Sticker ->
                         do! Api.sendAnimationReply chatId ani msgId
                             |> api ctx.Config
-                            |> asyncIgnore
+                            |> Async.Ignore
                     | Video ->
                         do! Api.sendVideoReply chatId ani msgId
                             |> api ctx.Config
-                            |> asyncIgnore
+                            |> Async.Ignore
                     | _ ->
                         do! Api.sendPhotoReply chatId ani msgId
                             |> api ctx.Config
-                            |> asyncIgnore
+                            |> Async.Ignore
                 | _ -> ()
             | _ -> ()
         | DistortCommand (chatId, msgId, fileId, fileType) ->
@@ -179,35 +179,31 @@ let updateArrived (ctx: UpdateContext) =
                     | Gif | Sticker ->
                         do! Api.sendAnimationReply chatId ani msgId
                             |> api ctx.Config
-                            |> asyncIgnore
+                            |> Async.Ignore
                     | Video ->
                         do! Api.sendVideoReply chatId ani msgId
                             |> api ctx.Config
-                            |> asyncIgnore
+                            |> Async.Ignore
                     | _ ->
                         do! Api.sendPhotoReply chatId ani msgId
                             |> api ctx.Config
-                            |> asyncIgnore
+                            |> Async.Ignore
                 | _ -> ()
             | _ -> ()
             ()
         | ClownCommand(chatId, count) ->
-            do! Api.sendMessage chatId (System.String.Concat(Enumerable.Repeat("🤡", count)))
-                |> api ctx.Config
-                |> asyncIgnore
+            TgApi.sendMessage chatId (System.String.Concat(Enumerable.Repeat("🤡", count)))
         | InfoCommand(chatId, msgId, reply) ->
-            // do! Api.deleteMessage chatId msgId |> api ctx.Config |> asyncIgnore
+            do! Api.deleteMessage chatId msgId |> api ctx.Config |> Async.Ignore
             let res =  $"```\n{reply |> Json.serializeNicely}\n```"
             let! x = Api.sendTextMarkupReply chatId res reply.MessageId ParseMode.Markdown |> api ctx.Config
             match x with
             | Ok { MessageId = msgId } ->
-                do! Task.Delay(30000)
-                do! Api.deleteMessage chatId msgId |> api ctx.Config |> asyncIgnore
+                do! Task.Delay(5000)
+                do! Api.deleteMessage chatId msgId |> api ctx.Config |> Async.Ignore
             | _ -> ()
         | CreateKick(chatId, victimUserId, msgId) ->
-            do! Api.deleteMessage chatId msgId
-                |> api ctx.Config
-                |> asyncIgnore
+            TgApi.deleteMessage chatId msgId
             let! apiResponse =
                 Api.sendTextMarkup chatId $"`/banid {victimUserId}`" ParseMode.Markdown
                 |> api ctx.Config
@@ -216,11 +212,14 @@ let updateArrived (ctx: UpdateContext) =
                 do! Task.Delay(10000)
                 do! Api.deleteMessage chatId msgId
                     |> api ctx.Config
-                    |> asyncIgnore
+                    |> Async.Ignore
             | _ -> ()
         | Nope ->
             ()
     } |> ignore
+
+open Akka.FSharp
+open Funogram.Types
 
 [<EntryPoint>]
 let main args =
@@ -228,13 +227,18 @@ let main args =
     if args.Length = 0 then
         logger.LogCritical("Usage: {execName} yourtelegramtoken", AppDomain.CurrentDomain.FriendlyName)
         Environment.Exit(-1)
+
     let token = args[0]
+    let system = Configuration.defaultConfig() |> System.create "system"
+    let tgResponseActor = responseTelegramActor |> spawn system "tgResponseActor"
+    TgApi.actor <- tgResponseActor
 
     ProcessingChannels.start()
     while true do
         try
             task {
                 let config = { Config.defaultConfig with Token = token }
+                tgResponseActor <! SendTelegramResponseMail.SetConfig config
                 let! _ = Api.deleteWebhookBase () |> api config
                 return! startBot config updateArrived None
             } |> fun x -> x.ConfigureAwait(false).GetAwaiter().GetResult()
