@@ -2,12 +2,19 @@ module SedBot.Utilities
 
 open System
 open System.IO
+open System.Runtime.InteropServices
 open System.Text
 open CliWrap
 open CliWrap.Buffered
 open Microsoft.Extensions.Logging
 open Serilog
 open Serilog.Extensions.Logging
+
+let platformed command args =
+    if RuntimeInformation.IsOSPlatform(OSPlatform.Windows) then
+        "wsl", args |> Seq.append (Seq.singleton command)
+    else
+        command, args
 
 [<RequireQualifiedAccess>]
 module Logger =
@@ -39,6 +46,7 @@ module Process =
     let private log = Logger.get "SedBot.Utilities.Process"
 
     let runTextProcess procName (args: string seq) data =
+        let procName, args = platformed procName args
         task {
             log.LogDebug(
                 "runTextProcess: proccess name: {procName};; args: {args};; data: {data}",
@@ -69,6 +77,7 @@ module Process =
         }
 
     let runStreamProcess procName (args: string seq, escape) outputFileName =
+        let procName, args = platformed procName args
         task {
             log.LogDebug(
                 "runStreamProcess: proccess name: {procName};; args: {args};; escape: {escape};; outputFileName: {outputFileName}",
@@ -100,6 +109,8 @@ module Process =
         }
 
     let runPipedStreamProcess procName inputStream (args: string seq, escape) =
+        (inputStream :> Stream).Position <- 0
+        let procName, args = platformed procName args
         task {
             log.LogDebug(
                 "runStreamProcess: proccess name: {procName};; args: {args};; escape: {escape}",

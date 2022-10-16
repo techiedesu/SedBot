@@ -32,7 +32,7 @@ let startGifFfmpeg() = // TODO: Use pipes
                     "-af areverse"
                 else
                     "-an"
-            let prams = ([$"-i {srcName} -y -qscale 0 {sound} -vf reverse {resName}"], false)
+            let prams = ([$"-i {srcName} -y {sound} -vf reverse {resName}"], false)
             let! res = Process.runStreamProcess "ffmpeg" prams resName
             tcs.SetResult(res)
             File.deleteOrNotUnit [srcName; resName]
@@ -57,34 +57,13 @@ let startGifMagicDistortion() =
 
             let extension = extension fileType
 
-            match fileType with
-            | Video ->
-                let prams = (["mp4:- -liquid-rescale 320x640 -implode 0.25 mp4:-"], false)
-                let! res = Process.runPipedStreamProcess "magick" stream prams
-                tcs.SetResult(res)
-            | _ ->
-                let srcName = Utilities.Path.getSynthName extension
-                let resNoSoundName = Utilities.Path.getSynthName extension
-                let resSoundName = Utilities.Path.getSynthName extension
-                do! File.WriteAllBytesAsync(srcName, stream.ToArray())
-
-                let prams = ([$"{srcName} -liquid-rescale 320x640 -implode 0.25 {resNoSoundName}"], false)
-                let! res = Process.runStreamProcess "magick" prams resNoSoundName
-                match res with
-                | ValueSome _ ->
-                    // Extract sound
-                    let soundName = Utilities.Path.getSynthName ".mp3"
-                    let! resSound = Process.runStreamProcess "ffmpeg" ([|$"-i {srcName} -vn -map a {soundName}"|], false) soundName
-                    match resSound with
-                    | ValueSome _ ->
-                        let! res = Process.runStreamProcess "ffmpeg" ([|$"-i {resNoSoundName} -i {soundName} -map 0 -map 1:a -c:v copy -shortest {resSoundName}"|], false) resSoundName
-                        tcs.SetResult(res)
-                        File.deleteOrNotUnit [resNoSoundName; soundName; resSoundName]
-                    | _ ->
-                        tcs.SetResult(ValueNone)
-                        File.deleteOrNotUnit [srcName; resNoSoundName; resSoundName]
-                | _ ->
-                    tcs.SetResult(res)
+            let srcName = Utilities.Path.getSynthName extension
+            let resName = Utilities.Path.getSynthName extension
+            do! File.WriteAllBytesAsync(srcName, stream.ToArray())
+            let prams = ([$"{srcName} -liquid-rescale 320x640 -implode 0.25 {resName}"], false)
+            let! res = Process.runPipedStreamProcess "magick" stream prams
+            File.deleteOrNotUnit [srcName; resName]
+            tcs.SetResult(res)
             do! Task.Delay(40)
     }
 

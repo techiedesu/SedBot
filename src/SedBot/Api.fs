@@ -35,3 +35,17 @@ let tryGetFileAsStream ctx fileId = task {
         | _ -> return ValueNone
     | _ -> return ValueNone
 }
+
+/// Try to get file bytes by telegram FileId
+let tryGetFileAsBytes ctx fileId = task {
+    let! file = Api.getFile fileId |> api ctx.Config
+    match file with
+    | Ok { FilePath = Some path } ->
+        try
+            let! res = hc.GetByteArrayAsync($"https://api.telegram.org/file/bot{ctx.Config.Token}/{path}")
+            return res |> ValueSome
+        with
+        | _ -> return ValueNone
+    | _ -> return ValueNone
+}
+
