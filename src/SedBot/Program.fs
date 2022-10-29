@@ -41,6 +41,22 @@ let private replyAsFileType fileType chatId ani msgId =
     | Picture ->
         TgApi.sendPhotoReply chatId ani msgId
 
+let createInputFile fileType (data: byte[] voption) : InputFile voption =
+    match data with
+    | ValueSome data ->
+        let extension = extension fileType
+        let synthName = Utilities.Path.getSynthName extension
+        let ms = new MemoryStream(data)
+        InputFile.File (synthName, ms) |> ValueSome
+    | _ -> ValueNone
+
+let sendFileAsReply data fileType chatId msgId =
+    let inputFile = createInputFile fileType data
+    match inputFile with
+    | ValueSome inputFile ->
+        replyAsFileType fileType chatId inputFile msgId
+    | _ -> ()
+
 let updateArrived (ctx: UpdateContext) =
     task {
         let! botUsername = me ctx
@@ -51,8 +67,7 @@ let updateArrived (ctx: UpdateContext) =
             | Some res ->
                 TgApi.deleteMessage chatId srcMsgId
                 TgApi.sendMessageReply chatId res replyMsgId
-            | _ ->
-                ()
+            | _ -> ()
         | JqCommand (chatId, msgId, data, expression) ->
             let! res = expression |> Commands.jq data
             res |> Option.iter (fun res -> TgApi.sendMarkupMessageReply chatId $"```\n{res}\n```" msgId ParseMode.Markdown)
@@ -60,60 +75,30 @@ let updateArrived (ctx: UpdateContext) =
             let! file = fileId |> Api.tryGetFileAsStream ctx
             match file with
             | ValueSome srcStream ->
-                match! Commands.reverse srcStream fileType with
-                | ValueSome resStream ->
-                    let extension = extension fileType
-                    let synthName = Utilities.Path.getSynthName extension
-                    let ms = new MemoryStream(resStream)
-                    ms.Position <- 0
-                    let ani = InputFile.File (synthName, ms)
-                    replyAsFileType fileType chatId ani msgId
-                | _ -> ()
+                let! res = Commands.reverse srcStream fileType
+                sendFileAsReply res fileType chatId msgId
             | ValueNone -> ()
         | VflipCommand (chatId, msgId, fileId, fileType) ->
             let! file = fileId |> Api.tryGetFileAsStream ctx
             match file with
             | ValueSome srcStream ->
-                match! Commands.vFlip srcStream fileType with
-                | ValueSome resStream ->
-                    let extension = extension fileType
-                    let synthName = Utilities.Path.getSynthName extension
-                    let ms = new MemoryStream(resStream)
-                    ms.Position <- 0
-                    let ani = InputFile.File (synthName, ms)
-                    replyAsFileType fileType chatId ani msgId
-                | ValueNone -> ()
-            | _ -> ()
+                let! res = Commands.vFlip srcStream fileType
+                sendFileAsReply res fileType chatId msgId
+            | ValueNone -> ()
         | HflipCommand (chatId, msgId, fileId, fileType) ->
             let! file = fileId |> Api.tryGetFileAsStream ctx
             match file with
             | ValueSome srcStream ->
-                match! Commands.hFlip srcStream fileType with
-                | ValueSome resStream ->
-                    let synthName =
-                        extension fileType
-                        |> Utilities.Path.getSynthName
-                    let ms = new MemoryStream(resStream)
-                    ms.Position <- 0
-                    let ani = InputFile.File (synthName, ms)
-                    replyAsFileType fileType chatId ani msgId
-                | _ -> ()
-            | _ -> ()
+                let! res = Commands.hFlip srcStream fileType
+                sendFileAsReply res fileType chatId msgId
+            | ValueNone -> ()
         | DistortCommand (chatId, msgId, fileId, fileType) ->
             let! file = fileId |> Api.tryGetFileAsStream ctx
             match file with
             | ValueSome srcStream ->
-                match! Commands.distort srcStream fileType with
-                | ValueSome resStream ->
-                    let extension = extension fileType
-                    let synthName = Utilities.Path.getSynthName extension
-                    let ms = new MemoryStream(resStream)
-                    ms.Position <- 0
-                    let ani = InputFile.File (synthName, ms)
-                    replyAsFileType fileType chatId ani msgId
-                | _ -> ()
-            | _ -> ()
-            ()
+                let! res = Commands.distort srcStream fileType
+                sendFileAsReply res fileType chatId msgId
+            | ValueNone -> ()
         | ClownCommand(chatId, count) ->
             TgApi.sendMessage chatId (System.String.Concat(Enumerable.Repeat("🤡", count)))
         | InfoCommand(chatId, msgId, reply) ->
