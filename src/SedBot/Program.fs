@@ -68,46 +68,58 @@ let updateArrived (ctx: UpdateContext) =
                 TgApi.deleteMessage chatId srcMsgId
                 TgApi.sendMessageReply chatId res replyMsgId
             | _ -> ()
+
         | JqCommand (chatId, msgId, data, expression) ->
             let! res = expression |> Commands.jq data
-            res |> Option.iter (fun res -> TgApi.sendMarkupMessageReply chatId $"```\n{res}\n```" msgId ParseMode.Markdown)
+            match res with
+            | Some res ->
+                TgApi.sendMarkupMessageReply chatId $"```\n{res}\n```" msgId ParseMode.Markdown
+            | _ -> ()
+
         | ReverseCommand (chatId, msgId, fileId, fileType) ->
             let! file = fileId |> Api.tryGetFileAsStream ctx
             match file with
             | ValueSome srcStream ->
                 let! res = Commands.reverse srcStream fileType
                 sendFileAsReply res fileType chatId msgId
-            | ValueNone -> ()
+            | _ -> ()
+
         | VflipCommand (chatId, msgId, fileId, fileType) ->
             let! file = fileId |> Api.tryGetFileAsStream ctx
             match file with
             | ValueSome srcStream ->
                 let! res = Commands.vFlip srcStream fileType
                 sendFileAsReply res fileType chatId msgId
-            | ValueNone -> ()
+            | _ -> ()
+
         | HflipCommand (chatId, msgId, fileId, fileType) ->
             let! file = fileId |> Api.tryGetFileAsStream ctx
             match file with
             | ValueSome srcStream ->
                 let! res = Commands.hFlip srcStream fileType
                 sendFileAsReply res fileType chatId msgId
-            | ValueNone -> ()
+            | _ -> ()
+
         | DistortCommand (chatId, msgId, fileId, fileType) ->
             let! file = fileId |> Api.tryGetFileAsStream ctx
             match file with
             | ValueSome srcStream ->
                 let! res = Commands.distort srcStream fileType
                 sendFileAsReply res fileType chatId msgId
-            | ValueNone -> ()
+            | _ -> ()
+
         | ClownCommand(chatId, count) ->
             TgApi.sendMessage chatId (System.String.Concat(Enumerable.Repeat("🤡", count)))
+
         | InfoCommand(chatId, msgId, reply) ->
             TgApi.deleteMessage chatId msgId
             let res =  $"```\n{reply |> Json.serializeNicely}\n```"
             TgApi.sendMarkupMessageReplyAndDeleteAfter chatId res ParseMode.Markdown reply.MessageId 5000
+
         | CreateKick(chatId, victimUserId, msgId) ->
             TgApi.deleteMessage chatId msgId
             TgApi.sendMarkupMessageAndDeleteAfter chatId $"`/banid {victimUserId}`" ParseMode.Markdown 5000
+
         | Nope ->
             ()
     } |> ignore
