@@ -31,6 +31,16 @@ let me ctx = task {
 
 let log = Logger.get "updateArrived"
 
+let private replyAsFileType fileType chatId ani msgId =
+    match fileType with
+    | Gif
+    | Sticker ->
+        TgApi.sendAnimationReply chatId ani msgId
+    | Video ->
+        TgApi.sendVideoReply chatId ani msgId
+    | Picture ->
+        TgApi.sendPhotoReply chatId ani msgId
+
 let updateArrived (ctx: UpdateContext) =
     task {
         let! botUsername = me ctx
@@ -57,19 +67,7 @@ let updateArrived (ctx: UpdateContext) =
                     let ms = new MemoryStream(resStream)
                     ms.Position <- 0
                     let ani = InputFile.File (synthName, ms)
-                    match fileType with
-                    | Gif | Sticker ->
-                        do! Api.sendAnimationReply chatId ani msgId
-                            |> api ctx.Config
-                            |> Async.Ignore
-                    | Video ->
-                        do! Api.sendVideoReply chatId ani msgId
-                            |> api ctx.Config
-                            |> Async.Ignore
-                    | _ ->
-                        do! Api.sendPhotoReply chatId ani msgId
-                            |> api ctx.Config
-                            |> Async.Ignore
+                    replyAsFileType fileType chatId ani msgId
                 | _ -> ()
             | ValueNone -> ()
         | VflipCommand (chatId, msgId, fileId, fileType) ->
@@ -83,20 +81,7 @@ let updateArrived (ctx: UpdateContext) =
                     let ms = new MemoryStream(resStream)
                     ms.Position <- 0
                     let ani = InputFile.File (synthName, ms)
-                    match fileType with
-                    | Gif
-                    | Sticker ->
-                        do! Api.sendAnimationReply chatId ani msgId
-                            |> api ctx.Config
-                            |> Async.Ignore
-                    | Video ->
-                        do! Api.sendVideoReply chatId ani msgId
-                            |> api ctx.Config
-                            |> Async.Ignore
-                    | _ ->
-                        do! Api.sendPhotoReply chatId ani msgId
-                            |> api ctx.Config
-                            |> Async.Ignore
+                    replyAsFileType fileType chatId ani msgId
                 | ValueNone -> ()
             | _ -> ()
         | HflipCommand (chatId, msgId, fileId, fileType) ->
@@ -111,20 +96,7 @@ let updateArrived (ctx: UpdateContext) =
                     let ms = new MemoryStream(resStream)
                     ms.Position <- 0
                     let ani = InputFile.File (synthName, ms)
-                    match fileType with
-                    | Gif
-                    | Sticker ->
-                        do! Api.sendAnimationReply chatId ani msgId
-                            |> api ctx.Config
-                            |> Async.Ignore
-                    | Video ->
-                        do! Api.sendVideoReply chatId ani msgId
-                            |> api ctx.Config
-                            |> Async.Ignore
-                    | _ ->
-                        do! Api.sendPhotoReply chatId ani msgId
-                            |> api ctx.Config
-                            |> Async.Ignore
+                    replyAsFileType fileType chatId ani msgId
                 | _ -> ()
             | _ -> ()
         | DistortCommand (chatId, msgId, fileId, fileType) ->
@@ -138,19 +110,7 @@ let updateArrived (ctx: UpdateContext) =
                     let ms = new MemoryStream(resStream)
                     ms.Position <- 0
                     let ani = InputFile.File (synthName, ms)
-                    match fileType with
-                    | Gif | Sticker ->
-                        do! Api.sendAnimationReply chatId ani msgId
-                            |> api ctx.Config
-                            |> Async.Ignore
-                    | Video ->
-                        do! Api.sendVideoReply chatId ani msgId
-                            |> api ctx.Config
-                            |> Async.Ignore
-                    | _ ->
-                        do! Api.sendPhotoReply chatId ani msgId
-                            |> api ctx.Config
-                            |> Async.Ignore
+                    replyAsFileType fileType chatId ani msgId
                 | _ -> ()
             | _ -> ()
             ()

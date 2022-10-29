@@ -35,7 +35,7 @@ let startGifFfmpeg() = // TODO: Use pipes
             let prams = ([$"-i {srcName} -y {sound} -vf reverse {resName}"], false)
             let! res = Process.runStreamProcess "ffmpeg" prams resName
             tcs.SetResult(res)
-            File.deleteOrNotUnit [srcName; resName]
+            File.deleteOrIgnore [srcName; resName]
             do! Task.Delay(40)
     }
 
@@ -62,7 +62,7 @@ let startGifMagicDistortion() =
             do! File.WriteAllBytesAsync(srcName, stream.ToArray())
             let prams = ([$"{srcName} -liquid-rescale 320x640 -implode 0.25 {resName}"], false)
             let! res = Process.runPipedStreamProcess "magick" stream prams
-            File.deleteOrNotUnit [srcName; resName]
+            File.deleteOrIgnore [srcName; resName]
             tcs.SetResult(res)
             do! Task.Delay(40)
     }
@@ -130,7 +130,7 @@ let startHflipGifFfmpeg() =
             let prams = ([$"-i {srcName} -y -vf hflip -qscale 0 {sound} {resName}"], false)
             let! res = Process.runStreamProcess "ffmpeg" prams resName
             tcs.SetResult(res)
-            File.deleteOrNotUnit [sound; resName]
+            File.deleteOrIgnore [sound; resName]
             do! Task.Delay(40)
     }
 

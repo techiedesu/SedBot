@@ -16,6 +16,9 @@ type SendTelegramResponseMail =
     | MarkupMessageReply of chatId: int64 * text: string * replyToMessageId: int64 * parseMode: ParseMode
     | DeleteMessage of chatId: int64 * messageId: int64
     | SetConfig of config: BotConfig
+    | SendAnimationReply of chatId: int64 * animation: InputFile * replyToMessageId: int64
+    | SendVideoReply of chatId: int64 * video: InputFile * replyToMessageId: int64
+    | SendPhotoReply of chatId: int64 * photo: InputFile * replyToMessageId: int64
 
 module [<RequireQualifiedAccess>] TgApi =
     let mutable actor : Akka.Actor.IActorRef = null
@@ -47,6 +50,18 @@ module [<RequireQualifiedAccess>] TgApi =
     /// Delete message in chat
     let deleteMessage chatId messageId =
         actor <! SendTelegramResponseMail.DeleteMessage (chatId, messageId)
+
+    /// Send animation as reply
+    let sendAnimationReply chatId animation replyToMessageId =
+        actor <! SendTelegramResponseMail.SendAnimationReply (chatId, animation, replyToMessageId)
+
+    /// Send video as reply
+    let sendVideoReply chatId video replyToMessageId =
+        actor <! SendTelegramResponseMail.SendVideoReply (chatId, video, replyToMessageId)
+
+    /// Send photo as reply
+    let sendPhotoReply chatId photo replyToMessageId =
+        actor <! SendTelegramResponseMail.SendPhotoReply (chatId, photo, replyToMessageId)
 
 let rec responseTelegramActor (mailbox: Actor<SendTelegramResponseMail>) =
     let mutable cfg : BotConfig option = None
@@ -123,6 +138,15 @@ let rec responseTelegramActor (mailbox: Actor<SendTelegramResponseMail>) =
                     None
                 else
                     Some botConfig
+        | SendAnimationReply (chatId, animation, replyToMessageId) ->
+            Api.sendAnimationReply chatId animation replyToMessageId
+            |> api
+        | SendVideoReply (chatId, video, replyToMessageId) ->
+            Api.sendVideoReply chatId video replyToMessageId
+            |> api
+        | SendPhotoReply (chatId, animation, replyToMessageId) ->
+            Api.sendPhotoReply chatId animation replyToMessageId
+            |> api
 
         return! loop ()
     }
