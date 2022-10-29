@@ -64,7 +64,7 @@ let updateArrived (ctx: UpdateContext) =
         | SedCommand (chatId, replyMsgId, srcMsgId, exp, text) ->
             let! res = Commands.sed text exp
             match res with
-            | Some res ->
+            | ValueSome res ->
                 TgApi.deleteMessage chatId srcMsgId
                 TgApi.sendMessageReply chatId res replyMsgId
             | _ -> ()
@@ -72,7 +72,7 @@ let updateArrived (ctx: UpdateContext) =
         | JqCommand (chatId, msgId, data, expression) ->
             let! res = expression |> Commands.jq data
             match res with
-            | Some res ->
+            | ValueSome res ->
                 TgApi.sendMarkupMessageReply chatId $"```\n{res}\n```" msgId ParseMode.Markdown
             | _ -> ()
 

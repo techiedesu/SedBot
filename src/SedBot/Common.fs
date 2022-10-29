@@ -9,6 +9,12 @@ open NUnit.Framework
 
 let inline (^) f x = f(x)
 
+let inline (<-?) (field: _ byref) a =
+    if System.Object.ReferenceEquals(null, a) then
+        field <- ValueNone
+    else
+        field <- ValueSome a
+
 type FileType =
     | Gif
     | Video

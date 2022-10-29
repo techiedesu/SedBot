@@ -1,11 +1,11 @@
 module SedBot.Utilities
 
+open SedBot.CliWrap
+
 open System
 open System.IO
 open System.Runtime.InteropServices
 open System.Text
-open CliWrap
-open CliWrap.Buffered
 open Microsoft.Extensions.Logging
 open Serilog
 open Serilog.Extensions.Logging
@@ -55,25 +55,26 @@ module Process =
 
             let stdout = StringBuilder()
             let stderr = StringBuilder()
+
             let! executionResult =
-                Cli
-                    .Wrap(procName)
-                    .WithArguments(args)
-                    .WithStandardInputPipe(PipeSource.FromString(data))
-                    .WithStandardErrorPipe(PipeTarget.ToStringBuilder(stderr))
-                    .WithStandardOutputPipe(PipeTarget.ToStringBuilder(stdout))
-                    .WithValidation(CommandResultValidation.None)
-                    .ExecuteBufferedAsync(Encoding.UTF8)
+                procName
+                |> wrap
+                |> withArguments args ValueNone
+                |> withStandardInputPipe (data |> PipeSource.FromString)
+                |> withStandardErrorPipe (stderr |> PipeTarget.ToStringBuilder)
+                |> withStandardOutputPipe (stdout |> PipeTarget.ToStringBuilder)
+                |> withValidation ^ CommandResultValidation.None
+                |> executeBufferedAsync Encoding.UTF8
 
             let exitCode = executionResult.ExitCode
             if exitCode = 0 then
-                return Some ^ stdout.ToString()
+                return ValueSome ^ stdout.ToString()
             else
                 log.LogError(
                     "runTextProcess: wrong exit code: {exitCode};; stderr: {stdErr}",
                     exitCode, stderr.ToString()
                 )
-                return None
+                return ValueNone
         }
 
     let runStreamProcess procName (args: string seq, escape) outputFileName =
@@ -86,12 +87,12 @@ module Process =
 
             let stderr = StringBuilder()
             let! executionResult =
-                Cli
-                    .Wrap(procName)
-                    .WithArguments(args, escape)
-                    .WithValidation(CommandResultValidation.None)
-                    .WithStandardErrorPipe(PipeTarget.ToStringBuilder(stderr))
-                    .ExecuteBufferedAsync()
+                procName
+                |> wrap
+                |> withArguments args (escape |> ValueSome)
+                |> withValidation CommandResultValidation.None
+                |> withStandardErrorPipe (stderr |> PipeTarget.ToStringBuilder)
+                |> executeBufferedAsync Console.OutputEncoding
 
             let exitCode = executionResult.ExitCode
             if exitCode = 0 then
@@ -120,14 +121,14 @@ module Process =
             let stderr = StringBuilder()
             let stdout = new MemoryStream()
             let! executionResult =
-                Cli
-                    .Wrap(procName)
-                    .WithArguments(args, escape)
-                    .WithValidation(CommandResultValidation.None)
-                    .WithStandardInputPipe(PipeSource.FromStream(inputStream))
-                    .WithStandardErrorPipe(PipeTarget.ToStringBuilder(stderr))
-                    .WithStandardOutputPipe(PipeTarget.ToStream(stdout))
-                    .ExecuteBufferedAsync()
+                procName
+                |> wrap
+                |> withArguments args (escape |> ValueSome)
+                |> withValidation CommandResultValidation.None
+                |> withStandardInputPipe (inputStream |> PipeSource.FromStream)
+                |> withStandardErrorPipe (stderr |> PipeTarget.ToStringBuilder)
+                |> withStandardOutputPipe (PipeTarget.ToStream(stdout, ValueNone))
+                |> executeBufferedAsync Console.OutputEncoding
 
             let exitCode = executionResult.ExitCode
             if exitCode = 0 then

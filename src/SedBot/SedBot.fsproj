@@ -7,6 +7,7 @@
     <GenerateProgramFile>false</GenerateProgramFile>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="CliWrap.fs" />
     <Compile Include="Common.fs" />
     <Compile Include="Utilities.fs" />
     <Compile Include="Api.fs" />

@@ -64,10 +64,10 @@ module [<RequireQualifiedAccess>] TgApi =
         actor <! SendTelegramResponseMail.SendPhotoReply (chatId, photo, replyToMessageId)
 
 let rec responseTelegramActor (mailbox: Actor<SendTelegramResponseMail>) =
-    let mutable cfg : BotConfig option = None
+    let mutable cfg : BotConfig voption = ValueNone
     let api request =
         match cfg with
-        | Some botConfig ->
+        | ValueSome botConfig ->
             request
             |> Funogram.Api.api botConfig
             |> Async.RunSynchronously
@@ -92,7 +92,7 @@ let rec responseTelegramActor (mailbox: Actor<SendTelegramResponseMail>) =
             |> api
         | SendMessageAndDeleteAfter(chatId, text, ms) ->
             match cfg with
-            | Some cfg ->
+            | ValueSome cfg ->
                 let messageId =
                     Api.sendMessage chatId text
                     |> Funogram.Api.api cfg
@@ -106,7 +106,7 @@ let rec responseTelegramActor (mailbox: Actor<SendTelegramResponseMail>) =
             | _ -> ()
         | SendMarkupMessageAndDeleteAfter(chatId, text, mode, ms) ->
             match cfg with
-            | Some cfg ->
+            | ValueSome cfg ->
                 let messageId =
                     Api.sendTextMarkup chatId text mode
                     |> Funogram.Api.api cfg
@@ -120,7 +120,7 @@ let rec responseTelegramActor (mailbox: Actor<SendTelegramResponseMail>) =
             | _ -> ()
         | SendMarkupMessageReplyAndDeleteAfter(chatId, text, mode, replyToMessageId, ms) ->
             match cfg with
-            | Some cfg ->
+            | ValueSome cfg ->
                 let messageId =
                     Api.sendTextMarkupReply chatId text replyToMessageId mode
                     |> Funogram.Api.api cfg
@@ -133,11 +133,7 @@ let rec responseTelegramActor (mailbox: Actor<SendTelegramResponseMail>) =
                 } |> ignore
             | _ -> ()
         | SetConfig botConfig ->
-            cfg <-
-                if System.Object.ReferenceEquals(null, botConfig) then
-                    None
-                else
-                    Some botConfig
+            &cfg <-? botConfig
         | SendAnimationReply (chatId, animation, replyToMessageId) ->
             Api.sendAnimationReply chatId animation replyToMessageId
             |> api
