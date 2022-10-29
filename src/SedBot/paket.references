@@ -7,3 +7,4 @@ Funogram.Telegram
 Akka.FSharp
 NUnit
 Microsoft.NET.Test.Sdk
+FParsec

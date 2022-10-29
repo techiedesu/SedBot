@@ -17,6 +17,9 @@
     <Compile Include="Commands.fs" />
     <Compile Include="Program.fs" />
     <Content Include="paket.references" />
+    <None Include="VID_20221007_163400_126.mp4">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
   <Import Project="..\.paket\Paket.Restore.targets" />
 </Project>

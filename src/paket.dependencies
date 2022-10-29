@@ -11,3 +11,4 @@ nuget FSharp.SystemTextJson
 nuget Akka.FSharp
 nuget NUnit
 nuget Microsoft.NET.Test.Sdk
+nuget FParsec
