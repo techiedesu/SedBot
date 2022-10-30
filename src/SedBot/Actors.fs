@@ -75,7 +75,7 @@ let rec responseTelegramActor (mailbox: Actor<SendTelegramResponseMail>) =
             request
             |> Funogram.Api.api botConfig
             |> Async.RunSynchronously
-            |> fun res -> log.LogTrace("Result: {res}", Json.serialize res)
+            |> fun res -> try log.LogTrace("Result: {res}", Json.serialize res) with | _ -> ()
         | _ -> ()
 
     let rec loop () = actor {

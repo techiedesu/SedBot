@@ -46,7 +46,6 @@ module Process =
     let private log = Logger.get "SedBot.Utilities.Process"
 
     let runTextProcess procName (args: string seq) data =
-        let procName, args = platformed procName args
         task {
             log.LogDebug(
                 "runTextProcess: proccess name: {procName};; args: {args};; data: {data}",
