@@ -6,6 +6,8 @@ open Funogram.Telegram
 open Funogram.Telegram.Types
 open Funogram.Types
 open Microsoft.FSharp.Core
+open SedBot.Utilities
+open Microsoft.Extensions.Logging
 
 type SendTelegramResponseMail =
     | SendMessage of chatId: int64 * text: string
@@ -63,6 +65,8 @@ module [<RequireQualifiedAccess>] TgApi =
     let sendPhotoReply chatId photo replyToMessageId =
         actor <! SendTelegramResponseMail.SendPhotoReply (chatId, photo, replyToMessageId)
 
+let log = Logger.get "responseTelegramActor"
+
 let rec responseTelegramActor (mailbox: Actor<SendTelegramResponseMail>) =
     let mutable cfg : BotConfig voption = ValueNone
     let api request =
@@ -71,7 +75,7 @@ let rec responseTelegramActor (mailbox: Actor<SendTelegramResponseMail>) =
             request
             |> Funogram.Api.api botConfig
             |> Async.RunSynchronously
-            |> ignore
+            |> fun res -> log.LogTrace("Result: {res}", Json.serialize res)
         | _ -> ()
 
     let rec loop () = actor {

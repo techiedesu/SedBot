@@ -111,7 +111,6 @@ module Process =
 
     let runPipedStreamProcess procName inputStream (args: string seq, escape) =
         (inputStream :> Stream).Position <- 0
-        let procName, args = platformed procName args
         task {
             log.LogDebug(
                 "runStreamProcess: proccess name: {procName};; args: {args};; escape: {escape}",

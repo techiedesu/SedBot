@@ -63,9 +63,9 @@ module FFmpeg =
                     for res in result do
                         let dict = Dictionary(res |> List.map KeyValuePair)
                         {
-                            Index = dict |> Seq.tryFind (It.KeyIs "index") |> Option.map (It.Value >> int)
-                            CodecName = dict |> Seq.tryFind (It.KeyIs "codec_name") |> Option.map It.Key
-                            CodecLongName = dict |> Seq.tryFind (It.KeyIs "codec_long_name") |> Option.map It.Key
+                            Index = dict |> Seq.tryFind ^ It.KeyIs "index" |> Option.map (It.Value >> int)
+                            CodecName = dict |> Seq.tryFind ^ It.KeyIs "codec_name" |> Option.map It.Value
+                            CodecLongName = dict |> Seq.tryFind ^ It.KeyIs "codec_long_name" |> Option.map It.Value
                             Kv = dict
                         }
                 |]
@@ -120,10 +120,9 @@ module FFmpeg =
         let! executionResult =
             "ffmpeg"
             |> wrap
-            |> withStandardInputPipe (PipeSource.FromStream data.Src)
             |> withStandardErrorPipe (PipeTarget.ToStringBuilder errSb)
             |> withStandardOutputPipe (PipeTarget.ToStream(target, ValueNone))
-            |> withArguments [$"-i {args} -f mp4 -movflags frag_keyframe+empty_moov pipe:1"] (ValueSome false)
+            |> withArguments [$"-i {args} -f mp4 -movflags frag_keyframe+empty_moov -vcodec libx264 pipe:1"] (ValueSome false)
             |> withValidation CommandResultValidation.None
             |> executeBufferedAsync Console.OutputEncoding
 
@@ -254,6 +253,55 @@ module Tests =
             Assert.Fail(err)
     }
 
+type ImageMagickObjectState = {
+    Src: Stream
+}
+
+module ImageMagick =
+    let convert (data: ImageMagickObjectState) = task {
+        let target = new MemoryStream()
+        let errSb = StringBuilder()
+
+        let inputFile = Path.getSynthName ".mp4"
+        let outFile = Path.getSynthName ".mp4"
+
+        data.Src.Position <- 0
+        let memSrc = new MemoryStream()
+        do! data.Src.CopyToAsync(memSrc)
+        do! File.WriteAllBytesAsync(inputFile, memSrc.ToArray())
+
+        let! executionResult =
+            "magick"
+            |> wrap
+            |> withStandardErrorPipe (PipeTarget.ToStringBuilder errSb)
+            |> withArguments [$"{inputFile} -liquid-rescale 320x640 -implode 0.25 {outFile}"] (ValueSome false)
+            |> withValidation CommandResultValidation.None
+            |> executeBufferedAsync Console.OutputEncoding
+
+        let outStream = new StreamReader(outFile)
+        do! outStream.BaseStream.CopyToAsync(target)
+        File.deleteOrIgnore [inputFile; outFile]
+
+        if executionResult.ExitCode = 0 then
+            return target |> Result.Ok
+        else
+            return errSb.ToString() |> Result.Error
+    }
+
+module ImageMagickTests =
+    let [<Test>] ``liquid rescale works properly``() = task {
+        let sr = new StreamReader("VID_20221007_163400_126.mp4")
+        let state = { Src = sr.BaseStream }
+        let! res = ImageMagick.convert state
+        match res with
+        | Result.Ok res ->
+            let res = res.ToArray()
+            do! File.WriteAllBytesAsync("liquid_out.mp4", res)
+            Assert.True(res.Length > 0)
+        | Result.Error err ->
+            Assert.Fail(err)
+    }
+
 type FfmpegGifItem = {
     Stream: MemoryStream
     FileType: FileType
@@ -300,18 +348,15 @@ let startGifMagicDistortion() =
         let log = Logger.get "startGifMagicDistortion"
         log.LogDebug("Spawned!")
         while true do
-            let! { Tcs = tcs; Stream = stream; FileType = fileType } = magicChannel.Reader.ReadAsync()
-            stream.Position <- 0
-
-            let extension = extension fileType
-
-            let srcName = Utilities.Path.getSynthName extension
-            let resName = Utilities.Path.getSynthName extension
-            do! File.WriteAllBytesAsync(srcName, stream.ToArray())
-            let prams = ([$"{srcName} -liquid-rescale 320x640 -implode 0.25 {resName}"], false)
-            let! res = Process.runPipedStreamProcess "magick" stream prams
-            File.deleteOrIgnore [srcName; resName]
-            tcs.SetResult(res)
+            let! { Tcs = tcs; Stream = stream; FileType = _ } = magicChannel.Reader.ReadAsync()
+            let! res = ImageMagick.convert { Src = stream }
+            match res with
+            | Result.Ok res ->
+                log.LogDebug("Dist success: {length}", res.Length)
+                tcs.SetResult(res.ToArray() |> ValueSome)
+            | Result.Error err ->
+                log.LogDebug("Dist fail: {err}", err)
+                tcs.SetResult(ValueNone)
             do! Task.Delay(40)
     }
 
