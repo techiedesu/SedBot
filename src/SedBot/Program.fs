@@ -108,6 +108,22 @@ let updateArrived (ctx: UpdateContext) =
                 sendFileAsReply res fileType chatId msgId
             | _ -> ()
 
+        | ClockCommand (chatId, msgId, fileId, fileType) ->
+            let! file = fileId |> Api.tryGetFileAsStream ctx
+            match file with
+            | ValueSome srcStream ->
+                let! res = Commands.clock srcStream fileType
+                sendFileAsReply res fileType chatId msgId
+            | _ -> ()
+
+        | CClockCommand (chatId, msgId, fileId, fileType) ->
+            let! file = fileId |> Api.tryGetFileAsStream ctx
+            match file with
+            | ValueSome srcStream ->
+                let! res = Commands.cclock srcStream fileType
+                sendFileAsReply res fileType chatId msgId
+            | _ -> ()
+
         | ClownCommand(chatId, count) ->
             TgApi.sendMessage chatId (System.String.Concat(Enumerable.Repeat("🤡", count)))
 

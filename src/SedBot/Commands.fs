@@ -59,3 +59,27 @@ let distort (stream: Stream) fileType =
         else
             return ValueNone
     }
+
+let clock (stream: Stream) fileType =
+    task {
+        if stream.CanRead then
+            use ms = new MemoryStream()
+            do! stream.CopyToAsync(ms)
+            let tcs = TaskCompletionSource<byte[] voption>()
+            do! clockChannel.Writer.WriteAsync({ Stream = ms; Tcs = tcs; FileType = fileType })
+            return! tcs.Task
+        else
+            return ValueNone
+    }
+
+let cclock (stream: Stream) fileType =
+    task {
+        if stream.CanRead then
+            use ms = new MemoryStream()
+            do! stream.CopyToAsync(ms)
+            let tcs = TaskCompletionSource<byte[] voption>()
+            do! cclockChannel.Writer.WriteAsync({ Stream = ms; Tcs = tcs; FileType = fileType })
+            return! tcs.Task
+        else
+            return ValueNone
+    }

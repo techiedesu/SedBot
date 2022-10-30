@@ -1,11 +1,8 @@
 module [<AutoOpen>] SedBot.Common
 
 open System.IO
-open System.Reflection
-open System.Runtime.InteropServices
 open System.Text.Json
 open Microsoft.FSharp.Core
-open NUnit.Framework
 
 let inline (^) f x = f(x)
 
@@ -90,6 +87,7 @@ module It =
     let inline Value a = (^a: (member Value: ^b) a)
     let inline Key a = (^a: (member Key: ^b) a)
     let inline KeyIs v a = ((^a: (member Key: ^b) a) = v)
+    let inline Width a = (^a: (member Width: ^b) a)
 
 module File =
     let rec deleteOrIgnore (files: string list) =
@@ -101,27 +99,3 @@ module File =
             with
             | _ -> ()
             deleteOrIgnore tail
-
-    let windowsPathToWsl (path: string) =
-        if path = null then
-            path
-        else
-            match path.Split(":\\") |> List.ofArray with
-            | [disk; other] -> $"""/mnt/{disk.ToLowerInvariant()}/{other.Replace("\\", "/")}"""
-            | _ -> path.Replace("\\", "/")
-
-    let private isWindows = RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
-
-    let fixPath =
-        match isWindows with
-        | true -> windowsPathToWsl
-        | _ -> id
-
-    let absPath path =
-        Path.Combine(Path.GetDirectoryName(Assembly.GetEntryAssembly().Location), path)
-
-module ``File tests`` =
-    let [<Test>] ``windowsPathToWsl works properly``() =
-        Assert.AreEqual("/mnt/c/Python27", File.windowsPathToWsl "C:\\Python27")
-        Assert.AreEqual("Python27/main.fs", File.windowsPathToWsl "Python27\\main.fs")
-        Assert.AreEqual(null, File.windowsPathToWsl null)

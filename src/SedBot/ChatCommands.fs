@@ -8,6 +8,8 @@ type Command =
     | SedCommand of chatId: int64 * msgId: int64 * srcMsgId: int64 * expression: string * text: string
     | VflipCommand of chatId: int64 * msgId: int64 * fileId: string * FileType: FileType
     | HflipCommand of chatId: int64 * msgId: int64 * fileId: string * FileType: FileType
+    | ClockCommand of chatId: int64 * msgId: int64 * fileId: string * FileType: FileType
+    | CClockCommand of chatId: int64 * msgId: int64 * fileId: string * FileType: FileType
     | ReverseCommand of chatId: int64 * msgId: int64 * fileId: string * FileType: FileType
     | DistortCommand of chatId: int64 * msgId: int64 * fileId: string * FileType: FileType
     | JqCommand of chatId: int64 * msgId: int64 * expression: string * text: string
@@ -102,7 +104,7 @@ module CommandParser =
                 }
             } when command.Trim().AnyOf(["t!vflip"; "/vflip" + (prefix cType botUsername)]) ->
             let photo = photos
-                        |> Array.sortBy ^ fun p -> p.Width
+                        |> Array.sortBy It.Width
                         |> Array.rev
                         |> Array.head
             Command.VflipCommand (chatId, msgId, photo.FileId, FileType.Picture)
@@ -158,7 +160,7 @@ module CommandParser =
                 }
             } when command.Trim().AnyOf(["t!vflip"; "/vflip" + (prefix cType botUsername)]) ->
             let photo = photos
-                        |> Array.sortBy ^ fun p -> p.Width
+                        |> Array.sortBy It.Width
                         |> Array.rev
                         |> Array.head
             Command.VflipCommand (chatId, msgId, photo.FileId, FileType.Picture)
@@ -207,11 +209,73 @@ module CommandParser =
                 Text = Some command
                 ReplyToMessage = Some {
                     MessageId = msgId
+                    Document = Some
+                        {
+                            MimeType = Some mimeType
+                            FileSize = Some _
+                            FileId = fileId
+                        }
+                }
+            } when mimeType = "video/mp4" && command.Trim().AnyOf(["t!clock"; "/clock" + (prefix cType botUsername)]) ->
+            Command.ClockCommand (chatId, msgId, fileId, FileType.Gif)
+        | Some
+            {
+                Chat = {
+                    Id = chatId
+                    Type = cType
+                }
+                Text = Some command
+                ReplyToMessage = Some {
+                    MessageId = msgId
+                    Video = Some { FileId = fileId }
+                }
+            } when command.Trim().AnyOf(["t!clock"; "/clock" + (prefix cType botUsername)]) ->
+            Command.ClockCommand (chatId, msgId, fileId, FileType.Gif)
+        | Some
+            {
+                Chat = {
+                    Id = chatId
+                    Type = cType
+                }
+                Text = Some command
+                ReplyToMessage = Some {
+                    MessageId = msgId
+                    Document = Some
+                        {
+                            MimeType = Some mimeType
+                            FileSize = Some _
+                            FileId = fileId
+                        }
+                }
+            } when mimeType = "video/mp4" && command.Trim().AnyOf(["t!cclock"; "/cclock" + (prefix cType botUsername)]) ->
+            Command.CClockCommand (chatId, msgId, fileId, FileType.Gif)
+        | Some
+            {
+                Chat = {
+                    Id = chatId
+                    Type = cType
+                }
+                Text = Some command
+                ReplyToMessage = Some {
+                    MessageId = msgId
+                    Video = Some { FileId = fileId }
+                }
+            } when command.Trim().AnyOf(["t!cclock"; "/cclock" + (prefix cType botUsername)]) ->
+            Command.CClockCommand (chatId, msgId, fileId, FileType.Video)
+        | Some
+            {
+                Chat = {
+                    Id = chatId
+                    Type = cType
+                }
+                Text = Some command
+                ReplyToMessage = Some {
+                    MessageId = msgId
                     Photo = Some photos
                 }
             } when command.Trim().AnyOf(["t!dist"; "/dist" + (prefix cType botUsername)]) ->
             let photo = photos
-                        |> Array.sortBy ^ fun p -> p.Width
+                        |> Array.sortBy It.Width
                         |> Array.rev
                         |> Array.head
             Command.DistortCommand (chatId, msgId, photo.FileId, FileType.Picture)
