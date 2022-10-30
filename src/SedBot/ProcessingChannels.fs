@@ -487,7 +487,7 @@ let startHflipGifFfmpeg() =
             let! { Tcs = tcs; Stream = stream; FileType = _ } = ffmpegHflipChannel.Reader.ReadAsync()
             let args = {
                 FFmpegObjectState.Create(stream) with
-                    VerticalFlip = ValueSome true
+                    HorizontalFlip = ValueSome true
             }
             let! res = FFmpeg.execute args
             match res with
