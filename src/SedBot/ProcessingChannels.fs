@@ -20,6 +20,8 @@ type FFmpegObjectState = {
     VideoReverse: bool voption
     AudioReverse: bool voption
     RemoveAudio: bool voption
+    VerticalFlip: bool voption
+    HorizontalFlip: bool voption
 }
 
 type StreamsInfo = StreamInfo array
@@ -54,7 +56,6 @@ module FFmpeg =
             let kvPE1 = many (kvPE .>> (optional newline))
             let kvPE2 = (optional newline) >>. (pstring "[STREAM]") >>. newline >>. kvPE1 .>> (pstring "[/STREAM]") .>> (optional newline)
             let kvPE3 = many kvPE2
-
 
             match run kvPE3 (res.Trim()) with
             | Success(result, _, _) ->
@@ -96,6 +97,18 @@ module FFmpeg =
             | _ ->
                 ""
 
+        let vFlip =
+            match data.VerticalFlip with
+            | ValueSome true ->
+                " -vf vflip -qscale 0"
+            | _ -> ""
+
+        let hFlip =
+            match data.HorizontalFlip with
+            | ValueSome true ->
+                " -vf hflip -qscale 0"
+            | _ -> ""
+
         // FFmpeg can't read moov (MPEG headers) at the end of a file when using a pipe. Have to "dump" to a filesystem.
         data.Src.Position <- 0
         let memSrc = new MemoryStream()
@@ -103,13 +116,14 @@ module FFmpeg =
         let inputFile = Path.getSynthName ".mp4"
         do! File.WriteAllBytesAsync(inputFile, memSrc.ToArray())
 
+        let args = $"{inputFile}{audioReverse}{videoReverse}{vFlip}{hFlip}"
         let! executionResult =
             "ffmpeg"
             |> wrap
             |> withStandardInputPipe (PipeSource.FromStream data.Src)
             |> withStandardErrorPipe (PipeTarget.ToStringBuilder errSb)
             |> withStandardOutputPipe (PipeTarget.ToStream(target, ValueNone))
-            |> withArguments [$"-i {inputFile}{audioReverse}{videoReverse} -f mp4 -movflags frag_keyframe+empty_moov pipe:1"] (ValueSome false)
+            |> withArguments [$"-i {args} -f mp4 -movflags frag_keyframe+empty_moov pipe:1"] (ValueSome false)
             |> withValidation CommandResultValidation.None
             |> executeBufferedAsync Console.OutputEncoding
 
@@ -128,6 +142,8 @@ module Tests =
             AudioReverse = ValueSome true
             VideoReverse = ValueSome true
             RemoveAudio = ValueNone
+            VerticalFlip = ValueNone
+            HorizontalFlip = ValueNone
         }
         let! res = FFmpeg.execute args
 
@@ -153,6 +169,8 @@ module Tests =
             AudioReverse = ValueNone
             VideoReverse = ValueSome true
             RemoveAudio = ValueSome true
+            VerticalFlip = ValueNone
+            HorizontalFlip = ValueNone
         }
         let! res = FFmpeg.execute args
 
@@ -172,12 +190,41 @@ module Tests =
             Assert.Fail(err)
     }
 
+    let [<Test>] ``Vflip and hflip works properly``() = task {
+        let args = {
+            Src = (new StreamReader("VID_20221007_163400_126.mp4")).BaseStream
+            AudioReverse = ValueNone
+            VideoReverse = ValueNone
+            RemoveAudio = ValueNone
+            VerticalFlip = ValueSome true
+            HorizontalFlip = ValueSome true
+        }
+        let! res = FFmpeg.execute args
+
+        match res with
+        | Result.Ok res ->
+            let resFile = "works_nosound_vhfliped.mp4"
+            do! File.WriteAllBytesAsync(resFile, res.ToArray())
+
+            res.Position <- 0
+            let! res = FFmpeg.getStreamsInfo res
+            match res with
+            | Result.Ok res ->
+                Assert.True(File.Exists(resFile) && res.Length = 2)
+            | Result.Error err ->
+                Assert.Fail(err)
+        | Result.Error err ->
+            Assert.Fail(err)
+    }
+
     let [<Test>] ``No audio with reverse works properly``() = task {
         let args = {
             Src = (new StreamReader("cb3fce1ba6ad45309515cbaf323ba18b.mp4")).BaseStream
             AudioReverse = ValueNone
             VideoReverse = ValueSome true
             RemoveAudio = ValueSome true
+            VerticalFlip = ValueNone
+            HorizontalFlip = ValueNone
         }
         let! res = FFmpeg.execute args
 
@@ -226,6 +273,8 @@ let startGifFfmpeg() =
                 AudioReverse = ValueNone
                 VideoReverse = ValueSome true
                 RemoveAudio = ValueSome true
+                VerticalFlip = ValueNone
+                HorizontalFlip = ValueNone
             }
             let! res = FFmpeg.execute args
             match res with
@@ -279,20 +328,23 @@ let startVflipGifFfmpeg() =
         let log = Logger.get "startVflipGifFfmpeg"
         log.LogDebug("Spawned!")
         while true do
-            let! { Tcs = tcs; Stream = stream; FileType = fileType } = ffmpegVflipChannel.Reader.ReadAsync()
-            let extension = extension fileType
-            let srcName = Utilities.Path.getSynthName extension
-            let resName = Utilities.Path.getSynthName extension
-            log.LogDebug("srcName: {srcName};; resName: {resName}", srcName, resName)
-            do! File.WriteAllBytesAsync(srcName, stream.ToArray())
-            let sound =
-                if fileType = FileType.Gif then
-                    "-an"
-                else
-                    ""
-            let prams = ([$"-i {srcName} -y -vf vflip -qscale 0 {sound} {resName}"], false)
-            let! res = Process.runStreamProcess "ffmpeg" prams resName
-            tcs.SetResult(res)
+            let! { Tcs = tcs; Stream = stream; FileType = _ } = ffmpegVflipChannel.Reader.ReadAsync()
+            let args = {
+                Src = stream
+                AudioReverse = ValueNone
+                VideoReverse = ValueNone
+                RemoveAudio = ValueNone
+                VerticalFlip = ValueSome true
+                HorizontalFlip = ValueNone
+            }
+            let! res = FFmpeg.execute args
+            match res with
+            | Result.Ok res ->
+                log.LogDebug("Reverse success: {length}", res.Length)
+                tcs.SetResult(res.ToArray() |> ValueSome)
+            | Result.Error err ->
+                log.LogDebug("Reverse fail: {err}", err)
+                tcs.SetResult(ValueNone)
             do! Task.Delay(40)
     }
 
@@ -310,26 +362,23 @@ let startHflipGifFfmpeg() =
         log.LogDebug("Spawned!")
 
         while true do
-            let! { Tcs = tcs; Stream = stream; FileType = fileType } = ffmpegHflipChannel.Reader.ReadAsync()
-            let extension = extension fileType
-            let srcName = Utilities.Path.getSynthName extension
-            let resName = Utilities.Path.getSynthName extension
-            log.LogDebug("srcName: {srcName};; resName: {resName}", srcName, resName)
-
-            do! File.WriteAllBytesAsync(srcName, stream.ToArray())
-            let sound =
-                match fileType with
-                | FileType.Gif ->
-                    "-an"
-                | FileType.Sticker ->
-                    "-lossless true"
-                | _ ->
-                    ""
-
-            let prams = ([$"-i {srcName} -y -vf hflip -qscale 0 {sound} {resName}"], false)
-            let! res = Process.runStreamProcess "ffmpeg" prams resName
-            tcs.SetResult(res)
-            File.deleteOrIgnore [sound; resName]
+            let! { Tcs = tcs; Stream = stream; FileType = _ } = ffmpegHflipChannel.Reader.ReadAsync()
+            let args = {
+                Src = stream
+                AudioReverse = ValueNone
+                VideoReverse = ValueNone
+                RemoveAudio = ValueNone
+                VerticalFlip = ValueNone
+                HorizontalFlip = ValueSome true
+            }
+            let! res = FFmpeg.execute args
+            match res with
+            | Result.Ok res ->
+                log.LogDebug("Reverse success: {length}", res.Length)
+                tcs.SetResult(res.ToArray() |> ValueSome)
+            | Result.Error err ->
+                log.LogDebug("Reverse fail: {err}", err)
+                tcs.SetResult(ValueNone)
             do! Task.Delay(40)
     }
 
