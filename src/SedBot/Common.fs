@@ -71,18 +71,6 @@ module Json =
         settings.WriteIndented <- true
         JsonSerializer.Serialize(t, settings)
 
-module ActivePatterns =
-    let (|NonEmptySeq|_|) a = if Seq.isEmpty a then Some () else None
-
-module Array =
-    let foldi<'T, 'State> (folder: 'State -> 'T -> int -> 'State) (state: 'State) (array: 'T[]) =
-        let mutable state = state
-
-        for i = 0 to array.Length - 1 do
-            state <- folder state array[i] i
-
-        state
-
 module It =
     let inline Value a = (^a: (member Value: ^b) a)
     let inline Key a = (^a: (member Key: ^b) a)
