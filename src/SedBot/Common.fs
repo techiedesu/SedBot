@@ -1,13 +1,14 @@
 module [<AutoOpen>] SedBot.Common
 
+open System
 open System.IO
 open System.Text.Json
 open Microsoft.FSharp.Core
 
-let inline (^) f x = f(x)
+let inline (^) f x = f x
 
 let inline (<-?) (field: _ byref) a =
-    if System.Object.ReferenceEquals(null, a) then
+    if Object.ReferenceEquals(null, a) then
         field <- ValueNone
     else
         field <- ValueSome a
@@ -31,8 +32,8 @@ module String =
         else
             text.Trim().Substring(input.Length)
 
-type System.String with
-    member this.AnyOf(prams: string seq) =
+type String with
+    member this.AnyOf([<ParamArray>] prams: string array) =
         prams
         |> Seq.tryFind (fun p -> p = this)
         |> Option.isSome
