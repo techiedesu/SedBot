@@ -272,7 +272,9 @@ module CommandParser =
                 .Trim()
                 .AnyOf("t!cclock", "/cclock" + (prefix cType item.BotUsername))
             ->
-            let res = CommandType.CounterclockwiseRotation((chatId, msgId), (fileId, FileType.Gif))
+            let res =
+                CommandType.CounterclockwiseRotation((chatId, msgId), (fileId, FileType.Gif))
+
             item.SetCommand(res)
 
         | { Chat = { Id = chatId; Type = cType }
@@ -283,7 +285,9 @@ module CommandParser =
                 .Trim()
                 .AnyOf("t!cclock", "/cclock" + (prefix cType item.BotUsername))
             ->
-            let res = CommandType.CounterclockwiseRotation((chatId, msgId), (fileId, FileType.Video))
+            let res =
+                CommandType.CounterclockwiseRotation((chatId, msgId), (fileId, FileType.Video))
+
             item.SetCommand(res)
 
         | { Chat = { Id = chatId; Type = cType }
@@ -306,9 +310,45 @@ module CommandParser =
             item.SetCommand(res)
         | _ -> item
 
+    let private handleClown (item: CommandPipelineItem) : CommandPipelineItem =
+        match item.Message with
+        | { Chat = { Id = chatId }
+            Text = Some command } when command.Trim().Contains("🤡") ->
+            let res = CommandType.Clown(chatId, command.Split("🤡").Length - 1)
+            item.SetCommand(res)
+        | { Chat = { Id = chatId }
+            Sticker = Some { Emoji = Some emoji } } when emoji.Contains("🤡") ->
+            let res = CommandType.Clown(chatId, 1)
+            item.SetCommand(res)
+        | _ -> item
+
+    let private handleJq (item: CommandPipelineItem) : CommandPipelineItem =
+        match item.Message with
+        | { Chat = { Id = chatId; Type = cType }
+            Text = Some command
+            MessageId = msgId
+            ReplyToMessage = Some { Text = Some data } } when
+            command
+                .Trim()
+                .StartsWithAnyOf("t!jq", "/jq" + (prefix cType item.BotUsername))
+            ->
+            let res =
+                CommandType.Jq(
+                    (chatId, msgId),
+                    data,
+                    command
+                        .Trim()
+                        .RemoveAnyOf("t!jq", "/jq" + (prefix cType item.BotUsername))
+                )
+
+            item.SetCommand(res)
+        | _ -> item
+
     let processMessage message botUsername =
         CommandPipelineItem.Create(message, botUsername)
         |%> handleSed
+        |%> handleJq
+        |%> handleClown
         |%> handleRawMessageInfo
         |%> handleReverse
         |%> handleVerticalFlip

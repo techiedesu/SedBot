@@ -35,17 +35,17 @@ module String =
 type String with
     member this.AnyOf([<ParamArray>] prams: string array) =
         prams
-        |> Seq.tryFind (fun p -> p = this)
+        |> Array.tryFind (fun p -> p = this)
         |> Option.isSome
 
-    member this.StartsWithAnyOf(prams: string seq) =
+    member this.StartsWithAnyOf([<ParamArray>] prams: string array) =
         prams
-        |> Seq.tryFind this.StartsWith
+        |> Array.tryFind this.StartsWith
         |> Option.isSome
 
-    member this.RemoveAnyOf(prams: string seq) =
+    member this.RemoveAnyOf([<ParamArray>] prams: string array) =
         prams
-        |> Seq.tryFind this.StartsWith
+        |> Array.tryFind this.StartsWith
         |> Option.map (String.removeFromStart this)
         |> Option.defaultValue this
 
