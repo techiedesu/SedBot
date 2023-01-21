@@ -36,6 +36,11 @@ type FFmpegObjectState =
           CClock = false
           IsPicture = false }
 
+type AudioVideoConcat = {
+    VideoFileName: string
+    AudioFileName: string
+}
+
 type StreamsInfo = StreamInfo array
 
 and StreamInfo =
@@ -109,6 +114,32 @@ module FFmpeg =
                 return errSb.ToString() |> Result.Error
 
         }
+
+    let appendAudioToVideo (data: AudioVideoConcat) = task {
+        let target = new MemoryStream()
+        let errSb = StringBuilder()
+
+        let outputFileName = Path.getSynthName ".mp4"
+
+        let! executionResult =
+            "ffmpeg"
+            |> wrap
+            |> withStandardErrorPipe (PipeTarget.ToStringBuilder errSb)
+            |> withStandardOutputPipe (PipeTarget.ToStream(target, ValueNone))
+            |> withArguments [ $"-an -i {data.VideoFileName} -vn -i {data.AudioFileName} -c:a copy -c:v copy {outputFileName}" ] (ValueSome false)
+            |> withValidation CommandResultValidation.None
+            |> executeBufferedAsync Console.OutputEncoding
+
+        use sr = new StreamReader(outputFileName)
+
+        if executionResult.ExitCode = 0 then
+            File.deleteOrIgnore [ data.AudioFileName; data.VideoFileName ]
+            let ms = new MemoryStream()
+            do! sr.BaseStream.CopyToAsync(ms)
+            return (ms, outputFileName) |> Result.Ok
+        else
+            return errSb.ToString() |> Result.Error
+    }
 
     let execute (data: FFmpegObjectState) =
         task {
@@ -337,7 +368,8 @@ module Tests =
             | Result.Error err -> Assert.Fail(err)
         }
 
-type ImageMagickObjectState = { Src: Stream; FileType: FileType }
+type ImageMagickObjectState = { Src: Stream
+                                FileType: FileType }
 
 module ImageMagick =
     let convert (data: ImageMagickObjectState) =
@@ -370,10 +402,9 @@ module ImageMagick =
                 let outStream = new StreamReader(outFile)
                 do! outStream.BaseStream.CopyToAsync(target)
 
-                File.deleteOrIgnore [ inputFile
-                                      outFile ]
+                File.deleteOrIgnore [ inputFile ]
 
-                return target |> Result.Ok
+                return (target, outFile) |> Result.Ok
             else
                 return errSb.ToString() |> Result.Error
         }
@@ -391,7 +422,8 @@ module ImageMagickTests =
             let! res = ImageMagick.convert state
 
             match res with
-            | Result.Ok res ->
+            | Result.Ok (res, fileName) ->
+                File.deleteOrIgnore [fileName]
                 let res = res.ToArray()
                 do! File.WriteAllBytesAsync("liquid_out.mp4", res)
                 Assert.True(res.Length > 0)
@@ -407,7 +439,7 @@ let ffmpegChannel = Channel.CreateUnbounded<FfmpegGifItem>()
 
 let reverseContent () =
     task {
-        let log = Logger.get "startGifMagicDistortion"
+        let log = Logger.get "startReverse"
         log.LogDebug("Spawned!")
 
         while true do
@@ -505,9 +537,9 @@ type MagicGifItem =
 
 let magicChannel = Channel.CreateUnbounded<MagicGifItem>()
 
-let startGifMagicDistortion () =
+let startMagicDistortion () =
     task {
-        let log = Logger.get "startGifMagicDistortion"
+        let log = Logger.get "startMagicDistortion"
         log.LogDebug("Spawned!")
 
         while true do
@@ -515,11 +547,31 @@ let startGifMagicDistortion () =
                    Stream = stream
                    FileType = fileType } = magicChannel.Reader.ReadAsync()
 
-            let! res = ImageMagick.convert { Src = stream; FileType = fileType }
+            let! res = task {
+                match fileType with
+                | FileType.Video ->
+                    let inputFile = Path.getSynthName ".mp4"
+                    stream.Position <- 0
+                    let memSrc = new MemoryStream()
+                    do! stream.CopyToAsync(memSrc)
+                    let memSrc' = memSrc.ToArray()
+                    do! File.WriteAllBytesAsync(inputFile, memSrc')
+                    let! res = ImageMagick.convert { Src = stream; FileType = fileType }
+                    match res with
+                    | Result.Ok (_, distResultFileName) ->
+                        let! res = FFmpeg.appendAudioToVideo { VideoFileName = distResultFileName; AudioFileName = inputFile }
+                        return res
+                    | _ ->
+                        return res
+                | _ ->
+                    return! ImageMagick.convert { Src = stream; FileType = fileType }
+            }
 
             match res with
-            | Result.Ok res ->
+            | Result.Ok (res, outFileName) ->
                 log.LogDebug("Dist success: {length}", res.Length)
+
+                File.deleteOrIgnore [outFileName]
                 tcs.SetResult(res.ToArray() |> ValueSome)
             | Result.Error err ->
                 log.LogDebug("Dist fail: {err}", err)
@@ -535,7 +587,7 @@ type FfmpegVflipGifItem =
 
 let ffmpegVflipChannel = Channel.CreateUnbounded<FfmpegVflipGifItem>()
 
-let startVflipGifFfmpeg () =
+let startVflipFfmpeg () =
     task {
         let log = Logger.get "startVflipGifFfmpeg"
         log.LogDebug("Spawned!")
@@ -566,9 +618,9 @@ type FfmpegHflipGifItem =
 
 let ffmpegHflipChannel = Channel.CreateUnbounded<FfmpegHflipGifItem>()
 
-let startHflipGifFfmpeg () =
+let startHflipFfmpeg () =
     task {
-        let log = Logger.get "startHflipGifFfmpeg"
+        let log = Logger.get "HorizontalFlipProcessor"
         log.LogDebug("Spawned!")
 
         while true do
@@ -592,7 +644,7 @@ let startHflipGifFfmpeg () =
 
 let mutable private cts = TaskCompletionSource()
 
-let private spawn (lambda: Unit -> Task<_>) =
+let private spawn (lambda: Unit -> #Task) =
     let worker () =
         while cts.Task.IsCanceled |> not do
             lambda().Wait()
@@ -607,9 +659,9 @@ let start () =
 
     if cts.Task.Status = TaskStatus.Running |> not then
         [ reverseContent
-          startGifMagicDistortion
-          startVflipGifFfmpeg
-          startHflipGifFfmpeg
+          startMagicDistortion
+          startVflipFfmpeg
+          startHflipFfmpeg
           startClockFfmpeg
           startCClockFfmpeg ]
         |> List.iter spawn
