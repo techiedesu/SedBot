@@ -37,7 +37,7 @@ module Path =
 module Process =
     let private log = Logger.get "SedBot.Utilities.Process"
 
-    let runTextProcess procName (args: string seq) data =
+    let runTextProcess procName args data =
         task {
             log.LogDebug(
                 "runTextProcess: proccess name: {procName};; args: {args};; data: {data}",
@@ -67,3 +67,14 @@ module Process =
                 )
                 return ValueNone
         }
+
+    let getStatusCode procName args data =
+        let executionResult =
+            procName
+            |> wrap
+            |> withArguments args ValueNone
+            |> withStandardInputPipe ^ PipeSource.FromString data
+            |> withValidation CommandResultValidation.None
+            |> executeBuffered
+
+        executionResult.ExitCode
