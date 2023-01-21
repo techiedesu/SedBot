@@ -337,7 +337,7 @@ module Tests =
             | Result.Error err -> Assert.Fail(err)
         }
 
-type ImageMagickObjectState = { Src: Stream }
+type ImageMagickObjectState = { Src: Stream; FileType: FileType }
 
 module ImageMagick =
     let convert (data: ImageMagickObjectState) =
@@ -345,8 +345,13 @@ module ImageMagick =
             let target = new MemoryStream()
             let errSb = StringBuilder()
 
-            let inputFile = Path.getSynthName ".mp4"
-            let outFile = Path.getSynthName ".mp4"
+            let fileType =
+                match data.FileType with
+                | FileType.Picture -> ".jpg"
+                | _ -> ".mp4"
+
+            let inputFile = Path.getSynthName fileType
+            let outFile = Path.getSynthName fileType
 
             data.Src.Position <- 0
             let memSrc = new MemoryStream()
@@ -361,13 +366,13 @@ module ImageMagick =
                 |> withValidation CommandResultValidation.None
                 |> executeBufferedAsync Console.OutputEncoding
 
-            let outStream = new StreamReader(outFile)
-            do! outStream.BaseStream.CopyToAsync(target)
-
-            File.deleteOrIgnore [ inputFile
-                                  outFile ]
-
             if executionResult.ExitCode = 0 then
+                let outStream = new StreamReader(outFile)
+                do! outStream.BaseStream.CopyToAsync(target)
+
+                File.deleteOrIgnore [ inputFile
+                                      outFile ]
+
                 return target |> Result.Ok
             else
                 return errSb.ToString() |> Result.Error
@@ -378,7 +383,11 @@ module ImageMagickTests =
     let ``liquid rescale works properly`` () =
         task {
             let sr = new StreamReader("VID_20221007_163400_126.mp4")
-            let state = { Src = sr.BaseStream }
+
+            let state =
+                { Src = sr.BaseStream
+                  FileType = FileType.Video }
+
             let! res = ImageMagick.convert state
 
             match res with
@@ -504,9 +513,9 @@ let startGifMagicDistortion () =
         while true do
             let! { Tcs = tcs
                    Stream = stream
-                   FileType = _ } = magicChannel.Reader.ReadAsync()
+                   FileType = fileType } = magicChannel.Reader.ReadAsync()
 
-            let! res = ImageMagick.convert { Src = stream }
+            let! res = ImageMagick.convert { Src = stream; FileType = fileType }
 
             match res with
             | Result.Ok res ->
