@@ -17,24 +17,24 @@ open Microsoft.Extensions.Logging
 
 type FFmpegObjectState = {
     Src: Stream
-    VideoReverse: bool voption
-    AudioReverse: bool voption
-    RemoveAudio: bool voption
-    VerticalFlip: bool voption
-    HorizontalFlip: bool voption
-    Clock: bool voption
-    CClock: bool voption
+    VideoReverse: bool
+    AudioReverse: bool
+    RemoveAudio: bool
+    VerticalFlip: bool
+    HorizontalFlip: bool
+    Clock: bool
+    CClock: bool
 }
 with
     static member Create(src) = {
         Src = src
-        VideoReverse = ValueNone
-        AudioReverse = ValueNone
-        RemoveAudio = ValueNone
-        VerticalFlip = ValueNone
-        HorizontalFlip = ValueNone
-        Clock = ValueNone
-        CClock = ValueNone
+        VideoReverse = false
+        AudioReverse = false
+        RemoveAudio = false
+        VerticalFlip = false
+        HorizontalFlip = false
+        Clock = false
+        CClock = false
     }
 
 type StreamsInfo = StreamInfo array
@@ -96,41 +96,41 @@ module FFmpeg =
 
         let audioReverse =
             match data.AudioReverse, data.RemoveAudio with
-            | ValueSome true, _ ->
+            | true, false ->
                  " -af areverse"
-            | _, ValueSome true ->
+            | _, true ->
                 " -an"
             | _, _ ->
                 ""
 
         let videoReverse =
             match data.VideoReverse with
-            | ValueSome true ->
+            | true ->
                  " -vf reverse"
             | _ ->
                 ""
 
         let vFlip =
             match data.VerticalFlip with
-            | ValueSome true ->
+            | true ->
                 " -vf vflip -qscale 0"
             | _ -> ""
 
         let hFlip =
             match data.HorizontalFlip with
-            | ValueSome true ->
+            | true ->
                 " -vf hflip -qscale 0"
             | _ -> ""
 
         let clock =
             match data.Clock with
-            | ValueSome true ->
+            | true ->
                 " -vf \"transpose=clock\""
             | _ -> ""
 
         let cClock =
             match data.CClock with
-            | ValueSome true ->
+            | true ->
                 " -vf \"transpose=cclock\""
             | _ -> ""
 
@@ -163,8 +163,8 @@ module Tests =
     let [<Test>] ``Reverse audio and video works properly``() = task {
         let args = {
             FFmpegObjectState.Create((new StreamReader("VID_20221007_163400_126.mp4")).BaseStream) with
-                AudioReverse = ValueSome true
-                VideoReverse = ValueSome true
+                AudioReverse = true
+                VideoReverse = true
         }
         let! res = FFmpeg.execute args
 
@@ -187,8 +187,8 @@ module Tests =
     let [<Test>] ``Remove audio with reverse works properly``() = task {
         let args = {
             FFmpegObjectState.Create((new StreamReader("VID_20221007_163400_126.mp4")).BaseStream) with
-                VideoReverse = ValueSome true
-                RemoveAudio = ValueSome true
+                VideoReverse = true
+                RemoveAudio = true
         }
         let! res = FFmpeg.execute args
 
@@ -211,8 +211,8 @@ module Tests =
     let [<Test>] ``Vflip and hflip works properly``() = task {
         let args = {
             FFmpegObjectState.Create((new StreamReader("VID_20221007_163400_126.mp4")).BaseStream) with
-                VerticalFlip = ValueSome true
-                HorizontalFlip = ValueSome true
+                VerticalFlip = true
+                HorizontalFlip = true
         }
         let! res = FFmpeg.execute args
 
@@ -235,8 +235,8 @@ module Tests =
     let [<Test>] ``No audio with reverse works properly``() = task {
         let args = {
             FFmpegObjectState.Create((new StreamReader("cb3fce1ba6ad45309515cbaf323ba18b.mp4")).BaseStream) with
-                VideoReverse = ValueSome true
-                RemoveAudio = ValueSome true
+                VideoReverse = true
+                RemoveAudio = true
         }
         let! res = FFmpeg.execute args
 
@@ -259,7 +259,7 @@ module Tests =
     let [<Test>] ``Clock works properly``() = task {
         let args = {
             FFmpegObjectState.Create((new StreamReader("cb3fce1ba6ad45309515cbaf323ba18b.mp4")).BaseStream) with
-                Clock = ValueSome true
+                Clock = true
         }
         let! res = FFmpeg.execute args
 
@@ -346,16 +346,17 @@ type FfmpegGifItem = {
 
 let ffmpegChannel = Channel.CreateUnbounded<FfmpegGifItem>()
 
-let startGifFfmpeg() =
+let reverseContent() =
     task {
         let log = Logger.get "startGifMagicDistortion"
         log.LogDebug("Spawned!")
         while true do
-            let! { Tcs = tcs; Stream = stream; FileType = _ } = ffmpegChannel.Reader.ReadAsync()
+            let! { Tcs = tcs; Stream = stream; FileType = fileType } = ffmpegChannel.Reader.ReadAsync()
             let args = {
                 FFmpegObjectState.Create(stream) with
-                    VideoReverse = ValueSome true
-                    RemoveAudio = ValueSome true
+                    VideoReverse = true
+                    AudioReverse = true
+                    RemoveAudio = fileType = FileType.Gif
             }
 
             let! res = FFmpeg.execute args
@@ -379,7 +380,7 @@ let startClockFfmpeg() =
             let! { Tcs = tcs; Stream = stream; FileType = _ } = clockChannel.Reader.ReadAsync()
             let args = {
                 FFmpegObjectState.Create(stream) with
-                    Clock = ValueSome true
+                    Clock = true
             }
             let! res = FFmpeg.execute args
             match res with
@@ -402,7 +403,7 @@ let startCClockFfmpeg() =
             let! { Tcs = tcs; Stream = stream; FileType = _ } = cclockChannel.Reader.ReadAsync()
             let args = {
                 FFmpegObjectState.Create(stream) with
-                    CClock = ValueSome true
+                    CClock = true
             }
             let! res = FFmpeg.execute args
             match res with
@@ -457,7 +458,7 @@ let startVflipGifFfmpeg() =
             let! { Tcs = tcs; Stream = stream; FileType = _ } = ffmpegVflipChannel.Reader.ReadAsync()
             let args = {
                 FFmpegObjectState.Create(stream) with
-                    VerticalFlip = ValueSome true
+                    VerticalFlip = true
             }
             let! res = FFmpeg.execute args
             match res with
@@ -487,7 +488,7 @@ let startHflipGifFfmpeg() =
             let! { Tcs = tcs; Stream = stream; FileType = _ } = ffmpegHflipChannel.Reader.ReadAsync()
             let args = {
                 FFmpegObjectState.Create(stream) with
-                    HorizontalFlip = ValueSome true
+                    HorizontalFlip = true
             }
             let! res = FFmpeg.execute args
             match res with
@@ -514,7 +515,7 @@ let start() =
     if cts.Task.IsCompleted then
         cts <- TaskCompletionSource()
     if cts.Task.Status = TaskStatus.Running |> not then
-        [ startGifFfmpeg
+        [ reverseContent
           startGifMagicDistortion
           startVflipGifFfmpeg
           startHflipGifFfmpeg

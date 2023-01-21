@@ -98,7 +98,6 @@ module CommandParser =
             Text = Some command
             ReplyToMessage = Some { MessageId = msgId
                                     Document = Some { MimeType = Some mimeType
-                                                      FileSize = Some _
                                                       FileId = fileId } } } when
             mimeType = "video/mp4"
             && command
@@ -106,6 +105,16 @@ module CommandParser =
                 .AnyOf("t!rev", $"/rev{(prefix cType item.BotUsername)}")
             ->
             let res = CommandType.Reverse((chatId, msgId), (fileId, FileType.Gif))
+            item.SetCommand(res)
+        | { Chat = { Id = chatId; Type = cType }
+            Text = Some command
+            ReplyToMessage = Some { MessageId = msgId
+                                    Video = Some { FileId = fileId } } } when
+            command
+                .Trim()
+                .AnyOf("t!rev", $"/rev{(prefix cType item.BotUsername)}")
+            ->
+            let res = CommandType.Reverse((chatId, msgId), (fileId, FileType.Video))
             item.SetCommand(res)
         | _ -> item
 
