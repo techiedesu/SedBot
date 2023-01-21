@@ -118,9 +118,105 @@ module CommandParser =
             item.SetCommand(res)
         | _ -> item
 
+    let private handleVerticalFlip (item: CommandPipelineItem) : CommandPipelineItem =
+        match item.Message with
+        | { Chat = { Id = chatId; Type = cType }
+            Text = Some command
+            ReplyToMessage = Some { MessageId = msgId
+                                    Document = Some { MimeType = Some mimeType
+                                                      FileSize = Some _
+                                                      FileId = fileId } } } when
+            mimeType = "video/mp4"
+            && command
+                .Trim()
+                .AnyOf("t!vflip", "/vflip" + (prefix cType item.BotUsername))
+            ->
+            let res = CommandType.VerticalFlip((chatId, msgId), (fileId, FileType.Gif))
+            item.SetCommand(res)
+
+        | { Chat = { Id = chatId; Type = cType }
+            Text = Some command
+            ReplyToMessage = Some { MessageId = msgId
+                                    Video = Some { FileId = fileId } } } when
+            command
+                .Trim()
+                .AnyOf("t!vflip", "/vflip" + (prefix cType item.BotUsername))
+            ->
+            let res = CommandType.VerticalFlip((chatId, msgId), (fileId, FileType.Video))
+            item.SetCommand(res)
+
+        | { Chat = { Id = chatId; Type = cType }
+            Text = Some command
+            ReplyToMessage = Some { MessageId = msgId
+                                    Photo = Some photos } } when
+            command
+                .Trim()
+                .AnyOf("t!vflip", "/vflip" + (prefix cType item.BotUsername))
+            ->
+            let photo =
+                photos
+                |> Array.sortBy It.Width
+                |> Array.rev
+                |> Array.head
+
+            let res =
+                CommandType.VerticalFlip((chatId, msgId), (photo.FileId, FileType.Picture))
+
+            item.SetCommand(res)
+        | _ -> item
+
+    let private handleHorizontalFlip (item: CommandPipelineItem) : CommandPipelineItem =
+        match item.Message with
+        | { Chat = { Id = chatId; Type = cType }
+            Text = Some command
+            ReplyToMessage = Some { MessageId = msgId
+                                    Document = Some { MimeType = Some mimeType
+                                                      FileSize = Some _
+                                                      FileId = fileId } } } when
+            mimeType = "video/mp4"
+            && command
+                .Trim()
+                .AnyOf("t!hflip", "/hflip" + (prefix cType item.BotUsername))
+            ->
+            let res = CommandType.HorizontalFlip((chatId, msgId), (fileId, FileType.Gif))
+            item.SetCommand(res)
+
+        | { Chat = { Id = chatId; Type = cType }
+            Text = Some command
+            ReplyToMessage = Some { MessageId = msgId
+                                    Video = Some { FileId = fileId } } } when
+            command
+                .Trim()
+                .AnyOf("t!hflip", "/hflip" + (prefix cType item.BotUsername))
+            ->
+            let res = CommandType.HorizontalFlip((chatId, msgId), (fileId, FileType.Video))
+            item.SetCommand(res)
+
+        | { Chat = { Id = chatId; Type = cType }
+            Text = Some command
+            ReplyToMessage = Some { MessageId = msgId
+                                    Photo = Some photos } } when
+            command
+                .Trim()
+                .AnyOf("t!hflip", "/hflip" + (prefix cType item.BotUsername))
+            ->
+            let photo =
+                photos
+                |> Array.sortBy It.Width
+                |> Array.rev
+                |> Array.head
+
+            let res =
+                CommandType.HorizontalFlip((chatId, msgId), (photo.FileId, FileType.Picture))
+
+            item.SetCommand(res)
+        | _ -> item
+
     let processMessage message botUsername =
         CommandPipelineItem.Create(message, botUsername)
         |%> handleSed
         |%> handleRawMessageInfo
         |%> handleReverse
+        |%> handleVerticalFlip
+        |%> handleHorizontalFlip
         |> CommandPipelineItem.GetCommand
