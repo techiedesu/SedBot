@@ -11,8 +11,11 @@ type CliPipeTarget = CliWrap.PipeTarget
 let wrap target =
     CliWrap.Cli.Wrap(target)
 
-let withArguments (args: string seq) (escape: bool voption) (command: CliCommand) =
-    command.WithArguments(args, escape |> ValueOption.defaultValue true)
+let withArguments (args: string seq) (command: CliCommand) =
+    command.WithArguments(args, false)
+
+let withEscapedArguments (args: string seq) (command: CliCommand) =
+    command.WithArguments(args, true)
 
 let withArgumentsEscape (args: string seq) escape (command: CliCommand) =
     command.WithArguments(args, escape)

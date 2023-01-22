@@ -323,8 +323,7 @@ module CommandParser =
                 .Trim()
                 .AnyOf("t!dist", "/dist" + (prefix cType item.BotUsername))
             ->
-            let res =
-                CommandType.Distortion((chatId, msgId), (fileId, FileType.Gif))
+            let res = CommandType.Distortion((chatId, msgId), (fileId, FileType.Gif))
 
             item.SetCommand(res)
 
@@ -336,8 +335,7 @@ module CommandParser =
                 .Trim()
                 .AnyOf("t!dist", "/dist" + (prefix cType item.BotUsername))
             ->
-            let res =
-                CommandType.Distortion((chatId, msgId), (fileId, FileType.Video))
+            let res = CommandType.Distortion((chatId, msgId), (fileId, FileType.Video))
 
             item.SetCommand(res)
 
@@ -355,8 +353,7 @@ module CommandParser =
                 |> Array.rev
                 |> Array.head
 
-            let res =
-                CommandType.Distortion((chatId, msgId), (photo.FileId, FileType.Picture))
+            let res = CommandType.Distortion((chatId, msgId), (photo.FileId, FileType.Picture))
 
             item.SetCommand(res)
         | _ -> item

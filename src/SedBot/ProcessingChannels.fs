@@ -61,7 +61,7 @@ module FFmpeg =
                 |> withStandardInputPipe (PipeSource.FromStream stream)
                 |> withStandardErrorPipe (PipeTarget.ToStringBuilder errSb)
                 |> withStandardOutputPipe (PipeTarget.ToStringBuilder(resSb))
-                |> withArguments [ "-i pipe: -show_streams" ] (ValueSome false)
+                |> withArguments [ "-i pipe: -show_streams" ]
                 |> withValidation CommandResultValidation.None
                 |> executeBufferedAsync Console.OutputEncoding
 
@@ -126,7 +126,7 @@ module FFmpeg =
             |> wrap
             |> withStandardErrorPipe (PipeTarget.ToStringBuilder errSb)
             |> withStandardOutputPipe (PipeTarget.ToStream(target, ValueNone))
-            |> withArguments [ $"-an -i {data.VideoFileName} -vn -i {data.AudioFileName} -c:a libopus -c:v copy -af vibrato=f=6:d=1 -shortest {outputFileName}" ] (ValueSome false)
+            |> withArguments [ $"-an -i {data.VideoFileName} -vn -i {data.AudioFileName} -c:a libopus -c:v copy -af vibrato=f=6:d=1 -shortest {outputFileName}" ]
             |> withValidation CommandResultValidation.None
             |> executeBufferedAsync Console.OutputEncoding
 
@@ -203,7 +203,7 @@ module FFmpeg =
                 |> wrap
                 |> withStandardErrorPipe (PipeTarget.ToStringBuilder errSb)
                 |> withStandardOutputPipe (PipeTarget.ToStream(target, ValueNone))
-                |> withArguments [ $"-i {args} {contentSpecific} pipe:1" ] (ValueSome false)
+                |> withArguments [ $"-i {args} {contentSpecific} pipe:1" ]
                 |> withValidation CommandResultValidation.None
                 |> executeBufferedAsync Console.OutputEncoding
 
@@ -394,7 +394,7 @@ module ImageMagick =
                 |> wrap
                 |> withStandardErrorPipe (PipeTarget.ToStringBuilder errSb)
                 // |> withArguments [ $"{inputFile} -scale\", \"512x512> {outFile}" ] (ValueSome false)
-                |> withArguments [ inputFile; "-scale"; "512x512>";"-liquid-rescale"; "50%"; "-scale"; "200%"; outFile ] (ValueSome false)
+                |> withArguments [ inputFile; "-scale"; "512x512>";"-liquid-rescale"; "50%"; "-scale"; "200%"; outFile ]
                 |> withValidation CommandResultValidation.None
                 |> executeBufferedAsync Console.OutputEncoding
 

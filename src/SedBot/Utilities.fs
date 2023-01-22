@@ -50,7 +50,7 @@ module Process =
             let! executionResult =
                 procName
                 |> wrap
-                |> withArguments args ValueNone
+                |> withEscapedArguments args
                 |> withStandardInputPipe (data |> PipeSource.FromString)
                 |> withStandardErrorPipe (stderr |> PipeTarget.ToStringBuilder)
                 |> withStandardOutputPipe (stdout |> PipeTarget.ToStringBuilder)
@@ -72,7 +72,7 @@ module Process =
         let executionResult =
             procName
             |> wrap
-            |> withArguments args ValueNone
+            |> withEscapedArguments args
             |> withStandardInputPipe ^ PipeSource.FromString data
             |> withValidation CommandResultValidation.None
             |> executeBuffered
