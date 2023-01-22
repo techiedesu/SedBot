@@ -126,7 +126,7 @@ module FFmpeg =
             |> wrap
             |> withStandardErrorPipe (PipeTarget.ToStringBuilder errSb)
             |> withStandardOutputPipe (PipeTarget.ToStream(target, ValueNone))
-            |> withArguments [ $"-an -i {data.VideoFileName} -vn -i {data.AudioFileName} -c:a libopus -c:v copy -af vibrato=f=6:d=1 {outputFileName}" ] (ValueSome false)
+            |> withArguments [ $"-an -i {data.VideoFileName} -vn -i {data.AudioFileName} -c:a libopus -c:v copy -af vibrato=f=6:d=1 -shortest {outputFileName}" ] (ValueSome false)
             |> withValidation CommandResultValidation.None
             |> executeBufferedAsync Console.OutputEncoding
 
