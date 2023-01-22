@@ -115,7 +115,7 @@ module FFmpeg =
 
         }
 
-    let appendAudioToVideo (data: AudioVideoConcat) = task {
+    let appendAudioToVideoDistortion (data: AudioVideoConcat) = task {
         let target = new MemoryStream()
         let errSb = StringBuilder()
 
@@ -126,13 +126,12 @@ module FFmpeg =
             |> wrap
             |> withStandardErrorPipe (PipeTarget.ToStringBuilder errSb)
             |> withStandardOutputPipe (PipeTarget.ToStream(target, ValueNone))
-            |> withArguments [ $"-an -i {data.VideoFileName} -vn -i {data.AudioFileName} -c:a copy -c:v copy {outputFileName}" ] (ValueSome false)
+            |> withArguments [ $"-an -i {data.VideoFileName} -vn -i {data.AudioFileName} -c:a libopus -c:v copy -af vibrato=f=6:d=1 {outputFileName}" ] (ValueSome false)
             |> withValidation CommandResultValidation.None
             |> executeBufferedAsync Console.OutputEncoding
 
-        use sr = new StreamReader(outputFileName)
-
         if executionResult.ExitCode = 0 then
+            use sr = new StreamReader(outputFileName)
             File.deleteOrIgnore [ data.AudioFileName; data.VideoFileName ]
             let ms = new MemoryStream()
             do! sr.BaseStream.CopyToAsync(ms)
@@ -382,8 +381,8 @@ module ImageMagick =
                 | FileType.Picture -> ".jpg"
                 | _ -> ".mp4"
 
-            let inputFile = Path.getSynthName fileType
-            let outFile = Path.getSynthName fileType
+            let inputFile = "in" + Path.getSynthName fileType
+            let outFile = "out" + Path.getSynthName fileType
 
             data.Src.Position <- 0
             let memSrc = new MemoryStream()
@@ -391,10 +390,11 @@ module ImageMagick =
             do! File.WriteAllBytesAsync(inputFile, memSrc.ToArray())
 
             let! executionResult =
-                "magick"
+                "convert"
                 |> wrap
                 |> withStandardErrorPipe (PipeTarget.ToStringBuilder errSb)
-                |> withArguments [ $"{inputFile} -liquid-rescale 320x640 -implode 0.25 {outFile}" ] (ValueSome false)
+                // |> withArguments [ $"{inputFile} -scale\", \"512x512> {outFile}" ] (ValueSome false)
+                |> withArguments [ inputFile; "-scale"; "512x512>";"-liquid-rescale"; "50%"; "-scale"; "200%"; outFile ] (ValueSome false)
                 |> withValidation CommandResultValidation.None
                 |> executeBufferedAsync Console.OutputEncoding
 
@@ -559,7 +559,7 @@ let startMagicDistortion () =
                     let! res = ImageMagick.convert { Src = stream; FileType = fileType }
                     match res with
                     | Result.Ok (_, distResultFileName) ->
-                        let! res = FFmpeg.appendAudioToVideo { VideoFileName = distResultFileName; AudioFileName = inputFile }
+                        let! res = FFmpeg.appendAudioToVideoDistortion { VideoFileName = distResultFileName; AudioFileName = inputFile }
                         return res
                     | _ ->
                         return res
