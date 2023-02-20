@@ -18,12 +18,14 @@ type FileType =
     | Video
     | Picture
     | Sticker
+    | Voice
 
 let extension (ft: FileType) =
     match ft with
     | Gif | Video -> ".mp4"
     | Picture -> ".png"
     | Sticker -> ".webp"
+    | Voice -> ".ogg"
 
 module String =
     let removeFromStart (text: string) (input: string) =

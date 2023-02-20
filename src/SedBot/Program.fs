@@ -32,12 +32,17 @@ let me ctx =
 
 let log = Logger.get "updateArrived"
 
-let private replyAsFileType fileType chatId ani msgId =
+let private replyAsFileType fileType chatId inputFile msgId =
     match fileType with
     | Gif
-    | Sticker -> TgApi.sendAnimationReply chatId ani msgId
-    | Video -> TgApi.sendVideoReply chatId ani msgId
-    | Picture -> TgApi.sendPhotoReply chatId ani msgId
+    | Sticker ->
+        TgApi.sendAnimationReply chatId inputFile msgId
+    | Video ->
+        TgApi.sendVideoReply chatId inputFile msgId
+    | Picture ->
+        TgApi.sendPhotoReply chatId inputFile msgId
+    | Voice ->
+        TgApi.sendVoiceReply chatId inputFile msgId
 
 let createInputFile fileType (data: byte [] voption) : InputFile voption =
     match data with

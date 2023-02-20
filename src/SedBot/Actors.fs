@@ -21,6 +21,7 @@ type SendTelegramResponseMail =
     | SendAnimationReply of chatId: int64 * animation: InputFile * replyToMessageId: int64
     | SendVideoReply of chatId: int64 * video: InputFile * replyToMessageId: int64
     | SendPhotoReply of chatId: int64 * photo: InputFile * replyToMessageId: int64
+    | SendVoiceReply of chatId: int64 * voice: InputFile * replyToMessageId: int64
 
 module [<RequireQualifiedAccess>] TgApi =
     let mutable actor : Akka.Actor.IActorRef = null
@@ -65,6 +66,11 @@ module [<RequireQualifiedAccess>] TgApi =
     let sendPhotoReply chatId photo replyToMessageId =
         actor <! SendTelegramResponseMail.SendPhotoReply (chatId, photo, replyToMessageId)
 
+    /// Send photo as reply
+    let sendVoiceReply chatId photo replyToMessageId =
+        actor <! SendTelegramResponseMail.SendVoiceReply (chatId, photo, replyToMessageId)
+
+
 let log = Logger.get "responseTelegramActor"
 
 let rec responseTelegramActor (mailbox: Actor<SendTelegramResponseMail>) =
@@ -75,7 +81,7 @@ let rec responseTelegramActor (mailbox: Actor<SendTelegramResponseMail>) =
             request
             |> Funogram.Api.api botConfig
             |> Async.RunSynchronously
-            |> fun res -> try log.LogTrace("Result: {res}", Json.serialize res) with | _ -> ()
+            |> fun res -> try log.LogError("Result: {res}", Json.serialize res) with | _ -> ()
         | _ -> ()
 
     let rec loop () = actor {
@@ -146,6 +152,9 @@ let rec responseTelegramActor (mailbox: Actor<SendTelegramResponseMail>) =
             |> api
         | SendPhotoReply (chatId, animation, replyToMessageId) ->
             Api.sendPhotoReply chatId animation replyToMessageId
+            |> api
+        | SendVoiceReply(chatId, inputFile, replyToMessageId) ->
+            Api.sendVoiceReply chatId inputFile replyToMessageId
             |> api
 
         return! loop ()

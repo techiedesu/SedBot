@@ -315,6 +315,21 @@ module CommandParser =
         | { Chat = { Id = chatId; Type = cType }
             Text = Some command
             ReplyToMessage = Some { MessageId = msgId
+                                    Voice = Some { MimeType = Some mimeType
+                                                   FileSize = Some _
+                                                   FileId = fileId } } } when
+            mimeType = "audio/ogg"
+            && command
+                .Trim()
+                .AnyOf("t!dist", "/dist" + (prefix cType item.BotUsername))
+            ->
+            let res = CommandType.Distortion((chatId, msgId), (fileId, FileType.Voice))
+
+            item.SetCommand(res)
+
+        | { Chat = { Id = chatId; Type = cType }
+            Text = Some command
+            ReplyToMessage = Some { MessageId = msgId
                                     Document = Some { MimeType = Some mimeType
                                                       FileSize = Some _
                                                       FileId = fileId } } } when

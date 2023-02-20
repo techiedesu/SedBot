@@ -23,6 +23,9 @@ let sendTextMarkup chatId text parseMode =
 let sendPhotoReply chatId photo replyToMessageId =
     Req.SendPhoto.Make(ChatId.Int chatId, photo, replyToMessageId = replyToMessageId)
 
+let sendVoiceReply chatId voice replyToMessageId =
+    Req.SendVoice.Make(ChatId.Int chatId, voice, replyToMessageId = replyToMessageId)
+
 /// Try to get file stream by telegram FileId
 let tryGetFileAsStream ctx fileId = task {
     let! file = Api.getFile fileId |> api ctx.Config
