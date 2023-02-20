@@ -130,7 +130,7 @@ module FFmpeg =
             |> wrap
             |> withStandardErrorPipe (PipeTarget.ToStringBuilder errSb)
             |> withStandardOutputPipe (PipeTarget.ToStream(target, ValueNone))
-            |> withArguments [ $"-i {data.AudioFileName} -ac 1 -map 0:a -strict -2 -acodec opus -b:a 128k -af vibrato=f=6:d=1 {outputFileName}" ]
+            |> withArguments [ $"-i {data.AudioFileName} -ac 1 -map 0:a -strict -2 -acodec opus -b:a 128k -af vibrato=f=8:d=1 {outputFileName}" ]
             |> withValidation CommandResultValidation.None
             |> executeBufferedAsync Console.OutputEncoding
 
