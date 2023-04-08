@@ -409,7 +409,7 @@ module CommandParser =
 
     let processMessage message botUsername =
         CommandPipelineItem.Create(message, botUsername)
-        |%> handleSed
+        // |%> handleSed
         |%> handleJq
         |%> handleClown
         |%> handleRawMessageInfo
