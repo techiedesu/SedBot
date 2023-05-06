@@ -59,8 +59,15 @@ module CommandParser =
             ""
 
     let private handleSed (item: CommandPipelineItem) : CommandPipelineItem =
-        let isValidExpression expression =
-            Process.getStatusCode "sed" [| "-E"; expression |] "data" = 0
+        let tryGetValidExpression (expression: string) =
+            if expression.StartsWith("t@") then
+                let expression = $"s@{expression.Substring(2)}"
+                if Process.getStatusCode "sed" [| "-E"; expression |] "data" = 0 then
+                    Some expression
+                else
+                    None
+            else
+                None
 
         match item.Message with
         | { MessageId = srcMsgId
@@ -68,14 +75,18 @@ module CommandParser =
             Text = Some expression
             ReplyToMessage = Some { Text = text
                                     MessageId = msgId
-                                    Caption = caption } } when isValidExpression expression ->
-            let text = Option.anyOf2 text caption
+                                    Caption = caption } } ->
+            let expression = tryGetValidExpression expression
+            match expression with
+            | Some expression ->
+                let text = Option.anyOf2 text caption
 
-            match text with
-            | Some text ->
-                let res = CommandType.Sed((chatId, msgId), srcMsgId, expression, text)
-                item.SetCommand(res)
-            | None -> item
+                match text with
+                | Some text ->
+                    let res = CommandType.Sed((chatId, msgId), srcMsgId, expression, text)
+                    item.SetCommand(res)
+                | None -> item
+            | _ -> item
         | _ -> item
 
     let private handleRawMessageInfo (item: CommandPipelineItem) : CommandPipelineItem =
@@ -409,7 +420,7 @@ module CommandParser =
 
     let processMessage message botUsername =
         CommandPipelineItem.Create(message, botUsername)
-        // |%> handleSed
+        |%> handleSed
         |%> handleJq
         |%> handleClown
         |%> handleRawMessageInfo
