@@ -1,7 +1,9 @@
 module SedBot.ChatCommands
 
+open System.Text.RegularExpressions
 open Funogram.Telegram
 open Funogram.Telegram.Types
+open NUnit.Framework
 open SedBot
 open SedBot.Utilities
 
@@ -47,16 +49,46 @@ module CommandParser =
             | ValueSome command -> command
             | _ -> CommandType.Nope
 
+    let rec commandPatternInternal botUsername (text: string) chatType =
+        let tryGetArgs rawArgs =
+            let matched = Regex.Matches(rawArgs, """(?:(['"])(.*?)(?<!\\)(?>\\\\)*\1|([^\s]+))""")
+            if matched.Count = 0 then
+                None
+            else
+                matched |> Seq.map (fun m -> m.Value) |> Array.ofSeq |> Some
+
+        if text.StartsWith "t!" then
+            match text.Split " " |> List.ofArray with
+            | [ command ] ->
+                Some (command.Substring(2)), None
+            | head :: args ->
+                Some (head.Substring(2)), tryGetArgs (args |> String.concat " ")
+            | _ ->
+                None, None
+        elif chatType = SuperGroup then
+            let command = Regex.Match(text, "(\/)(.*?)((@" + botUsername + " (\*.))|(@" + botUsername + "))")
+            if command.Length > 0 then
+                Some (command.Value.Substring(1, command.Value.Length - botUsername.Length - 2)), tryGetArgs (text.Substring(command.Value.Length))
+            else
+                None, None
+        else
+            let command = Regex.Match(text, "(\/.*?)")
+            if command.Length > 0 && command.Value <> "/" then
+                Some (command.Value.Substring(1, command.Value.Length - 1)), tryGetArgs (text.Substring(command.Value.Length))
+            else
+                commandPatternInternal botUsername text SuperGroup
+
+    let (|Command|) (item: CommandPipelineItem) =
+        match item.Message with
+        | { Text = Some text; Chat = { Type = cType } } ->
+            commandPatternInternal (item.BotUsername.Substring(1)) text cType
+        | _ ->
+            None, None
+
     let (|%>) (item: CommandPipelineItem) (messageProcessor: CommandPipelineItem -> CommandPipelineItem) =
         match item.Command with
         | ValueNone -> messageProcessor item
         | _ -> item
-
-    let private prefix mType prefix =
-        if mType = SuperGroup then
-            prefix
-        else
-            ""
 
     let private handleSed (item: CommandPipelineItem) : CommandPipelineItem =
         let tryGetValidExpression (expression: string) =
@@ -90,80 +122,48 @@ module CommandParser =
         | _ -> item
 
     let private handleRawMessageInfo (item: CommandPipelineItem) : CommandPipelineItem =
-        match item.Message with
+        match item.Message, item with
         | { MessageId = msgId
-            Chat = { Id = chatId; Type = cType }
-            Text = Some text
-            ReplyToMessage = Some replyToMessage } when
-            text
-                .Trim()
-                .AnyOf("t!info", $"/info{prefix cType item.BotUsername}")
+            Chat = { Id = chatId }
+            ReplyToMessage = Some replyToMessage }, Command (Some "raw", _)
             ->
             let res = CommandType.RawMessageInfo((chatId, msgId), replyToMessage)
             item.SetCommand(res)
         | _ -> item
 
     let private handleReverse (item: CommandPipelineItem) : CommandPipelineItem =
-        match item.Message with
-        | { Chat = { Id = chatId; Type = cType }
-            Text = Some command
+        match item.Message, item with
+        | { Chat = { Id = chatId }
             ReplyToMessage = Some { MessageId = msgId
-                                    Document = Some { MimeType = Some mimeType
-                                                      FileId = fileId } } } when
-            mimeType = "video/mp4"
-            && command
-                .Trim()
-                .AnyOf("t!rev", $"/rev{(prefix cType item.BotUsername)}")
-            ->
+                                    Document = Some { MimeType = Some "video/mp4"
+                                                      FileId = fileId } } }, Command (Some "rev", _) ->
             let res = CommandType.Reverse((chatId, msgId), (fileId, FileType.Gif))
             item.SetCommand(res)
-        | { Chat = { Id = chatId; Type = cType }
-            Text = Some command
+        | { Chat = { Id = chatId }
             ReplyToMessage = Some { MessageId = msgId
-                                    Video = Some { FileId = fileId } } } when
-            command
-                .Trim()
-                .AnyOf("t!rev", $"/rev{(prefix cType item.BotUsername)}")
-            ->
+                                    Video = Some { FileId = fileId } } }, Command (Some "rev", _) ->
             let res = CommandType.Reverse((chatId, msgId), (fileId, FileType.Video))
             item.SetCommand(res)
         | _ -> item
 
     let private handleVerticalFlip (item: CommandPipelineItem) : CommandPipelineItem =
-        match item.Message with
-        | { Chat = { Id = chatId; Type = cType }
-            Text = Some command
+        match item.Message, item with
+        | { Chat = { Id = chatId }
             ReplyToMessage = Some { MessageId = msgId
-                                    Document = Some { MimeType = Some mimeType
-                                                      FileSize = Some _
-                                                      FileId = fileId } } } when
-            mimeType = "video/mp4"
-            && command
-                .Trim()
-                .AnyOf("t!vflip", "/vflip" + (prefix cType item.BotUsername))
-            ->
+                                    Document = Some { MimeType = Some "video/mp4"
+                                                      FileId = fileId } } }, Command (Some "vflip", _) ->
             let res = CommandType.VerticalFlip((chatId, msgId), (fileId, FileType.Gif))
             item.SetCommand(res)
 
-        | { Chat = { Id = chatId; Type = cType }
-            Text = Some command
+        | { Chat = { Id = chatId }
             ReplyToMessage = Some { MessageId = msgId
-                                    Video = Some { FileId = fileId } } } when
-            command
-                .Trim()
-                .AnyOf("t!vflip", "/vflip" + (prefix cType item.BotUsername))
-            ->
+                                    Video = Some { FileId = fileId } } }, Command (Some "vflip", _) ->
             let res = CommandType.VerticalFlip((chatId, msgId), (fileId, FileType.Video))
             item.SetCommand(res)
 
-        | { Chat = { Id = chatId; Type = cType }
-            Text = Some command
+        | { Chat = { Id = chatId }
             ReplyToMessage = Some { MessageId = msgId
-                                    Photo = Some photos } } when
-            command
-                .Trim()
-                .AnyOf("t!vflip", "/vflip" + (prefix cType item.BotUsername))
-            ->
+                                    Photo = Some photos } }, Command (Some "vflip", _) ->
             let photo =
                 photos
                 |> Array.sortBy It.Width
@@ -177,39 +177,25 @@ module CommandParser =
         | _ -> item
 
     let private handleHorizontalFlip (item: CommandPipelineItem) : CommandPipelineItem =
-        match item.Message with
-        | { Chat = { Id = chatId; Type = cType }
-            Text = Some command
+        match item.Message, item with
+        | { Chat = { Id = chatId }
             ReplyToMessage = Some { MessageId = msgId
-                                    Document = Some { MimeType = Some mimeType
-                                                      FileSize = Some _
-                                                      FileId = fileId } } } when
-            mimeType = "video/mp4"
-            && command
-                .Trim()
-                .AnyOf("t!hflip", "/hflip" + (prefix cType item.BotUsername))
+                                    Document = Some { MimeType = Some "video/mp4"
+                                                      FileId = fileId } } }, Command (Some "hflip", _)
             ->
             let res = CommandType.HorizontalFlip((chatId, msgId), (fileId, FileType.Gif))
             item.SetCommand(res)
 
-        | { Chat = { Id = chatId; Type = cType }
-            Text = Some command
+        | { Chat = { Id = chatId }
             ReplyToMessage = Some { MessageId = msgId
-                                    Video = Some { FileId = fileId } } } when
-            command
-                .Trim()
-                .AnyOf("t!hflip", "/hflip" + (prefix cType item.BotUsername))
+                                    Video = Some { FileId = fileId } } }, Command (Some "hflip", _)
             ->
             let res = CommandType.HorizontalFlip((chatId, msgId), (fileId, FileType.Video))
             item.SetCommand(res)
 
-        | { Chat = { Id = chatId; Type = cType }
-            Text = Some command
+        | { Chat = { Id = chatId }
             ReplyToMessage = Some { MessageId = msgId
-                                    Photo = Some photos } } when
-            command
-                .Trim()
-                .AnyOf("t!hflip", "/hflip" + (prefix cType item.BotUsername))
+                                    Photo = Some photos } }, Command (Some "hflip", _)
             ->
             let photo =
                 photos
@@ -224,40 +210,23 @@ module CommandParser =
         | _ -> item
 
     let private handleClockwiseRotation (item: CommandPipelineItem) : CommandPipelineItem =
-        match item.Message with
-        | { Chat = { Id = chatId; Type = cType }
-            Text = Some command
+        match item.Message, item with
+        | { Chat = { Id = chatId }
             ReplyToMessage = Some { MessageId = msgId
-                                    Document = Some { MimeType = Some mimeType
-                                                      FileSize = Some _
-                                                      FileId = fileId } } } when
-            mimeType = "video/mp4"
-            && command
-                .Trim()
-                .AnyOf("t!clock", "/clock" + (prefix cType item.BotUsername))
-            ->
+                                    Document = Some { MimeType = Some "video/mp4"
+                                                      FileId = fileId } } }, Command (Some "clock", _) ->
             let res = CommandType.ClockwiseRotation((chatId, msgId), (fileId, FileType.Gif))
             item.SetCommand(res)
 
-        | { Chat = { Id = chatId; Type = cType }
-            Text = Some command
+        | { Chat = { Id = chatId }
             ReplyToMessage = Some { MessageId = msgId
-                                    Video = Some { FileId = fileId } } } when
-            command
-                .Trim()
-                .AnyOf("t!clock", "/clock" + (prefix cType item.BotUsername))
-            ->
+                                    Video = Some { FileId = fileId } } }, Command (Some "clock", _) ->
             let res = CommandType.ClockwiseRotation((chatId, msgId), (fileId, FileType.Video))
             item.SetCommand(res)
 
-        | { Chat = { Id = chatId; Type = cType }
-            Text = Some command
+        | { Chat = { Id = chatId }
             ReplyToMessage = Some { MessageId = msgId
-                                    Photo = Some photos } } when
-            command
-                .Trim()
-                .AnyOf("t!clock", "/clock" + (prefix cType item.BotUsername))
-            ->
+                                    Photo = Some photos } }, Command (Some "clock", _) ->
             let photo =
                 photos
                 |> Array.sortBy It.Width
@@ -271,44 +240,28 @@ module CommandParser =
         | _ -> item
 
     let private handleCounterclockwiseRotation (item: CommandPipelineItem) : CommandPipelineItem =
-        match item.Message with
-        | { Chat = { Id = chatId; Type = cType }
-            Text = Some command
-            ReplyToMessage = Some { MessageId = msgId
-                                    Document = Some { MimeType = Some mimeType
-                                                      FileSize = Some _
-                                                      FileId = fileId } } } when
-            mimeType = "video/mp4"
-            && command
-                .Trim()
-                .AnyOf("t!cclock", "/cclock" + (prefix cType item.BotUsername))
-            ->
-            let res =
-                CommandType.CounterclockwiseRotation((chatId, msgId), (fileId, FileType.Gif))
-
+        match item.Message, item with
+        | { Chat = { Id = chatId }
+            ReplyToMessage = Some {
+                MessageId = msgId
+                Document = Some {
+                    MimeType = Some "video/mp4"
+                    FileId = fileId
+                }
+            } }, Command (Some "cclock", _) ->
+            let res = CommandType.CounterclockwiseRotation((chatId, msgId), (fileId, FileType.Gif))
             item.SetCommand(res)
 
-        | { Chat = { Id = chatId; Type = cType }
-            Text = Some command
+        | { Chat = { Id = chatId }
             ReplyToMessage = Some { MessageId = msgId
-                                    Video = Some { FileId = fileId } } } when
-            command
-                .Trim()
-                .AnyOf("t!cclock", "/cclock" + (prefix cType item.BotUsername))
-            ->
+                                    Video = Some { FileId = fileId } } }, Command (Some "cclock", _) ->
             let res =
                 CommandType.CounterclockwiseRotation((chatId, msgId), (fileId, FileType.Video))
 
             item.SetCommand(res)
 
-        | { Chat = { Id = chatId; Type = cType }
-            Text = Some command
-            ReplyToMessage = Some { MessageId = msgId
-                                    Photo = Some photos } } when
-            command
-                .Trim()
-                .AnyOf("t!cclock", "/cclock" + (prefix cType item.BotUsername))
-            ->
+        | { Chat = { Id = chatId }
+            ReplyToMessage = Some { MessageId = msgId; Photo = Some photos } } , Command (Some "cclock", _)  ->
             let photo =
                 photos
                 |> Array.sortBy It.Width
@@ -322,57 +275,34 @@ module CommandParser =
         | _ -> item
 
     let private handleDistortion (item: CommandPipelineItem) : CommandPipelineItem =
-        match item.Message with
-        | { Chat = { Id = chatId; Type = cType }
-            Text = Some command
+        match item.Message, item with
+        | { Chat = { Id = chatId }
             ReplyToMessage = Some { MessageId = msgId
-                                    Voice = Some { MimeType = Some mimeType
-                                                   FileSize = Some _
-                                                   FileId = fileId } } } when
-            mimeType = "audio/ogg"
-            && command
-                .Trim()
-                .AnyOf("t!dist", "/dist" + (prefix cType item.BotUsername))
-            ->
+                                    Voice = Some { MimeType = Some "audio/ogg"
+                                                   FileId = fileId } } }, Command (Some "dist", _) ->
             let res = CommandType.Distortion((chatId, msgId), (fileId, FileType.Voice))
 
             item.SetCommand(res)
 
-        | { Chat = { Id = chatId; Type = cType }
-            Text = Some command
+        | { Chat = { Id = chatId }
             ReplyToMessage = Some { MessageId = msgId
-                                    Document = Some { MimeType = Some mimeType
-                                                      FileSize = Some _
-                                                      FileId = fileId } } } when
-            mimeType = "video/mp4"
-            && command
-                .Trim()
-                .AnyOf("t!dist", "/dist" + (prefix cType item.BotUsername))
+                                    Document = Some { MimeType = Some "video/mp4"
+                                                      FileId = fileId } } }, Command (Some "dist", _)
             ->
             let res = CommandType.Distortion((chatId, msgId), (fileId, FileType.Gif))
 
             item.SetCommand(res)
 
-        | { Chat = { Id = chatId; Type = cType }
-            Text = Some command
+        | { Chat = { Id = chatId }
             ReplyToMessage = Some { MessageId = msgId
-                                    Video = Some { FileId = fileId } } } when
-            command
-                .Trim()
-                .AnyOf("t!dist", "/dist" + (prefix cType item.BotUsername))
-            ->
+                                    Video = Some { FileId = fileId } } }, Command (Some "dist", _) ->
             let res = CommandType.Distortion((chatId, msgId), (fileId, FileType.Video))
 
             item.SetCommand(res)
 
-        | { Chat = { Id = chatId; Type = cType }
-            Text = Some command
+        | { Chat = { Id = chatId }
             ReplyToMessage = Some { MessageId = msgId
-                                    Photo = Some photos } } when
-            command
-                .Trim()
-                .AnyOf("t!dist", "/dist" + (prefix cType item.BotUsername))
-            ->
+                                    Photo = Some photos } }, Command (Some "dist", _) ->
             let photo =
                 photos
                 |> Array.sortBy It.Width
@@ -397,22 +327,15 @@ module CommandParser =
         | _ -> item
 
     let private handleJq (item: CommandPipelineItem) : CommandPipelineItem =
-        match item.Message with
-        | { Chat = { Id = chatId; Type = cType }
-            Text = Some command
+        match item.Message, item with
+        | { Chat = { Id = chatId }
             MessageId = msgId
-            ReplyToMessage = Some { Text = Some data } } when
-            command
-                .Trim()
-                .StartsWithAnyOf("t!jq", "/jq" + (prefix cType item.BotUsername))
-            ->
+            ReplyToMessage = Some { Text = Some data } }, Command (Some "jq", Some args) ->
             let res =
                 CommandType.Jq(
                     (chatId, msgId),
                     data,
-                    command
-                        .Trim()
-                        .RemoveAnyOf("t!jq", "/jq" + (prefix cType item.BotUsername))
+                    args |> String.concat " "
                 )
 
             item.SetCommand(res)
@@ -431,3 +354,30 @@ module CommandParser =
         |%> handleClockwiseRotation
         |%> handleCounterclockwiseRotation
         |> CommandPipelineItem.GetCommand
+
+    [<TestCase("sample_bot", "/send@sample_bot horny bonk", "supergroup", "send", "horny,bonk")>]
+    [<TestCase("sample_bot", "/send@sample_bot horny bonk", "private", "send", "horny,bonk")>]
+    [<TestCase("sample_bot", "t!send horny bonk", "private", "send", "horny,bonk")>]
+    [<TestCase("sample_bot", "t!send", "private", "send", "")>]
+    [<TestCase("sample_bot", "/send@sample_bot", "private", "send", "")>]
+    [<TestCase("sample_bot", "/send@sample_bot", "private", "send", "")>]
+    let [<Test>] ``Command handler works properly`` (botName, command, chatType, expectedCommand, expectedArgs) =
+        let chatType =
+            match chatType with
+            | "supergroup" -> ChatType.SuperGroup
+            | "unknown" -> ChatType.Unknown
+            | "sender" -> ChatType.Sender
+            | "private" -> ChatType.Private
+            | "group" -> ChatType.Group
+            | "channel" -> ChatType.Channel
+            | s -> failwith $"Can't handle -> {s}"
+
+        match commandPatternInternal botName command chatType with
+        | Some command, Some args ->
+            Assert.AreEqual(command, expectedCommand)
+            Assert.AreEqual(expectedArgs, System.String.Join(",", args))
+        | Some command, None ->
+            Assert.AreEqual(command, expectedCommand)
+            Assert.AreEqual(expectedArgs, "")
+        | _ ->
+            Assert.Fail("Broken")
