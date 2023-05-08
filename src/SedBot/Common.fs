@@ -58,20 +58,28 @@ module Option =
     let anyOf2 a b =
         [a; b] |> anyOfList
 
-module Json =
+module Json = // TODO: creating settings each call looks like overhead
     open System.Text.Json.Serialization
 
-    let settings =
+    let settings() =
         let options = JsonSerializerOptions()
         options.Converters.Add(JsonFSharpConverter())
         options
 
     let serialize<'a> (t: 'a) =
+        let settings = settings()
         settings.WriteIndented <- false
         JsonSerializer.Serialize(t, settings)
 
     let serializeNicely (t: 'a) =
+        let settings = settings()
         settings.WriteIndented <- true
+        JsonSerializer.Serialize(t, settings)
+
+    let serializeNicelyWithoutEmptyFields (t: 'a) =
+        let settings = settings()
+        settings.WriteIndented <- true
+        settings.DefaultIgnoreCondition <- JsonIgnoreCondition.WhenWritingNull
         JsonSerializer.Serialize(t, settings)
 
 module It =

@@ -137,8 +137,14 @@ let updateArrivedInternal (message: Message) ctx =
 
         | Clown (chatId, count) -> TgApi.sendMessage chatId (System.String.Concat(Enumerable.Repeat("🤡", count)))
 
+        | RawMessageInfo(_, replyTo) ->
+            TgApi.sendMarkupMessageReplyAndDeleteAfter replyTo.Chat.Id $"`{(Json.serializeNicelyWithoutEmptyFields replyTo)}`" ParseMode.Markdown replyTo.MessageId 30000
+
+        | UserId((chatId, msgId), victimUserId) ->
+            TgApi.deleteMessage chatId msgId
+            TgApi.sendMarkupMessageAndDeleteAfter chatId $"`{victimUserId}`" ParseMode.Markdown 5000
+
         | Nope -> ()
-        | _ -> () // TODO: REMOVE
     }
     |> ignore
 

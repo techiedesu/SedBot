@@ -341,12 +341,22 @@ module CommandParser =
             item.SetCommand(res)
         | _ -> item
 
+    let private handleUserId (item: CommandPipelineItem) : CommandPipelineItem =
+        match item.Message, item with
+        | { Chat = { Id = chatId }
+            MessageId = msgId
+            ReplyToMessage = Some { From = Some { Id = victimId } }}, Command (Some "9", _) ->
+            let res = CommandType.UserId((chatId, msgId), victimId)
+            item.SetCommand(res)
+        | _ -> item
+
     let processMessage message botUsername =
         CommandPipelineItem.Create(message, botUsername)
         |%> handleSed
         |%> handleJq
         |%> handleClown
         |%> handleRawMessageInfo
+        |%> handleUserId
         |%> handleReverse
         |%> handleDistortion
         |%> handleVerticalFlip
