@@ -321,6 +321,10 @@ module CommandParser =
             let res = CommandType.Clown(chatId, command.Split("🤡").Length - 1)
             item.SetCommand(res)
         | { Chat = { Id = chatId }
+            Caption = Some command } when command.Trim().Contains("🤡") ->
+            let res = CommandType.Clown(chatId, command.Split("🤡").Length - 1)
+            item.SetCommand(res)
+        | { Chat = { Id = chatId }
             Sticker = Some { Emoji = Some emoji } } when emoji.Contains("🤡") ->
             let res = CommandType.Clown(chatId, 1)
             item.SetCommand(res)
