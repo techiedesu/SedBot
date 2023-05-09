@@ -119,7 +119,7 @@ module FFmpeg =
 
         }
 
-    let audioDistortion (data: AudioDistortion) = task {
+    let voiceDistortion (data: AudioDistortion) = task {
         let target = new MemoryStream()
         let errSb = StringBuilder()
 
@@ -131,6 +131,31 @@ module FFmpeg =
             |> withStandardErrorPipe (PipeTarget.ToStringBuilder errSb)
             |> withStandardOutputPipe (PipeTarget.ToStream(target, ValueNone))
             |> withArguments [ $"-i {data.AudioFileName} -ac 1 -map 0:a -strict -2 -acodec opus -b:a 128k -af vibrato=f=8:d=1 {outputFileName}" ]
+            |> withValidation CommandResultValidation.None
+            |> executeBufferedAsync Console.OutputEncoding
+
+        if executionResult.ExitCode = 0 then
+            use sr = new StreamReader(outputFileName)
+            File.deleteOrIgnore [ data.AudioFileName ]
+            let ms = new MemoryStream()
+            do! sr.BaseStream.CopyToAsync(ms)
+            return (ms, outputFileName) |> Result.Ok
+        else
+            return errSb.ToString() |> Result.Error
+    }
+
+    let audioDistortion (data: AudioDistortion) = task {
+        let target = new MemoryStream()
+        let errSb = StringBuilder()
+
+        let outputFileName = Path.getSynthName ".mp3"
+
+        let! executionResult =
+            "ffmpeg"
+            |> wrap
+            |> withStandardErrorPipe (PipeTarget.ToStringBuilder errSb)
+            |> withStandardOutputPipe (PipeTarget.ToStream(target, ValueNone))
+            |> withArguments [ $"-i {data.AudioFileName} -af vibrato=f=8:d=1 {outputFileName}" ]
             |> withValidation CommandResultValidation.None
             |> executeBufferedAsync Console.OutputEncoding
 
@@ -594,6 +619,14 @@ let startMagicDistortion () =
                         return res
                 | Voice ->
                     let inputFile = Path.getSynthName ".ogg"
+                    stream.Position <- 0
+                    let memSrc = new MemoryStream()
+                    do! stream.CopyToAsync(memSrc)
+                    let memSrc' = memSrc.ToArray()
+                    do! File.WriteAllBytesAsync(inputFile, memSrc')
+                    return! FFmpeg.voiceDistortion { AudioFileName = inputFile }
+                | Audio ->
+                    let inputFile = Path.getSynthName ".mp3"
                     stream.Position <- 0
                     let memSrc = new MemoryStream()
                     do! stream.CopyToAsync(memSrc)

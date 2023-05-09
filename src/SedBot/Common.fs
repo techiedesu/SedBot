@@ -19,6 +19,7 @@ type FileType =
     | Picture
     | Sticker
     | Voice
+    | Audio
 
 let extension (ft: FileType) =
     match ft with
@@ -26,6 +27,7 @@ let extension (ft: FileType) =
     | Picture -> ".png"
     | Sticker -> ".webp"
     | Voice -> ".ogg"
+    | Audio -> ".mp3"
 
 module String =
     let removeFromStart (text: string) (input: string) =

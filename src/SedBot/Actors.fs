@@ -22,6 +22,7 @@ type SendTelegramResponseMail =
     | SendVideoReply of chatId: int64 * video: InputFile * replyToMessageId: int64
     | SendPhotoReply of chatId: int64 * photo: InputFile * replyToMessageId: int64
     | SendVoiceReply of chatId: int64 * voice: InputFile * replyToMessageId: int64
+    | SendAudioReply of chatId: int64 * audio: InputFile * replyToMessageId: int64
 
 module [<RequireQualifiedAccess>] TgApi =
     let mutable actor : Akka.Actor.IActorRef = null
@@ -67,9 +68,12 @@ module [<RequireQualifiedAccess>] TgApi =
         actor <! SendTelegramResponseMail.SendPhotoReply (chatId, photo, replyToMessageId)
 
     /// Send photo as reply
-    let sendVoiceReply chatId photo replyToMessageId =
-        actor <! SendTelegramResponseMail.SendVoiceReply (chatId, photo, replyToMessageId)
+    let sendVoiceReply chatId voice replyToMessageId =
+        actor <! SendTelegramResponseMail.SendVoiceReply (chatId, voice, replyToMessageId)
 
+    /// Send audio as reply
+    let sendAudioReply chatId photo replyToMessageId =
+        actor <! SendTelegramResponseMail.SendAudioReply (chatId, photo, replyToMessageId)
 
 let log = Logger.get "responseTelegramActor"
 
@@ -155,6 +159,9 @@ let rec responseTelegramActor (mailbox: Actor<SendTelegramResponseMail>) =
             |> api
         | SendVoiceReply(chatId, inputFile, replyToMessageId) ->
             Api.sendVoiceReply chatId inputFile replyToMessageId
+            |> api
+        | SendAudioReply(chatId, inputFile, replyToMessageId) ->
+            Api.sendAudioReply chatId inputFile replyToMessageId
             |> api
 
         return! loop ()

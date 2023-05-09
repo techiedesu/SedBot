@@ -278,6 +278,11 @@ module CommandParser =
         match item.Message, item with
         | { Chat = { Id = chatId }
             ReplyToMessage = Some { MessageId = msgId
+                                    Audio = Some { FileId = fileId } } }, Command (Some "dist", _) ->
+            let res = CommandType.Distortion((chatId, msgId), (fileId, FileType.Audio))
+            item.SetCommand(res)
+        | { Chat = { Id = chatId }
+            ReplyToMessage = Some { MessageId = msgId
                                     Voice = Some { MimeType = Some "audio/ogg"
                                                    FileId = fileId } } }, Command (Some "dist", _) ->
             let res = CommandType.Distortion((chatId, msgId), (fileId, FileType.Voice))

@@ -43,6 +43,8 @@ let private replyAsFileType fileType chatId inputFile msgId =
         TgApi.sendPhotoReply chatId inputFile msgId
     | Voice ->
         TgApi.sendVoiceReply chatId inputFile msgId
+    | Audio ->
+        TgApi.sendAudioReply chatId inputFile msgId
 
 let createInputFile fileType (data: byte [] voption) : InputFile voption =
     match data with

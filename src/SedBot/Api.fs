@@ -26,6 +26,9 @@ let sendPhotoReply chatId photo replyToMessageId =
 let sendVoiceReply chatId voice replyToMessageId =
     Req.SendVoice.Make(ChatId.Int chatId, voice, replyToMessageId = replyToMessageId)
 
+let sendAudioReply chatId audio replyToMessageId =
+    Req.SendAudio.Make(ChatId.Int chatId, audio, replyToMessageId = replyToMessageId)
+
 /// Try to get file stream by telegram FileId
 let tryGetFileAsStream ctx fileId = task {
     let! file = Api.getFile fileId |> api ctx.Config
