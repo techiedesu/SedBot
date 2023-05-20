@@ -40,7 +40,7 @@ module Process =
     let runTextProcess procName args data =
         task {
             log.LogDebug(
-                "runTextProcess: proccess name: {procName};; args: {args};; data: {data}",
+                "runTextProcess: process name: {procName};; args: {args};; data: {data}",
                 procName, args, data
             )
 

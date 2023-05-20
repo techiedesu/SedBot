@@ -98,6 +98,12 @@ module CommandParser =
                     Some expression
                 else
                     None
+            else if expression.StartsWith("t/") then
+                let expression = $"s/{expression.Substring(2)}"
+                if Process.getStatusCode "sed" [| "-E"; expression |] "data" = 0 then
+                    Some expression
+                else
+                    None
             else
                 None
 
