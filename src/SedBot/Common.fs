@@ -36,6 +36,15 @@ module String =
         else
             text.Trim().Substring(input.Length)
 
+    let isNulOfWhiteSpace = String.IsNullOrWhiteSpace
+    let isNotNulOfWhiteSpace = String.IsNullOrWhiteSpace >> not
+
+module Result =
+    let get<'a, 'b> (res: Result<'a, 'b>) =
+        match res with
+        | Ok res -> res
+        | Error _ -> failwith "Can't get result value"
+
 type String with
     member this.AnyOf([<ParamArray>] prams: string array) =
         prams
