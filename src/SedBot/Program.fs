@@ -7,6 +7,7 @@ open Funogram.Api
 open Funogram.Telegram
 open Funogram.Telegram.Bot
 open Funogram.Telegram.Types
+open Microsoft.Extensions.Configuration
 open SedBot
 open SedBot.Actors
 open SedBot.ChatCommands
@@ -159,14 +160,22 @@ open Akka.FSharp
 open Funogram.Types
 
 [<EntryPoint>]
-let main args =
+let main _ =
     let logger = Logger.get "EntryPoint"
 
-    if args.Length = 0 then
-        logger.LogCritical("Usage: {execName} yourtelegramtoken", AppDomain.CurrentDomain.FriendlyName)
-        Environment.Exit(-1)
+    let configRoot =
+        ConfigurationBuilder()
+            .AddJsonFile("config.json")
+            .AddJsonFile("config_local.json", optional = true)
+            .AddEnvironmentVariables()
+            .Build()
 
-    let token = args[0]
+    let config = configRoot.Get<AppConfig>()
+    let apiKey = config.TelegramBotApiKey
+
+    if String.isNulOfWhiteSpace apiKey then
+        logger.LogCritical("apiKey is empty")
+        Environment.Exit(-1)
 
     let system =
         Configuration.defaultConfig ()
@@ -183,7 +192,7 @@ let main args =
     while true do
         try
             task {
-                let config = { Config.defaultConfig with Token = token }
+                let config = { Config.defaultConfig with Token = apiKey }
 
                 tgResponseActor
                 <! SendTelegramResponseMail.SetConfig config

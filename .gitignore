@@ -215,3 +215,4 @@ project.lock.json
 paket-files/
 
 /src/output/
+config_local.json

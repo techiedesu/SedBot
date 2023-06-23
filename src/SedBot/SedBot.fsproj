@@ -17,12 +17,20 @@
     <Compile Include="ChatCommands.fs" />
     <Compile Include="Commands.fs" />
     <Compile Include="Clickhouse.fs" />
+    <Compile Include="AppConfig.fs" />
     <Compile Include="Program.fs" />
     <Content Include="paket.references" />
+    <None Include="config_local.json" Condition="Exists('config_local.json')">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    
     <None Include="VID_20221007_163400_126.mp4">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <None Include="cb3fce1ba6ad45309515cbaf323ba18b.mp4">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Include="config.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
   </ItemGroup>

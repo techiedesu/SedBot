@@ -13,3 +13,11 @@ nuget NUnit
 nuget Microsoft.NET.Test.Sdk
 nuget FParsec
 nuget Dapper.FSharp
+nuget WTelegramClient
+nuget SixLabors.ImageSharp
+nuget SixLabors.ImageSharp.Drawing
+nuget SixLabors.Fonts
+nuget Microsoft.Extensions.Configuration
+nuget Microsoft.Extensions.Configuration.Binder
+nuget Microsoft.Extensions.Configuration.EnvironmentVariables
+nuget Microsoft.Extensions.Configuration.Json
