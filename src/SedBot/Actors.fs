@@ -12,6 +12,7 @@ open Microsoft.Extensions.Logging
 type SendTelegramResponseMail =
     | SendMessage of chatId: int64 * text: string
     | SendMessageAndDeleteAfter of chatId: int64 * text: string * ms: int
+    | SendMessageReplyAndDeleteAfter of chatId: int64 * text: string * ms: int
     | SendMarkupMessageAndDeleteAfter of chatId: int64 * text: string * parseMode: ParseMode * ms: int
     | SendMarkupMessageReplyAndDeleteAfter of chatId: int64 * text: string * parseMode: ParseMode * replyToMessageId: int64 * ms: int
     | MessageReply of chatId: int64 * text: string * replyToMessageId: int64
@@ -123,6 +124,20 @@ let rec responseTelegramActor (mailbox: Actor<SendTelegramResponseMail>) =
             | ValueSome cfg ->
                 let messageId =
                     Api.sendTextMarkup chatId text mode
+                    |> Funogram.Api.api cfg
+                    |> Async.RunSynchronously
+                    |> Result.toOption
+                    |> Option.map (fun m -> m.MessageId)
+                task {
+                    do! Task.Delay(ms)
+                    messageId |> Option.iter (TgApi.deleteMessage chatId)
+                } |> ignore
+            | _ -> ()
+        | SendMessageReplyAndDeleteAfter(chatId, text, ms) ->
+            match cfg with
+            | ValueSome cfg ->
+                let messageId =
+                    Api.sendMessage chatId text
                     |> Funogram.Api.api cfg
                     |> Async.RunSynchronously
                     |> Result.toOption

@@ -18,7 +18,7 @@ type CommandType =
     | VerticalFlip of message: SourceMessage * file: SourceFile
     | HorizontalFlip of message: SourceMessage * file: SourceFile
     | ClockwiseRotation of message: SourceMessage * file: SourceFile
-    | CounterclockwiseRotation of message: SourceMessage * file: SourceFile
+    | CounterClockwiseRotation of message: SourceMessage * file: SourceFile
     | Reverse of message: SourceMessage * file: SourceFile
     | Distortion of message: SourceMessage * file: SourceFile
     | Jq of message: SourceMessage * expression: string * text: string
@@ -255,14 +255,14 @@ module CommandParser =
                     FileId = fileId
                 }
             } }, Command (Some "cclock", _) ->
-            let res = CommandType.CounterclockwiseRotation((chatId, msgId), (fileId, FileType.Gif))
+            let res = CommandType.CounterClockwiseRotation((chatId, msgId), (fileId, FileType.Gif))
             item.SetCommand(res)
 
         | { Chat = { Id = chatId }
             ReplyToMessage = Some { MessageId = msgId
                                     Video = Some { FileId = fileId } } }, Command (Some "cclock", _) ->
             let res =
-                CommandType.CounterclockwiseRotation((chatId, msgId), (fileId, FileType.Video))
+                CommandType.CounterClockwiseRotation((chatId, msgId), (fileId, FileType.Video))
 
             item.SetCommand(res)
 
@@ -275,7 +275,7 @@ module CommandParser =
                 |> Array.head
 
             let res =
-                CommandType.CounterclockwiseRotation((chatId, msgId), (photo.FileId, FileType.Picture))
+                CommandType.CounterClockwiseRotation((chatId, msgId), (photo.FileId, FileType.Picture))
 
             item.SetCommand(res)
         | _ -> item

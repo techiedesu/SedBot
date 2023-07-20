@@ -85,17 +85,19 @@ module Json =
     let private serializeWithIndentationsSettings =
         let settings = settings()
         settings.WriteIndented <- true
+        settings
 
     let serializeNicely (t: 'a) =
         JsonSerializer.Serialize(t, serializeWithIndentationsSettings)
 
-    let private serializeWithIndentationsIgnoreEmptyFields =
+    let private serializeWithIndentationsIgnoreEmptyFieldsSettings =
         let settings = settings()
         settings.WriteIndented <- true
         settings.DefaultIgnoreCondition <- JsonIgnoreCondition.WhenWritingNull
+        settings
 
-    let serializeNicelyWithoutEmptyFields (t: 'a) =
-        JsonSerializer.Serialize(t, serializeWithIndentationsIgnoreEmptyFields)
+    let serializeWithIndentationsIgnoreEmptyFields (t: 'a) =
+        JsonSerializer.Serialize(t, serializeWithIndentationsIgnoreEmptyFieldsSettings)
 
 module It =
     let inline Value a = (^a: (member Value: ^b) a)
