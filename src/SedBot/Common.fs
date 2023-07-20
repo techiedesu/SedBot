@@ -69,7 +69,7 @@ module Option =
     let anyOf2 a b =
         [a; b] |> anyOfList
 
-module Json = // TODO: creating settings each call looks like overhead
+module Json =
     open System.Text.Json.Serialization
 
     let settings() =
@@ -82,16 +82,20 @@ module Json = // TODO: creating settings each call looks like overhead
         settings.WriteIndented <- false
         JsonSerializer.Serialize(t, settings)
 
-    let serializeNicely (t: 'a) =
+    let private serializeWithIndentationsSettings =
         let settings = settings()
         settings.WriteIndented <- true
-        JsonSerializer.Serialize(t, settings)
 
-    let serializeNicelyWithoutEmptyFields (t: 'a) =
+    let serializeNicely (t: 'a) =
+        JsonSerializer.Serialize(t, serializeWithIndentationsSettings)
+
+    let private serializeWithIndentationsIgnoreEmptyFields =
         let settings = settings()
         settings.WriteIndented <- true
         settings.DefaultIgnoreCondition <- JsonIgnoreCondition.WhenWritingNull
-        JsonSerializer.Serialize(t, settings)
+
+    let serializeNicelyWithoutEmptyFields (t: 'a) =
+        JsonSerializer.Serialize(t, serializeWithIndentationsIgnoreEmptyFields)
 
 module It =
     let inline Value a = (^a: (member Value: ^b) a)
