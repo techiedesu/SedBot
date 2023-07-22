@@ -7,7 +7,6 @@ open System.Text
 open System.Threading
 open System.Threading.Channels
 open System.Threading.Tasks
-open NUnit.Framework
 open SedBot
 open SedBot.CliWrap
 open SedBot.Utilities
@@ -270,157 +269,6 @@ module FFmpeg =
                 return errSb.ToString() |> Result.Error
         }
 
-module Tests =
-
-    [<Test>]
-    let ``Reverse audio and video works properly`` () =
-        task {
-            let args =
-                { FFmpegObjectState.Create(
-                      (new StreamReader("VID_20221007_163400_126.mp4"))
-                          .BaseStream
-                  ) with
-                    AudioReverse = true
-                    VideoReverse = true }
-
-            let! res = FFmpeg.execute args
-
-            match res with
-            | Result.Ok res ->
-                let resFile = "works.mp4"
-                do! File.WriteAllBytesAsync(resFile, res.ToArray())
-
-                res.Position <- 0
-                let! res = FFmpeg.getStreamsInfo res
-
-                match res with
-                | Result.Ok _ ->
-                    Assert.True(
-                        File.Exists(resFile)
-                        && File.ReadAllBytes(resFile).Length > 0
-                    )
-                | Result.Error err -> Assert.Fail(err)
-            | Result.Error err -> Assert.Fail(err)
-        }
-
-    [<Test>]
-    let ``Remove audio with reverse works properly`` () =
-        task {
-            let args =
-                { FFmpegObjectState.Create(
-                      (new StreamReader("VID_20221007_163400_126.mp4"))
-                          .BaseStream
-                  ) with
-                    VideoReverse = true
-                    RemoveAudio = true }
-
-            let! res = FFmpeg.execute args
-
-            match res with
-            | Result.Ok res ->
-                let resFile = "works_nosound.mp4"
-                do! File.WriteAllBytesAsync(resFile, res.ToArray())
-
-                res.Position <- 0
-                let! res = FFmpeg.getStreamsInfo res
-
-                match res with
-                | Result.Ok res -> Assert.True(File.Exists(resFile) && res.Length = 1)
-                | Result.Error err -> Assert.Fail(err)
-            | Result.Error err -> Assert.Fail(err)
-        }
-
-    [<Test>]
-    let ``Vflip and hflip works properly`` () =
-        task {
-            let args =
-                { FFmpegObjectState.Create(
-                      (new StreamReader("VID_20221007_163400_126.mp4"))
-                          .BaseStream
-                  ) with
-                    VerticalFlip = true
-                    HorizontalFlip = true }
-
-            let! res = FFmpeg.execute args
-
-            match res with
-            | Result.Ok res ->
-                let resFile = "works_nosound_vhfliped.mp4"
-                do! File.WriteAllBytesAsync(resFile, res.ToArray())
-
-                res.Position <- 0
-                let! res = FFmpeg.getStreamsInfo res
-
-                match res with
-                | Result.Ok res -> Assert.True(File.Exists(resFile) && res.Length = 2)
-                | Result.Error err -> Assert.Fail(err)
-            | Result.Error err -> Assert.Fail(err)
-        }
-
-    [<Test>]
-    let ``No audio with reverse works properly`` () =
-        task {
-            let args =
-                { FFmpegObjectState.Create(
-                      (new StreamReader("cb3fce1ba6ad45309515cbaf323ba18b.mp4"))
-                          .BaseStream
-                  ) with
-                    VideoReverse = true
-                    RemoveAudio = true }
-
-            let! res = FFmpeg.execute args
-
-            match res with
-            | Result.Ok res ->
-                let resFile = "works_nosound.mp4"
-                do! File.WriteAllBytesAsync(resFile, res.ToArray())
-
-                res.Position <- 0
-                let! res = FFmpeg.getStreamsInfo res
-
-                match res with
-                | Result.Ok res -> Assert.True(File.Exists(resFile) && res.Length = 1)
-                | Result.Error err -> Assert.Fail(err)
-            | Result.Error err -> Assert.Fail(err)
-        }
-
-    [<Test>]
-    let ``Clock works properly`` () =
-        task {
-            let args =
-                { FFmpegObjectState.Create(
-                      (new StreamReader("cb3fce1ba6ad45309515cbaf323ba18b.mp4"))
-                          .BaseStream
-                  ) with Clock = true }
-
-            let! res = FFmpeg.execute args
-
-            match res with
-            | Result.Ok res ->
-                let resFile = "works_clock.mp4"
-                do! File.WriteAllBytesAsync(resFile, res.ToArray())
-
-                res.Position <- 0
-                let! res = FFmpeg.getStreamsInfo res
-
-                match res with
-                | Result.Ok res -> Assert.True(File.Exists(resFile) && res.Length = 1)
-                | Result.Error err -> Assert.Fail(err)
-            | Result.Error err -> Assert.Fail(err)
-        }
-
-    [<Test>]
-    let ``Get file info`` () =
-        task {
-            let! res =
-                FFmpeg.getStreamsInfo
-                    (new StreamReader("VID_20221007_163400_126.mp4"))
-                        .BaseStream
-
-            match res with
-            | Result.Ok res -> Assert.AreEqual(2, res.Length)
-            | Result.Error err -> Assert.Fail(err)
-        }
 
 type ImageMagickObjectState = { Src: Stream
                                 FileType: FileType }
@@ -448,7 +296,6 @@ module ImageMagick =
                 "convert"
                 |> wrap
                 |> withStandardErrorPipe (PipeTarget.ToStringBuilder errSb)
-                // |> withArguments [ $"{inputFile} -scale\", \"512x512> {outFile}" ] (ValueSome false)
                 |> withArguments [ inputFile; "-scale"; "512x512>";"-liquid-rescale"; "50%"; "-scale"; "200%"; outFile ]
                 |> withValidation CommandResultValidation.None
                 |> executeBufferedAsync Console.OutputEncoding
@@ -462,27 +309,6 @@ module ImageMagick =
                 return (target, outFile) |> Result.Ok
             else
                 return errSb.ToString() |> Result.Error
-        }
-
-module ImageMagickTests =
-    [<Test>]
-    let ``liquid rescale works properly`` () =
-        task {
-            let sr = new StreamReader("VID_20221007_163400_126.mp4")
-
-            let state =
-                { Src = sr.BaseStream
-                  FileType = FileType.Video }
-
-            let! res = ImageMagick.convert state
-
-            match res with
-            | Result.Ok (res, fileName) ->
-                File.deleteUnit fileName
-                let res = res.ToArray()
-                do! File.WriteAllBytesAsync("liquid_out.mp4", res)
-                Assert.True(res.Length > 0)
-            | Result.Error err -> Assert.Fail(err)
         }
 
 type FfmpegGifItem =

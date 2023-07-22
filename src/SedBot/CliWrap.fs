@@ -29,7 +29,6 @@ type PipeSource =
     | FromBytes of data: byte array
     | FromCommand of command: CliWrap.Command
     | FromFile of filePath: string
-    | FromMemory of data: System.ReadOnlyMemory<byte>
     | FromStream of stream: Stream
     | FromString of str: string
 
@@ -46,8 +45,6 @@ let withStandardInputPipe (source: PipeSource) (command: CliCommand) =
             CliPipeSource.FromCommand(command)
         | FromFile filePath ->
             CliPipeSource.FromFile(filePath)
-        | FromMemory data ->
-            CliPipeSource.FromMemory(data)
         | FromStream stream ->
             CliPipeSource.FromStream(stream)
         | FromString str ->
