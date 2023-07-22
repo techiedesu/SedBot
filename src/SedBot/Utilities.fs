@@ -51,10 +51,10 @@ module Process =
                 procName
                 |> wrap
                 |> withEscapedArguments args
-                |> withStandardInputPipe (data |> PipeSource.FromString)
-                |> withStandardErrorPipe (stderr |> PipeTarget.ToStringBuilder)
-                |> withStandardOutputPipe (stdout |> PipeTarget.ToStringBuilder)
-                |> withValidation ^ CommandResultValidation.None
+                |> withStandardInputPipe (PipeSource.FromString data)
+                |> withStandardErrorPipe (PipeTarget.ToStringBuilder stderr)
+                |> withStandardOutputPipe (PipeTarget.ToStringBuilder stdout)
+                |> withValidation CommandResultValidation.None
                 |> executeBufferedAsync Encoding.UTF8
 
             let exitCode = executionResult.ExitCode

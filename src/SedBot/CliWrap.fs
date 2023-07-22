@@ -14,6 +14,9 @@ let wrap target =
 let withArguments (args: string seq) (command: CliCommand) =
     command.WithArguments(args, false)
 
+let withArgument (arg: string) (command: CliCommand) =
+    command.WithArguments(Array.singleton arg, false)
+
 let withEscapedArguments (args: string seq) (command: CliCommand) =
     command.WithArguments(args, true)
 

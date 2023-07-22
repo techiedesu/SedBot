@@ -45,23 +45,6 @@ module Result =
         | Ok res -> res
         | Error _ -> failwith "Can't get result value"
 
-type String with
-    member this.AnyOf([<ParamArray>] prams: string array) =
-        prams
-        |> Array.tryFind (fun p -> p = this)
-        |> Option.isSome
-
-    member this.StartsWithAnyOf([<ParamArray>] prams: string array) =
-        prams
-        |> Array.tryFind this.StartsWith
-        |> Option.isSome
-
-    member this.RemoveAnyOf([<ParamArray>] prams: string array) =
-        prams
-        |> Array.tryFind this.StartsWith
-        |> Option.map (String.removeFromStart this)
-        |> Option.defaultValue this
-
 module Option =
     let anyOfList<'a> (items: Option<'a> list) =
         items |> List.find Option.isSome
@@ -77,17 +60,18 @@ module Json =
         options.Converters.Add(JsonFSharpConverter())
         options
 
-    let serialize<'a> (t: 'a) =
-        let settings = settings()
-        settings.WriteIndented <- false
-        JsonSerializer.Serialize(t, settings)
+    let private serializeSettings =
+        settings()
+
+    let serialize t =
+        JsonSerializer.Serialize(t, serializeSettings)
 
     let private serializeWithIndentationsSettings =
         let settings = settings()
         settings.WriteIndented <- true
         settings
 
-    let serializeNicely (t: 'a) =
+    let serializeWithIndentations t =
         JsonSerializer.Serialize(t, serializeWithIndentationsSettings)
 
     let private serializeWithIndentationsIgnoreEmptyFieldsSettings =
@@ -106,12 +90,12 @@ module It =
     let inline Width a = (^a: (member Width: ^b) a)
 
 module File =
-    let rec deleteOrIgnore (files: string list) =
-        match files with
-        | [] -> ()
-        | head :: tail ->
-            try
-                File.Delete(head)
-            with
-            | _ -> ()
-            deleteOrIgnore tail
+    let delete filePath =
+        try
+            File.Delete(filePath)
+            Ok ()
+        with
+        | e ->
+            Error e
+
+    let deleteUnit = delete >> ignore

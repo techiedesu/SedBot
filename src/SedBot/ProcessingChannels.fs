@@ -136,7 +136,7 @@ module FFmpeg =
 
         if executionResult.ExitCode = 0 then
             use sr = new StreamReader(outputFileName)
-            File.deleteOrIgnore [ data.AudioFileName ]
+            File.deleteUnit data.AudioFileName
             let ms = new MemoryStream()
             do! sr.BaseStream.CopyToAsync(ms)
             return (ms, outputFileName) |> Result.Ok
@@ -161,7 +161,7 @@ module FFmpeg =
 
         if executionResult.ExitCode = 0 then
             use sr = new StreamReader(outputFileName)
-            File.deleteOrIgnore [ data.AudioFileName ]
+            File.deleteUnit data.AudioFileName
             let ms = new MemoryStream()
             do! sr.BaseStream.CopyToAsync(ms)
             return (ms, outputFileName) |> Result.Ok
@@ -180,13 +180,14 @@ module FFmpeg =
             |> wrap
             |> withStandardErrorPipe (PipeTarget.ToStringBuilder errSb)
             |> withStandardOutputPipe (PipeTarget.ToStream(target, ValueNone))
-            |> withArguments [ $"-an -i {data.VideoFileName} -vn -i {data.AudioFileName} -c:a libopus -c:v copy -af vibrato=f=6:d=1 -shortest {outputFileName}" ]
+            |> withArgument $"-an -i {data.VideoFileName} -vn -i {data.AudioFileName} -c:a libopus -c:v copy -af vibrato=f=6:d=1 -shortest {outputFileName}"
             |> withValidation CommandResultValidation.None
             |> executeBufferedAsync Console.OutputEncoding
 
         if executionResult.ExitCode = 0 then
             use sr = new StreamReader(outputFileName)
-            File.deleteOrIgnore [ data.AudioFileName; data.VideoFileName ]
+            File.deleteUnit data.AudioFileName
+            File.deleteUnit data.VideoFileName
             let ms = new MemoryStream()
             do! sr.BaseStream.CopyToAsync(ms)
             return (ms, outputFileName) |> Result.Ok
@@ -261,7 +262,7 @@ module FFmpeg =
                 |> withValidation CommandResultValidation.None
                 |> executeBufferedAsync Console.OutputEncoding
 
-            File.deleteOrIgnore [ inputFile ]
+            File.deleteUnit inputFile
 
             if executionResult.ExitCode = 0 then
                 return target |> Result.Ok
@@ -456,7 +457,7 @@ module ImageMagick =
                 let outStream = new StreamReader(outFile)
                 do! outStream.BaseStream.CopyToAsync(target)
 
-                File.deleteOrIgnore [ inputFile ]
+                File.deleteUnit inputFile
 
                 return (target, outFile) |> Result.Ok
             else
@@ -477,7 +478,7 @@ module ImageMagickTests =
 
             match res with
             | Result.Ok (res, fileName) ->
-                File.deleteOrIgnore [fileName]
+                File.deleteUnit fileName
                 let res = res.ToArray()
                 do! File.WriteAllBytesAsync("liquid_out.mp4", res)
                 Assert.True(res.Length > 0)
@@ -641,7 +642,7 @@ let startMagicDistortion () =
             | Result.Ok (res, outFileName) ->
                 log.LogDebug("Dist success: {length}", res.Length)
 
-                File.deleteOrIgnore [outFileName]
+                File.deleteUnit outFileName
                 tcs.SetResult(res.ToArray() |> ValueSome)
             | Result.Error err ->
                 log.LogDebug("Dist fail: {err}", err)
@@ -657,9 +658,9 @@ type FfmpegVflipGifItem =
 
 let ffmpegVflipChannel = Channel.CreateUnbounded<FfmpegVflipGifItem>()
 
-let startVflipFfmpeg () =
+let rec startVflipFfmpeg () =
     task {
-        let log = Logger.get "startVflipGifFfmpeg"
+        let log = Logger.get ^ nameof startVflipFfmpeg
         log.LogDebug("Spawned!")
 
         while true do
@@ -714,13 +715,19 @@ let startHflipFfmpeg () =
 
 let mutable private cts = TaskCompletionSource()
 
-let private spawn (lambda: Unit -> #Task) =
+let rec private spawn (lambda: Unit -> #Task) =
+    let logger = Logger.get ^ nameof spawn
+
     let worker () =
         while cts.Task.IsCanceled |> not do
-            lambda().Wait()
+            try
+                lambda().Wait()
+            with
+            | ex -> logger.LogError("worker task crashed. restarting... ex: {ex}", ex)
 
     let ts = ThreadStart(worker)
     let thread = Thread(ts)
+    thread.IsBackground <- true
     thread.Start()
 
 let start () =

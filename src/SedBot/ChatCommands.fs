@@ -92,15 +92,12 @@ module CommandParser =
 
     let private handleSed (item: CommandPipelineItem) : CommandPipelineItem =
         let tryGetValidExpression (expression: string) =
-            if expression.StartsWith("t@") then
-                let expression = $"s@{expression.Substring(2)}"
-                if Process.getStatusCode "sed" [| "-E"; expression |] "data" = 0 then
-                    Some expression
-                else
-                    None
-            else if expression.StartsWith("t/") then
-                let expression = $"s/{expression.Substring(2)}"
-                if Process.getStatusCode "sed" [| "-E"; expression |] "data" = 0 then
+            let isValidExpression expression =
+                Process.getStatusCode "sed" [| "-E"; expression |] "data" = 0
+
+            if expression.StartsWith("t") then
+                let expression = $"s{expression.Substring(1)}"
+                if isValidExpression expression then
                     Some expression
                 else
                     None

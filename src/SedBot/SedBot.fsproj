@@ -16,7 +16,6 @@
     <Compile Include="ProcessingChannels.fs" />
     <Compile Include="ChatCommands.fs" />
     <Compile Include="Commands.fs" />
-    <Compile Include="Clickhouse.fs" />
     <Compile Include="Program.fs" />
     <Content Include="paket.references" />
     <None Include="VID_20221007_163400_126.mp4">
