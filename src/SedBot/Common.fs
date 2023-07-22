@@ -39,6 +39,14 @@ module String =
     let isNulOfWhiteSpace = String.IsNullOrWhiteSpace
     let isNotNulOfWhiteSpace = String.IsNullOrWhiteSpace >> not
 
+    let getCountOfOccurrences (str: string) (substr: string) =
+        match str with
+        | null | "" ->
+            0
+        | _ ->
+            let res = Array.length ^ str.Split(substr)
+            res - 1
+
 module Result =
     let get<'a, 'b> (res: Result<'a, 'b>) =
         match res with
@@ -78,6 +86,7 @@ module Json =
         let settings = settings()
         settings.WriteIndented <- true
         settings.DefaultIgnoreCondition <- JsonIgnoreCondition.WhenWritingNull
+        settings.Encoder <- System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping
         settings
 
     let serializeWithIndentationsIgnoreEmptyFields (t: 'a) =

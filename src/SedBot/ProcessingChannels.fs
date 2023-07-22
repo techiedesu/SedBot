@@ -179,7 +179,7 @@ module FFmpeg =
             |> wrap
             |> withStandardErrorPipe (PipeTarget.ToStringBuilder errSb)
             |> withStandardOutputPipe (PipeTarget.ToStream(target, ValueNone))
-            |> withArgument $"-an -i {data.VideoFileName} -vn -i {data.AudioFileName} -c:a libopus -c:v copy -af vibrato=f=6:d=1 -shortest {outputFileName}"
+            |> withArgument $"-an -i {data.VideoFileName} -vn -i {data.AudioFileName} -strict -2 -c:a libopus -c:v libx264 -af vibrato=f=6:d=1 -shortest {outputFileName}"
             |> withValidation CommandResultValidation.None
             |> executeBufferedAsync Console.OutputEncoding
 
@@ -293,7 +293,8 @@ module ImageMagick =
             do! File.WriteAllBytesAsync(inputFile, memSrc.ToArray())
 
             let! executionResult =
-                "convert"
+                // "convert"
+                "magick"
                 |> wrap
                 |> withStandardErrorPipe (PipeTarget.ToStringBuilder errSb)
                 |> withArguments [ inputFile; "-scale"; "512x512>";"-liquid-rescale"; "50%"; "-scale"; "200%"; outFile ]
@@ -442,7 +443,7 @@ let startMagicDistortion () =
                     | Result.Ok (_, distResultFileName) ->
                         let! res = FFmpeg.appendAudioToVideoDistortion { VideoFileName = distResultFileName; AudioFileName = inputFile }
                         return res
-                    | _ ->
+                    | Result.Error _ ->
                         return res
                 | Voice ->
                     let inputFile = Path.getSynthName ".ogg"

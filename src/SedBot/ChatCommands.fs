@@ -23,7 +23,6 @@ type CommandType =
     | Jq of message: SourceMessage * expression: string * text: string
     | Clown of chatId: int64 * count: int
     | RawMessageInfo of message: SourceMessage * replyTo: FunogramMessage
-    | UserId of message: SourceMessage * victimUserId: int64
     | Nope
 
 and SourceFile = FileId * FileType
@@ -45,13 +44,15 @@ module CommandParser =
 
         static member GetCommand(item: CommandPipelineItem) =
             match item.Command with
-            | ValueSome command -> command
-            | _ -> CommandType.Nope
+            | ValueSome command ->
+                command
+            | ValueNone ->
+                CommandType.Nope
 
     let rec commandPatternInternal botUsername (text: string) chatType =
         let tryGetArgs rawArgs =
             let matched = Regex.Matches(rawArgs, """(?:(['"])(.*?)(?<!\\)(?>\\\\)*\1|([^\s]+))""")
-            if matched.Count = 0 then
+            if Seq.isEmpty matched then
                 None
             else
                 matched |> Seq.map (fun m -> m.Value) |> Array.ofSeq |> Some
@@ -321,23 +322,25 @@ module CommandParser =
             item.SetCommand(res)
         | _ -> item
 
-    let private handleClown (item: CommandPipelineItem) : CommandPipelineItem =
+    let private handleClown (item: CommandPipelineItem) =
         match item.Message with
         | { Chat = { Id = chatId }
-            Text = Some command } when command.Trim().Contains("🤡") ->
-            let res = CommandType.Clown(chatId, command.Split("🤡").Length - 1)
+            Text = Some command } when command.Contains("🤡") ->
+            let res = CommandType.Clown(chatId, String.getCountOfOccurrences command "🤡")
             item.SetCommand(res)
+
         | { Chat = { Id = chatId }
-            Caption = Some command } when command.Trim().Contains("🤡") ->
-            let res = CommandType.Clown(chatId, command.Split("🤡").Length - 1)
+            Caption = Some command } when command.Contains("🤡") ->
+            let res = CommandType.Clown(chatId, String.getCountOfOccurrences command "🤡")
             item.SetCommand(res)
+
         | { Chat = { Id = chatId }
             Sticker = Some { Emoji = Some emoji } } when emoji.Contains("🤡") ->
             let res = CommandType.Clown(chatId, 1)
             item.SetCommand(res)
         | _ -> item
 
-    let private handleJq (item: CommandPipelineItem) : CommandPipelineItem =
+    let private handleJq (item: CommandPipelineItem) =
         match item.Message, item with
         | { Chat = { Id = chatId }
             MessageId = msgId
@@ -350,16 +353,8 @@ module CommandParser =
                 )
 
             item.SetCommand(res)
-        | _ -> item
-
-    let private handleUserId (item: CommandPipelineItem) : CommandPipelineItem =
-        match item.Message, item with
-        | { Chat = { Id = chatId }
-            MessageId = msgId
-            ReplyToMessage = Some { From = Some { Id = victimId } }}, Command (Some "9", _) ->
-            let res = CommandType.UserId((chatId, msgId), victimId)
-            item.SetCommand(res)
-        | _ -> item
+        | _ ->
+            item
 
     let processMessage message botUsername =
         CommandPipelineItem.Create(message, botUsername)
@@ -367,7 +362,6 @@ module CommandParser =
         |%> handleJq
         |%> handleClown
         |%> handleRawMessageInfo
-        |%> handleUserId
         |%> handleReverse
         |%> handleDistortion
         |%> handleVerticalFlip

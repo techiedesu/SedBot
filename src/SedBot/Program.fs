@@ -150,10 +150,6 @@ let updateArrivedInternal ctx (message: Message) =
         | RawMessageInfo(_, replyTo) ->
             TgApi.sendMarkupMessageReplyAndDeleteAfter replyTo.Chat.Id $"`{(Json.serializeWithIndentationsIgnoreEmptyFields replyTo)}`" ParseMode.Markdown replyTo.MessageId 30000
 
-        | UserId((chatId, msgId), victimUserId) ->
-            TgApi.deleteMessage chatId msgId
-            TgApi.sendMarkupMessageAndDeleteAfter chatId $"`{victimUserId}`" ParseMode.Markdown 5000
-
         | Nope -> ()
     }
     |> ignore
