@@ -68,6 +68,8 @@ module FFmpeg =
                 |> withValidation CommandResultValidation.None
                 |> executeBufferedAsync Console.OutputEncoding
 
+            do! stream.DisposeAsync()
+
             if executionResult.ExitCode = 0 then
                 let res = resSb.ToString()
                 let letterOrDigitPE c = isNoneOf "=\n\r" c
