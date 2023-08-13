@@ -29,18 +29,20 @@ and SourceFile = FileId * FileType
 and SourceMessage = ChatId * MessageId
 
 module CommandParser =
-    type CommandPipelineItem =
-        { Message: FunogramMessage
-          BotUsername: string
-          Command: CommandType voption }
+    type CommandPipelineItem = {
+        Message: FunogramMessage
+        BotUsername: string
+        Command: CommandType voption
+    } with
 
         member item.SetCommand(command: CommandType) =
             { item with Command = ValueSome command }
 
-        static member Create(message, botUsername) =
-            { Message = message
-              BotUsername = botUsername
-              Command = ValueNone }
+        static member Create(message, botUsername) = {
+            Message = message
+            BotUsername = botUsername
+            Command = ValueNone
+        }
 
         static member GetCommand(item: CommandPipelineItem) =
             match item.Command with

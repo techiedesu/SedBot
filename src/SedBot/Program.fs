@@ -3,6 +3,7 @@ open System.IO
 open System.Linq
 
 open System.Threading
+open System.Threading.Tasks
 open Funogram.Api
 open Funogram.Telegram
 open Funogram.Telegram.Bot
@@ -59,31 +60,36 @@ let sendFileAsReply data fileType chatId msgId =
     let inputFile = createInputFile fileType data
 
     match inputFile with
-    | ValueSome inputFile -> replyAsFileType fileType chatId inputFile msgId
-    | _ -> ()
+    | ValueSome inputFile ->
+        replyAsFileType fileType chatId inputFile msgId
+    | _ ->
+        ValueTask.CompletedTask
 
 let updateArrivedInternal ctx (message: Message) =
     task {
         let! botUsername = me ctx
 
-        match CommandParser.processMessage message botUsername with
+        let res = CommandParser.processMessage message botUsername
+
+        match res with
         | Sed ((chatId, replyMsgId), srcMsgId, exp, text) ->
             let! res = Commands.sed text exp
 
             match res with
             | ValueSome res ->
-                TgApi.deleteMessage chatId srcMsgId
-                TgApi.sendMessageReply chatId res replyMsgId
+                do! TgApi.deleteMessage chatId srcMsgId
+                do! TgApi.sendMessageReply chatId res replyMsgId
             | _ ->
-                TgApi.sendMessageAndDeleteAfter chatId "Sed command failed. This message will be deleted after 35 s." 35000
+                do! TgApi.sendMessageAndDeleteAfter chatId "Sed command failed. This message will be deleted after 35 s." 35000
 
         | Jq ((chatId, msgId), data, expression) ->
             let! res = expression |> Commands.jq data
 
             match res with
-            | ValueSome res -> TgApi.sendMarkupMessageReply chatId $"```\n{res}\n```" msgId ParseMode.Markdown
+            | ValueSome res ->
+                do! TgApi.sendMarkupMessageReply chatId $"```\n{res}\n```" msgId ParseMode.Markdown
             | _ ->
-                TgApi.sendMessageAndDeleteAfter chatId "Jq command failed. This message will be deleted after 35 s." 35000
+                do! TgApi.sendMessageAndDeleteAfter chatId "Jq command failed. This message will be deleted after 35 s." 35000
 
         | Reverse ((chatId, msgId), (fileId, fileType)) ->
             let! file = fileId |> Api.tryGetFileAsStream ctx
@@ -91,9 +97,9 @@ let updateArrivedInternal ctx (message: Message) =
             match file with
             | ValueSome srcStream ->
                 let! res = Commands.reverse srcStream fileType
-                sendFileAsReply res fileType chatId msgId
+                do! sendFileAsReply res fileType chatId msgId
             | _ ->
-                TgApi.sendMessageAndDeleteAfter chatId "Reverse command failed. This message will be deleted after 35 s." 35000
+                do! TgApi.sendMessageAndDeleteAfter chatId "Reverse command failed. This message will be deleted after 35 s." 35000
 
         | VerticalFlip ((chatId, msgId), (fileId, fileType)) ->
             let! file = fileId |> Api.tryGetFileAsStream ctx
@@ -101,9 +107,9 @@ let updateArrivedInternal ctx (message: Message) =
             match file with
             | ValueSome srcStream ->
                 let! res = Commands.vFlip srcStream fileType
-                sendFileAsReply res fileType chatId msgId
+                do! sendFileAsReply res fileType chatId msgId
             | _ ->
-                TgApi.sendMessageAndDeleteAfter chatId "VerticalFlip command failed. This message will be deleted after 35 s." 35000
+                do! TgApi.sendMessageAndDeleteAfter chatId "VerticalFlip command failed. This message will be deleted after 35 s." 35000
 
         | HorizontalFlip ((chatId, msgId), (fileId, fileType)) ->
             let! file = fileId |> Api.tryGetFileAsStream ctx
@@ -111,9 +117,9 @@ let updateArrivedInternal ctx (message: Message) =
             match file with
             | ValueSome srcStream ->
                 let! res = Commands.hFlip srcStream fileType
-                sendFileAsReply res fileType chatId msgId
+                do! sendFileAsReply res fileType chatId msgId
             | _ ->
-                TgApi.sendMessageAndDeleteAfter chatId "HorizontalFlip command failed. This message will be deleted after 35 s." 35000
+                do! TgApi.sendMessageAndDeleteAfter chatId "HorizontalFlip command failed. This message will be deleted after 35 s." 35000
 
         | Distortion ((chatId, msgId), (fileId, fileType)) ->
             let! file = fileId |> Api.tryGetFileAsStream ctx
@@ -121,9 +127,9 @@ let updateArrivedInternal ctx (message: Message) =
             match file with
             | ValueSome srcStream ->
                 let! res = Commands.distort srcStream fileType
-                sendFileAsReply res fileType chatId msgId
+                do! sendFileAsReply res fileType chatId msgId
             | _ ->
-                TgApi.sendMessageAndDeleteAfter chatId "Distortion command failed. This message will be deleted after 35 s." 35000
+                do! TgApi.sendMessageAndDeleteAfter chatId "Distortion command failed. This message will be deleted after 35 s." 35000
 
         | ClockwiseRotation ((chatId, msgId), (fileId, fileType)) ->
             let! file = fileId |> Api.tryGetFileAsStream ctx
@@ -131,9 +137,9 @@ let updateArrivedInternal ctx (message: Message) =
             match file with
             | ValueSome srcStream ->
                 let! res = Commands.clock srcStream fileType
-                sendFileAsReply res fileType chatId msgId
+                do! sendFileAsReply res fileType chatId msgId
             | _ ->
-                TgApi.sendMessageAndDeleteAfter chatId "ClockwiseRotation command failed. This message will be deleted after 35 s." 35000
+                do! TgApi.sendMessageAndDeleteAfter chatId "ClockwiseRotation command failed. This message will be deleted after 35 s." 35000
 
         | CounterClockwiseRotation ((chatId, msgId), (fileId, fileType)) ->
             let! file = fileId |> Api.tryGetFileAsStream ctx
@@ -141,14 +147,15 @@ let updateArrivedInternal ctx (message: Message) =
             match file with
             | ValueSome srcStream ->
                 let! res = Commands.cclock srcStream fileType
-                sendFileAsReply res fileType chatId msgId
+                do! sendFileAsReply res fileType chatId msgId
             | _ ->
-                TgApi.sendMessageAndDeleteAfter chatId "CounterClockwiseRotation command failed. This message will be deleted after 35 s." 35000
+                do! TgApi.sendMessageAndDeleteAfter chatId "CounterClockwiseRotation command failed. This message will be deleted after 35 s." 35000
 
-        | Clown (chatId, count) -> TgApi.sendMessage chatId (System.String.Concat(Enumerable.Repeat("🤡", count)))
+        | Clown (chatId, count) ->
+            do! TgApi.sendMessage chatId (System.String.Concat(Enumerable.Repeat("🤡", count)))
 
         | RawMessageInfo(_, replyTo) ->
-            TgApi.sendMarkupMessageReplyAndDeleteAfter replyTo.Chat.Id $"`{(Json.serializeWithIndentationsIgnoreEmptyFields replyTo)}`" ParseMode.Markdown replyTo.MessageId 30000
+            do! TgApi.sendMarkupMessageReplyAndDeleteAfter replyTo.Chat.Id $"`{(Json.serializeWithIndentationsIgnoreEmptyFields replyTo)}`" ParseMode.Markdown replyTo.MessageId 30000
 
         | Nope -> ()
     }
@@ -157,12 +164,11 @@ let updateArrivedInternal ctx (message: Message) =
 let updateArrived (ctx: UpdateContext) =
     ctx.Update.Message |> Option.iter (updateArrivedInternal ctx)
 
-open Akka.FSharp
 open Funogram.Types
 
 [<EntryPoint>]
-let main args =
-    let logger = Logger.get "EntryPoint"
+let rec entryPoint args =
+    let logger = Logger.get (nameof entryPoint)
 
     let token =
         match List.ofArray args with
@@ -173,16 +179,6 @@ let main args =
             Environment.Exit(-1)
             null
 
-    let system =
-        Configuration.defaultConfig ()
-        |> System.create "system"
-
-    let tgResponseActor =
-        responseTelegramActor
-        |> spawn system "tgResponseActor"
-
-    TgApi.actor <- tgResponseActor
-
     ProcessingChannels.start ()
 
     while true do
@@ -190,8 +186,8 @@ let main args =
             task {
                 let config = { Config.defaultConfig with Token = token }
 
-                tgResponseActor
-                <! SendTelegramResponseMail.SetConfig config
+                Actors.channelWriter.TryWrite(TelegramSendingMessage.SetConfig config) |> ignore
+                Actors.runChannel()
 
                 let! _ = Api.deleteWebhookBase () |> api config
                 return! startBot config updateArrived None
