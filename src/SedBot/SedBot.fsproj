@@ -8,8 +8,6 @@
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="CliWrap.fs" />
-    <Compile Include="Common.fs" />
     <Compile Include="Utilities.fs" />
     <Compile Include="Api.fs" />
     <Compile Include="Actors.fs" />
@@ -18,6 +16,9 @@
     <Compile Include="Commands.fs" />
     <Compile Include="Program.fs" />
     <Content Include="paket.references" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\SedBot.Common\SedBot.Common.fsproj" />
   </ItemGroup>
   <Import Project="..\.paket\Paket.Restore.targets" />
 </Project>

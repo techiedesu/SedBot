@@ -1,4 +1,4 @@
-﻿module SedBot.CliWrap
+﻿module SedBot.Common.CliWrap
 
 open System.IO
 open System.Threading

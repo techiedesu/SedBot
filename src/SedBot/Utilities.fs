@@ -1,6 +1,7 @@
 module SedBot.Utilities
 
-open SedBot.CliWrap
+open SedBot.Common.CliWrap
+open SedBot.Common.TypeExtensions
 
 open System
 open System.Text

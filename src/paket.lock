@@ -10,7 +10,7 @@ NUGET
       FSharp.Core (>= 4.3.4) - restriction: || (>= net45) (>= netstandard2.0)
       System.ValueTuple (>= 4.4) - restriction: >= net45
     FSharp.Core (7.0.400) - restriction: || (>= net45) (>= netstandard2.0)
-    FSharp.SystemTextJson (1.1.23)
+    FSharp.SystemTextJson (1.2.34)
       FSharp.Core (>= 4.7) - restriction: >= netstandard2.0
       System.Text.Json (>= 6.0) - restriction: >= netstandard2.0
     Funogram (2.0.7) - restriction: >= netstandard2.0
@@ -25,7 +25,7 @@ NUGET
       Funogram (>= 2.0.6) - restriction: >= netstandard2.0
     Microsoft.Bcl.AsyncInterfaces (7.0) - restriction: || (>= net462) (&& (< net6.0) (>= netstandard2.0)) (&& (>= netstandard2.0) (< netstandard2.1))
       System.Threading.Tasks.Extensions (>= 4.5.4) - restriction: || (>= net462) (&& (>= netstandard2.0) (< netstandard2.1))
-    Microsoft.CodeCoverage (17.7) - restriction: || (>= net462) (>= netcoreapp3.1)
+    Microsoft.CodeCoverage (17.7.1) - restriction: || (>= net462) (>= netcoreapp3.1)
     Microsoft.Extensions.DependencyInjection (7.0) - restriction: || (>= net462) (>= netstandard2.0)
       Microsoft.Bcl.AsyncInterfaces (>= 7.0) - restriction: || (>= net462) (&& (>= netstandard2.0) (< netstandard2.1))
       Microsoft.Extensions.DependencyInjection.Abstractions (>= 7.0) - restriction: || (>= net462) (>= netstandard2.0)
@@ -51,16 +51,16 @@ NUGET
     Microsoft.Extensions.Primitives (7.0) - restriction: || (>= net462) (>= netstandard2.0)
       System.Memory (>= 4.5.5) - restriction: || (>= net462) (&& (< net6.0) (>= netstandard2.0))
       System.Runtime.CompilerServices.Unsafe (>= 6.0) - restriction: || (>= net462) (&& (>= net6.0) (< net7.0)) (&& (< net6.0) (>= netstandard2.0))
-    Microsoft.NET.Test.Sdk (17.7)
-      Microsoft.CodeCoverage (>= 17.7) - restriction: || (>= net462) (>= netcoreapp3.1)
-      Microsoft.TestPlatform.TestHost (>= 17.7) - restriction: >= netcoreapp3.1
+    Microsoft.NET.Test.Sdk (17.7.1)
+      Microsoft.CodeCoverage (>= 17.7.1) - restriction: || (>= net462) (>= netcoreapp3.1)
+      Microsoft.TestPlatform.TestHost (>= 17.7.1) - restriction: >= netcoreapp3.1
     Microsoft.NETCore.Platforms (7.0.4) - restriction: || (&& (< monoandroid) (< net45) (< netstandard1.2) (>= netstandard2.0) (< win8)) (&& (< monoandroid) (< net45) (< netstandard1.3) (>= netstandard2.0) (< win8) (< wpa81)) (&& (< monoandroid) (< net45) (< netstandard1.5) (>= netstandard2.0) (< win8) (< wpa81)) (&& (< monoandroid) (< net45) (< netstandard1.6) (>= netstandard2.0) (< win8) (< wpa81)) (&& (< monoandroid) (< netstandard1.1) (>= netstandard2.0) (< win8)) (&& (< net35) (>= netstandard2.0)) (&& (< net45) (>= netstandard2.0) (< xamarinios) (< xamarinmac) (< xamarintvos) (< xamarinwatchos)) (>= netcoreapp2.0) (&& (< netstandard1.0) (>= netstandard2.0) (>= win8)) (&& (< netstandard1.3) (>= netstandard2.0) (< win8) (>= wpa81)) (&& (< netstandard1.5) (>= netstandard2.0) (>= uap10.0)) (&& (>= netstandard2.0) (>= uap10.1)) (&& (>= netstandard2.0) (>= wp8))
     Microsoft.NETCore.Targets (5.0) - restriction: || (&& (< monoandroid) (< net45) (< netstandard1.2) (>= netstandard2.0) (< win8)) (&& (< monoandroid) (< net45) (< netstandard1.3) (>= netstandard2.0) (< win8) (< wpa81)) (&& (< monoandroid) (< net45) (< netstandard1.5) (>= netstandard2.0) (< win8) (< wpa81)) (&& (< monoandroid) (< net45) (< netstandard1.6) (>= netstandard2.0) (< win8) (< wpa81)) (&& (< monoandroid) (< netstandard1.1) (>= netstandard2.0) (< win8)) (&& (< net45) (>= netstandard2.0) (< xamarinios) (< xamarinmac) (< xamarintvos) (< xamarinwatchos))
-    Microsoft.TestPlatform.ObjectModel (17.7) - restriction: >= netcoreapp3.1
+    Microsoft.TestPlatform.ObjectModel (17.7.1) - restriction: >= netcoreapp3.1
       NuGet.Frameworks (>= 6.5) - restriction: || (>= net462) (>= netstandard2.0)
       System.Reflection.Metadata (>= 1.6) - restriction: || (>= net462) (>= netstandard2.0)
-    Microsoft.TestPlatform.TestHost (17.7) - restriction: >= netcoreapp3.1
-      Microsoft.TestPlatform.ObjectModel (>= 17.7) - restriction: >= netcoreapp3.1
+    Microsoft.TestPlatform.TestHost (17.7.1) - restriction: >= netcoreapp3.1
+      Microsoft.TestPlatform.ObjectModel (>= 17.7.1) - restriction: >= netcoreapp3.1
       Newtonsoft.Json (>= 13.0.1) - restriction: >= netcoreapp3.1
     NETStandard.Library (2.0.3) - restriction: || (&& (< net35) (>= netstandard2.0)) (&& (< net45) (>= netstandard1.3) (< netstandard2.0))
       Microsoft.NETCore.Platforms (>= 1.1) - restriction: || (&& (>= net45) (< netstandard1.3)) (&& (< net45) (>= netstandard1.1) (< netstandard1.2) (< win8)) (&& (< net45) (>= netstandard1.2) (< netstandard1.3) (< win8) (< wpa81)) (&& (< net45) (>= netstandard1.3) (< netstandard1.4) (< win8) (< wpa81)) (&& (< net45) (>= netstandard1.4) (< netstandard1.5) (< win8) (< wpa81)) (&& (< net45) (>= netstandard1.5) (< netstandard1.6) (< win8) (< wpa81)) (&& (< net45) (>= netstandard1.6) (< netstandard2.0) (< win8) (< wpa81)) (&& (< net45) (>= netstandard2.0)) (&& (>= net46) (< netstandard1.4)) (>= net461) (>= netcoreapp2.0) (&& (>= netstandard1.0) (< portable-net45+win8+wpa81)) (&& (< netstandard1.0) (>= portable-net45+win8) (< win8)) (&& (< netstandard1.0) (< portable-net45+win8) (>= portable-net45+win8+wpa81)) (&& (< netstandard1.0) (>= portable-net45+win8+wp8+wpa81) (< portable-net45+win8+wpa81)) (&& (< netstandard1.0) (>= win8)) (&& (< netstandard1.3) (< win8) (>= wpa81)) (&& (< netstandard1.5) (>= uap10.0)) (>= uap10.1) (>= wp8)

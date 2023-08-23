@@ -7,6 +7,7 @@ open Funogram.Telegram
 open Funogram.Telegram.Types
 open Funogram.Types
 open Microsoft.FSharp.Core
+open SedBot.Common
 open SedBot.Utilities
 open Microsoft.Extensions.Logging
 

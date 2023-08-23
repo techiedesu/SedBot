@@ -9,6 +9,7 @@ open Funogram.Telegram
 open Funogram.Telegram.Bot
 open Funogram.Telegram.Types
 open SedBot
+open SedBot.Common.TypeExtensions
 open SedBot.Actors
 open SedBot.ChatCommands
 open SedBot.Utilities

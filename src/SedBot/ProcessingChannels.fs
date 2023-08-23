@@ -7,8 +7,9 @@ open System.Text
 open System.Threading
 open System.Threading.Channels
 open System.Threading.Tasks
-open SedBot
-open SedBot.CliWrap
+
+open SedBot.Common.TypeExtensions
+open SedBot.Common.CliWrap
 open SedBot.Utilities
 open FParsec
 

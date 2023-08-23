@@ -1,4 +1,4 @@
-module [<AutoOpen>] SedBot.Common
+module [<AutoOpen>] SedBot.Common.TypeExtensions
 
 open System
 open System.IO

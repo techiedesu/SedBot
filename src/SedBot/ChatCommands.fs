@@ -3,7 +3,8 @@ module SedBot.ChatCommands
 open System.Text.RegularExpressions
 open Funogram.Telegram
 open Funogram.Telegram.Types
-open SedBot
+
+open SedBot.Common
 open SedBot.Utilities
 
 type FunogramMessage = Types.Message
