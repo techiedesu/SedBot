@@ -77,7 +77,7 @@ let updateArrivedInternal ctx (message: Message) =
 
             match res with
             | ValueSome res ->
-                do! TgApi.deleteMessage chatId srcMsgId
+                // do! TgApi.deleteMessage chatId srcMsgId
                 do! TgApi.sendMessageReply chatId res replyMsgId
             | _ ->
                 do! TgApi.sendMessageAndDeleteAfter chatId "Sed command failed. This message will be deleted after 35 s." 35000
@@ -152,7 +152,7 @@ let updateArrivedInternal ctx (message: Message) =
                 do! TgApi.sendMessageAndDeleteAfter chatId "CounterClockwiseRotation command failed. This message will be deleted after 35 s." 35000
 
         | Clown (chatId, count) ->
-            do! TgApi.sendMessage chatId (System.String.Concat(Enumerable.Repeat("🤡", count)))
+            do! TgApi.sendMessage chatId (seq { while true do "🤡" } |> Seq.take count |> String.concat "")
 
         | RawMessageInfo(_, replyTo) ->
             do! TgApi.sendMarkupMessageReplyAndDeleteAfter replyTo.Chat.Id $"`{(Json.serializeWithIndentationsIgnoreEmptyFields replyTo)}`" ParseMode.Markdown replyTo.MessageId 30000
@@ -172,12 +172,12 @@ let rec entryPoint args =
 
     let token =
         match List.ofArray args with
-        | token :: _ ->
-            token
         | [] ->
             logger.LogCritical("Usage: {execName} yourtelegramtoken", AppDomain.CurrentDomain.FriendlyName)
             Environment.Exit(-1)
             null
+        | token :: _ ->
+            token
 
     ProcessingChannels.start ()
 

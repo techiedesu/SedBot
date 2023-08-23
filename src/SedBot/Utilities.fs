@@ -37,36 +37,32 @@ module Path =
 module Process =
     let private log = Logger.get "SedBot.Utilities.Process"
 
-    let runTextProcess procName args data =
-        task {
-            log.LogDebug(
-                "runTextProcess: process name: {procName};; args: {args};; data: {data}",
-                procName, args, data
-            )
+    let runTextProcess procName args data = task {
+        log.LogDebug(
+            "runTextProcess: process name: {procName};; args: {args};; data: {data}",
+            procName, args, data
+        )
 
-            let stdout = StringBuilder()
-            let stderr = StringBuilder()
+        let stdout = StringBuilder()
+        let stderr = StringBuilder()
 
-            let! executionResult =
-                procName
-                |> wrap
-                |> withEscapedArguments args
-                |> withStandardInputPipe (PipeSource.FromString data)
-                |> withStandardErrorPipe (PipeTarget.ToStringBuilder stderr)
-                |> withStandardOutputPipe (PipeTarget.ToStringBuilder stdout)
-                |> withValidation CommandResultValidation.None
-                |> executeBufferedAsync Encoding.UTF8
+        let! executionResult =
+            procName
+            |> wrap
+            |> withEscapedArguments args
+            |> withStandardInputPipe  (PipeSource.FromString      data)
+            |> withStandardErrorPipe  (PipeTarget.ToStringBuilder stderr)
+            |> withStandardOutputPipe (PipeTarget.ToStringBuilder stdout)
+            |> withValidation CommandResultValidation.None
+            |> executeBufferedAsync Encoding.UTF8
 
-            let exitCode = executionResult.ExitCode
-            if exitCode = 0 then
-                return ValueSome ^ stdout.ToString()
-            else
-                log.LogError(
-                    "runTextProcess: wrong exit code: {exitCode};; stderr: {stdErr}",
-                    exitCode, stderr.ToString()
-                )
-                return ValueNone
-        }
+        let exitCode = executionResult.ExitCode
+        if exitCode = 0 then
+            return ValueSome ^ stdout.ToString()
+        else
+            log.LogError("runTextProcess: wrong exit code: {exitCode}, stderr: {stdErr}", exitCode, stderr)
+            return ValueNone
+    }
 
     let getStatusCode procName args data =
         let executionResult =

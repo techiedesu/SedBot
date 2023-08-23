@@ -97,14 +97,10 @@ module CommandParser =
             let isValidExpression expression =
                 Process.getStatusCode "sed" [| "-E"; expression |] "data" = 0
 
-            if expression.StartsWith("t") then
-                let expression = $"s{expression.Substring(1)}"
-                if isValidExpression expression then
+            if isValidExpression expression then
                     Some expression
                 else
                     None
-            else
-                None
 
         match item.Message with
         | { MessageId = srcMsgId

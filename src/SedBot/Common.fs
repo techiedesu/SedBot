@@ -47,12 +47,6 @@ module String =
             let res = Array.length ^ str.Split(substr)
             res - 1
 
-module Result =
-    let get<'a, 'b> (res: Result<'a, 'b>) =
-        match res with
-        | Ok res -> res
-        | Error _ -> failwith "Can't get result value"
-
 module Option =
     let anyOfList<'a> (items: Option<'a> list) =
         items |> List.find Option.isSome

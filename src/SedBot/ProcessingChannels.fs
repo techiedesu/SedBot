@@ -14,16 +14,18 @@ open FParsec
 
 open Microsoft.Extensions.Logging
 
-type FFmpegObjectState =
-    { Src: Stream
-      VideoReverse: bool
-      AudioReverse: bool
-      RemoveAudio: bool
-      VerticalFlip: bool
-      HorizontalFlip: bool
-      Clock: bool
-      CClock: bool
-      IsPicture: bool }
+type FFmpegObjectState = {
+    Src: Stream
+    VideoReverse: bool
+    AudioReverse: bool
+    RemoveAudio: bool
+    VerticalFlip: bool
+    HorizontalFlip: bool
+    Clock: bool
+    CClock: bool
+    Fix: bool
+    IsPicture: bool
+} with
     static member Create(src) =
         { Src = src
           VideoReverse = false
@@ -33,7 +35,8 @@ type FFmpegObjectState =
           HorizontalFlip = false
           Clock = false
           CClock = false
-          IsPicture = false }
+          IsPicture = false
+          Fix = false }
 
 type AudioVideoConcat = {
     VideoFileName: string
@@ -44,13 +47,14 @@ type AudioDistortion = {
     AudioFileName: string
 }
 
-type StreamsInfo = StreamInfo array
+type StreamsInfo = StreamInfo[]
 
-and StreamInfo =
-    { Kv: Dictionary<string, string>
-      Index: int option
-      CodecName: string option
-      CodecLongName: string option }
+and StreamInfo = {
+    Kv: Dictionary<string, string>
+    Index: int option
+    CodecName: string option
+    CodecLongName: string option
+}
 
 module FFmpeg =
     let getStreamsInfo (stream: Stream) =
@@ -64,7 +68,7 @@ module FFmpeg =
                 |> withStandardInputPipe (PipeSource.FromStream stream)
                 |> withStandardErrorPipe (PipeTarget.ToStringBuilder errSb)
                 |> withStandardOutputPipe (PipeTarget.ToStringBuilder(resSb))
-                |> withArguments [ "-i pipe: -show_streams" ]
+                |> withArgument "-i pipe: -show_streams"
                 |> withValidation CommandResultValidation.None
                 |> executeBufferedAsync Console.OutputEncoding
 
@@ -95,23 +99,24 @@ module FFmpeg =
 
                 match run kvPE3 (res.Trim()) with
                 | Success (result, _, _) ->
-                    let res: StreamsInfo =
-                        [| for res in result do
-                               let dict = Dictionary(res |> List.map KeyValuePair)
+                    let res: StreamsInfo = [|
+                        for res in result do
+                           let dict = Dictionary(res |> List.map KeyValuePair)
 
-                               { Index =
-                                   dict
-                                   |> Seq.tryFind ^ It.KeyIs "index"
-                                   |> Option.map (It.Value >> int)
-                                 CodecName =
-                                   dict
-                                   |> Seq.tryFind ^ It.KeyIs "codec_name"
-                                   |> Option.map It.Value
-                                 CodecLongName =
-                                   dict
-                                   |> Seq.tryFind ^ It.KeyIs "codec_long_name"
-                                   |> Option.map It.Value
-                                 Kv = dict } |]
+                           { Index =
+                               dict
+                               |> Seq.tryFind ^ It.KeyIs "index"
+                               |> Option.map (It.Value >> int)
+                             CodecName =
+                               dict
+                               |> Seq.tryFind ^ It.KeyIs "codec_name"
+                               |> Option.map It.Value
+                             CodecLongName =
+                               dict
+                               |> Seq.tryFind ^ It.KeyIs "codec_long_name"
+                               |> Option.map It.Value
+                             Kv = dict }
+                    |]
 
                     return res |> Result.Ok
                 | Failure (errorMsg, _, _) -> return errorMsg |> Result.Error
@@ -214,12 +219,12 @@ module FFmpeg =
 
             let vFlip =
                 match data.VerticalFlip with
-                | true -> " -vf vflip -qscale 0"
+                | true -> " -vf vflip -q:v 0 "
                 | _ -> ""
 
             let hFlip =
                 match data.HorizontalFlip with
-                | true -> " -vf hflip -qscale 0"
+                | true -> " -vf hflip -q:v 0 "
                 | _ -> ""
 
             let clock =
@@ -231,6 +236,8 @@ module FFmpeg =
                 match data.CClock with
                 | true -> " -vf \"transpose=cclock\""
                 | _ -> ""
+
+            let defVf = "-vf scale=out_range=full -color_range 2 -pix_fmt yuvj420p"
 
             // FFmpeg can't read moov (MPEG headers) at the end of a file when using a pipe. Have to "dump" to a filesystem.
             data.Src.Position <- 0
@@ -246,11 +253,12 @@ module FFmpeg =
 
             do! File.WriteAllBytesAsync(inputFile, memSrc.ToArray())
 
-            let args = $"{inputFile}{audioReverse}{videoReverse}{vFlip}{hFlip}{clock}{cClock}"
+            let args = $"{inputFile}{audioReverse}{videoReverse}{vFlip}{hFlip}{clock}{cClock}{defVf}"
 
             let contentSpecific =
                 if data.IsPicture |> not then
-                    "-f mp4 -movflags frag_keyframe+empty_moov -vcodec libx264"
+                    // "-f mp4 -movflags frag_keyframe+empty_moov -vcodec libx264"
+                    "-f mp4 -movflags frag_keyframe+empty_moov -c:a libopus -c:v libx264"
                 else
                     "-f mjpeg"
 
