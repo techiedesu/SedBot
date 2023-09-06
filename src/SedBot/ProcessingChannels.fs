@@ -182,6 +182,8 @@ module FFmpeg =
 
         let outputFileName = Path.getSynthName ".mp4"
 
+        // TODO: enforce "-movflags +faststart"
+
         let! executionResult =
             "ffmpeg"
             |> wrap
@@ -238,7 +240,8 @@ module FFmpeg =
                 | true -> " -vf \"transpose=cclock\""
                 | _ -> ""
 
-            let defVf = "-vf scale=out_range=full -color_range 2 -pix_fmt yuvj420p"
+            let defVf =
+                " -vf scale=out_range=full -color_range 2 -pix_fmt yuvj420p"
 
             // FFmpeg can't read moov (MPEG headers) at the end of a file when using a pipe. Have to "dump" to a filesystem.
             data.Src.Position <- 0

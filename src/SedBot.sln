@@ -8,6 +8,8 @@ Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "SedBot.Tests", "SedBot.Test
 EndProject
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "SedBot.Common", "SedBot.Common\SedBot.Common.fsproj", "{69226BDE-C61F-445F-BDB3-01426B117CFA}"
 EndProject
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "SedBot.Storage", "SedBot.Storage\SedBot.Storage.fsproj", "{AD4990FB-4AD1-4DF5-BBBD-F72FCE90F104}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -26,6 +28,10 @@ Global
 		{69226BDE-C61F-445F-BDB3-01426B117CFA}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{69226BDE-C61F-445F-BDB3-01426B117CFA}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{69226BDE-C61F-445F-BDB3-01426B117CFA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{AD4990FB-4AD1-4DF5-BBBD-F72FCE90F104}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AD4990FB-4AD1-4DF5-BBBD-F72FCE90F104}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AD4990FB-4AD1-4DF5-BBBD-F72FCE90F104}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{AD4990FB-4AD1-4DF5-BBBD-F72FCE90F104}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
