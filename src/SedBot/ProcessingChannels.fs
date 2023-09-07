@@ -217,31 +217,28 @@ module FFmpeg =
 
             let videoReverse =
                 match data.VideoReverse with
-                | true -> " -vf reverse"
+                | true -> " -vf reverse -color_range 2 -pix_fmt yuvj420p"
                 | _ -> ""
 
             let vFlip =
                 match data.VerticalFlip with
-                | true -> " -vf vflip -q:v 0 "
+                | true -> " -vf vflip -q:v 0 -color_range 2 -pix_fmt yuvj420p"
                 | _ -> ""
 
             let hFlip =
                 match data.HorizontalFlip with
-                | true -> " -vf hflip -q:v 0 "
+                | true -> " -vf hflip -q:v 0 -color_range 2 -pix_fmt yuvj420p"
                 | _ -> ""
 
             let clock =
                 match data.Clock with
-                | true -> " -vf \"transpose=clock\""
+                | true -> " -vf \"transpose=clock\" -color_range 2 -pix_fmt yuvj420p"
                 | _ -> ""
 
             let cClock =
                 match data.CClock with
-                | true -> " -vf \"transpose=cclock\""
+                | true -> " -vf \"transpose=cclock\" -color_range 2 -pix_fmt yuvj420p"
                 | _ -> ""
-
-            let defVf =
-                " -vf scale=out_range=full -color_range 2 -pix_fmt yuvj420p"
 
             // FFmpeg can't read moov (MPEG headers) at the end of a file when using a pipe. Have to "dump" to a filesystem.
             data.Src.Position <- 0
@@ -257,7 +254,7 @@ module FFmpeg =
 
             do! File.WriteAllBytesAsync(inputFile, memSrc.ToArray())
 
-            let args = $"{inputFile}{audioReverse}{videoReverse}{vFlip}{hFlip}{clock}{cClock}{defVf}"
+            let args = $"{inputFile}{audioReverse}{videoReverse}{vFlip}{hFlip}{clock}{cClock}"
 
             let contentSpecific =
                 if data.IsPicture |> not then
