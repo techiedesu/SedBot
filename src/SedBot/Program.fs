@@ -72,7 +72,11 @@ let updateArrivedInternal ctx (message: Message) =
         let res = CommandParser.processMessage message botUsername
 
         match res with
-        | Sed ((chatId, replyMsgId), srcMsgId, exp, text) ->
+        | Sed {
+                TelegramOmniMessageId = chatId, replyMsgId
+                Expression = exp
+                Text = text
+         } ->
             let! res = Commands.sed text exp
 
             match res with
@@ -82,7 +86,11 @@ let updateArrivedInternal ctx (message: Message) =
             | _ ->
                 do! TgApi.sendMessageAndDeleteAfter chatId "Sed command failed. This message will be deleted after 35 s." 35000
 
-        | Jq ((chatId, msgId), data, expression) ->
+        | Jq {
+            TelegramOmniMessageId = chatId, msgId
+            Expression = expression
+            Text = data
+         } ->
             let! res = expression |> Commands.jq data
 
             match res with
@@ -91,7 +99,10 @@ let updateArrivedInternal ctx (message: Message) =
             | _ ->
                 do! TgApi.sendMessageAndDeleteAfter chatId "Jq command failed. This message will be deleted after 35 s." 35000
 
-        | Reverse ((chatId, msgId), (fileId, fileType)) ->
+        | Reverse {
+            TelegramOmniMessageId = chatId, msgId
+            File = fileId, fileType
+         } ->
             let! file = fileId |> Api.tryGetFileAsStream ctx
 
             match file with
@@ -101,7 +112,10 @@ let updateArrivedInternal ctx (message: Message) =
             | _ ->
                 do! TgApi.sendMessageAndDeleteAfter chatId "Reverse command failed. This message will be deleted after 35 s." 35000
 
-        | VerticalFlip ((chatId, msgId), (fileId, fileType)) ->
+        | VerticalFlip {
+            TelegramOmniMessageId = chatId, msgId
+            File = fileId, fileType
+         } ->
             let! file = fileId |> Api.tryGetFileAsStream ctx
 
             match file with
@@ -111,7 +125,10 @@ let updateArrivedInternal ctx (message: Message) =
             | _ ->
                 do! TgApi.sendMessageAndDeleteAfter chatId "VerticalFlip command failed. This message will be deleted after 35 s." 35000
 
-        | HorizontalFlip ((chatId, msgId), (fileId, fileType)) ->
+        | HorizontalFlip {
+            TelegramOmniMessageId = chatId, msgId
+            File = fileId, fileType
+         } ->
             let! file = fileId |> Api.tryGetFileAsStream ctx
 
             match file with
@@ -121,7 +138,10 @@ let updateArrivedInternal ctx (message: Message) =
             | _ ->
                 do! TgApi.sendMessageAndDeleteAfter chatId "HorizontalFlip command failed. This message will be deleted after 35 s." 35000
 
-        | Distortion ((chatId, msgId), (fileId, fileType)) ->
+        | Distortion {
+            TelegramOmniMessageId = chatId, msgId
+            File = fileId, fileType
+         } ->
             let! file = fileId |> Api.tryGetFileAsStream ctx
 
             match file with
@@ -131,7 +151,10 @@ let updateArrivedInternal ctx (message: Message) =
             | _ ->
                 do! TgApi.sendMessageAndDeleteAfter chatId "Distortion command failed. This message will be deleted after 35 s." 35000
 
-        | ClockwiseRotation ((chatId, msgId), (fileId, fileType)) ->
+        | ClockwiseRotation {
+            TelegramOmniMessageId = chatId, msgId
+            File = fileId, fileType
+         } ->
             let! file = fileId |> Api.tryGetFileAsStream ctx
 
             match file with
@@ -141,7 +164,10 @@ let updateArrivedInternal ctx (message: Message) =
             | _ ->
                 do! TgApi.sendMessageAndDeleteAfter chatId "ClockwiseRotation command failed. This message will be deleted after 35 s." 35000
 
-        | CounterClockwiseRotation ((chatId, msgId), (fileId, fileType)) ->
+        | CounterClockwiseRotation {
+            TelegramOmniMessageId = chatId, msgId
+            File = fileId, fileType
+         } ->
             let! file = fileId |> Api.tryGetFileAsStream ctx
 
             match file with
@@ -151,11 +177,24 @@ let updateArrivedInternal ctx (message: Message) =
             | _ ->
                 do! TgApi.sendMessageAndDeleteAfter chatId "CounterClockwiseRotation command failed. This message will be deleted after 35 s." 35000
 
-        | Clown (chatId, count) ->
-            do! TgApi.sendMessage chatId (seq { while true do "🤡" } |> Seq.take count |> String.concat "")
+        | Clown {
+            ChatId = chatId
+            Count = count
+         } ->
+            do! TgApi.sendMessage chatId (seq {
+                while true do
+                    "🤡"
+            } |> Seq.take count |> String.concat "")
 
-        | RawMessageInfo(_, replyTo) ->
-            do! TgApi.sendMarkupMessageReplyAndDeleteAfter replyTo.Chat.Id $"`{(Json.serializeWithIndentationsIgnoreEmptyFields replyTo)}`" ParseMode.Markdown replyTo.MessageId 30000
+        | RawMessageInfo {
+            ReplyTo = {
+                MessageId = messageId
+                Chat = {
+                    Id = replyChatId
+                }
+            } as replyTo
+         } ->
+            do! TgApi.sendMarkupMessageReplyAndDeleteAfter replyChatId $"`{(Json.serialize replyTo)}`" ParseMode.Markdown messageId 30000
 
         | Nope -> ()
     }

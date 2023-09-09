@@ -36,7 +36,7 @@ module String =
         else
             text.Trim().Substring(input.Length)
 
-    let isNulOfWhiteSpace = String.IsNullOrWhiteSpace
+    let isNullOfWhiteSpace = String.IsNullOrWhiteSpace
     let isNotNulOfWhiteSpace = String.IsNullOrWhiteSpace >> not
 
     let getCountOfOccurrences (str: string) (substr: string) =
@@ -48,11 +48,15 @@ module String =
             res - 1
 
 module Option =
-    let anyOfList<'a> (items: Option<'a> list) =
-        items |> List.find Option.isSome
-
     let anyOf2 a b =
-        [a; b] |> anyOfList
+        a |> Option.orElse b
+
+    let ofBool (v: bool) =
+        match v with
+        | false ->
+            None
+        | true ->
+            Some ()
 
 module Json =
     open System.Text.Json.Serialization
@@ -63,28 +67,14 @@ module Json =
         options
 
     let private serializeSettings =
-        settings()
-
-    let serialize t =
-        JsonSerializer.Serialize(t, serializeSettings)
-
-    let private serializeWithIndentationsSettings =
-        let settings = settings()
-        settings.WriteIndented <- true
-        settings
-
-    let serializeWithIndentations t =
-        JsonSerializer.Serialize(t, serializeWithIndentationsSettings)
-
-    let private serializeWithIndentationsIgnoreEmptyFieldsSettings =
         let settings = settings()
         settings.WriteIndented <- true
         settings.DefaultIgnoreCondition <- JsonIgnoreCondition.WhenWritingNull
         settings.Encoder <- System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping
         settings
 
-    let serializeWithIndentationsIgnoreEmptyFields (t: 'a) =
-        JsonSerializer.Serialize(t, serializeWithIndentationsIgnoreEmptyFieldsSettings)
+    let serialize t =
+        JsonSerializer.Serialize(t, serializeSettings)
 
 module It =
     let inline Value a = (^a: (member Value: ^b) a)
