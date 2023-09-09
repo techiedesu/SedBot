@@ -9,7 +9,6 @@ open Funogram.Telegram.Bot
 open Funogram.Telegram.Types
 open SedBot
 open SedBot.Common.TypeExtensions
-open SedBot.Actors
 open SedBot.ChatCommands
 open SedBot.Utilities
 open Microsoft.Extensions.Logging
@@ -225,7 +224,7 @@ let rec entryPoint args =
             task {
                 let config = { Config.defaultConfig with Token = token }
 
-                Actors.channelWriter.TryWrite(TelegramSendingMessage.SetConfig config) |> ignore
+                Actors.channelWriter.TryWrite(TgApi.TelegramSendingMessage.SetConfig config) |> ignore
                 Actors.runChannel()
 
                 let! _ = Api.deleteWebhookBase () |> api config

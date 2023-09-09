@@ -477,4 +477,3 @@ module CommandParser =
         |%> handleClockwiseRotation
         |%> handleCounterclockwiseRotation
         |> CommandPipelineItem.GetCommand
-
