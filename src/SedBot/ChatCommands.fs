@@ -5,7 +5,7 @@ open Funogram.Telegram
 open Funogram.Telegram.Types
 
 open SedBot.Common
-open SedBot.Utilities
+open SedBot.ProcessingChannels
 
 type FunogramMessage = Types.Message
 
@@ -97,7 +97,7 @@ module CommandParser =
         elif chatType = SuperGroup then
             let command = Regex.Match(text, "(\/)(.*?)((@" + botUsername + " (\*.))|(@" + botUsername + "))")
             if command.Length > 0 then
-                Some (command.Value.Substring(1, command.Value.Length - botUsername.Length - 2)), tryGetArgs (text.Substring(command.Value.Length))
+                Some (command.Value.Substring(1, command.Value.Length - botUsername.Length - 2)), tryGetArgs (text.Substring(command.Value |> String.length))
             else
                 None, None
         else

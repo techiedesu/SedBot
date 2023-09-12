@@ -10,10 +10,51 @@ open System.Threading.Tasks
 
 open SedBot.Common.TypeExtensions
 open SedBot.Common.CliWrap
-open SedBot.Utilities
+open SedBot.Common.Utilities
 open FParsec
 
 open Microsoft.Extensions.Logging
+
+module Process =
+    let private log = Logger.get "SedBot.Utilities.Process"
+
+    let runTextProcess procName args data = task {
+        log.LogDebug(
+            "runTextProcess: process name: {procName};; args: {args};; data: {data}",
+            procName, args, data
+        )
+
+        let stdout = StringBuilder()
+        let stderr = StringBuilder()
+
+        let! executionResult =
+            procName
+            |> wrap
+            |> withEscapedArguments args
+            |> withStandardInputPipe  (PipeSource.FromString      data)
+            |> withStandardErrorPipe  (PipeTarget.ToStringBuilder stderr)
+            |> withStandardOutputPipe (PipeTarget.ToStringBuilder stdout)
+            |> withValidation CommandResultValidation.None
+            |> executeBufferedAsync Encoding.UTF8
+
+        let exitCode = executionResult.ExitCode
+        if exitCode = 0 then
+            return ValueSome ^ stdout.ToString()
+        else
+            log.LogError("runTextProcess: wrong exit code: {exitCode}, stderr: {stdErr}", exitCode, stderr)
+            return ValueNone
+    }
+
+    let getStatusCode procName args data =
+        let executionResult =
+            procName
+            |> wrap
+            |> withEscapedArguments args
+            |> withStandardInputPipe ^ PipeSource.FromString data
+            |> withValidation CommandResultValidation.None
+            |> executeBuffered
+
+        executionResult.ExitCode
 
 type FFmpegObjectState = {
     Src: Stream
@@ -26,18 +67,19 @@ type FFmpegObjectState = {
     CClock: bool
     Fix: bool
     IsPicture: bool
-} with
-    static member Create(src) =
-        { Src = src
-          VideoReverse = false
-          AudioReverse = false
-          RemoveAudio = false
-          VerticalFlip = false
-          HorizontalFlip = false
-          Clock = false
-          CClock = false
-          IsPicture = false
-          Fix = false }
+}
+with static member Create(src) = {
+        Src = src
+        VideoReverse = false
+        AudioReverse = false
+        RemoveAudio = false
+        VerticalFlip = false
+        HorizontalFlip = false
+        Clock = false
+        CClock = false
+        IsPicture = false
+        Fix = false
+}
 
 type AudioVideoConcat = {
     VideoFileName: string
@@ -193,14 +235,15 @@ module FFmpeg =
             |> withValidation CommandResultValidation.None
             |> executeBufferedAsync Console.OutputEncoding
 
-        if executionResult.ExitCode = 0 then
+        match executionResult.ExitCode with
+        | 0 ->
             use sr = new StreamReader(outputFileName)
             File.deleteUnit data.AudioFileName
             File.deleteUnit data.VideoFileName
             let ms = new MemoryStream()
             do! sr.BaseStream.CopyToAsync(ms)
             return (ms, outputFileName) |> Result.Ok
-        else
+        | _ ->
             return errSb.ToString() |> Result.Error
     }
 

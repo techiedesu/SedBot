@@ -10,6 +10,10 @@ Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "SedBot.Common", "SedBot.Com
 EndProject
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "SedBot.Storage", "SedBot.Storage\SedBot.Storage.fsproj", "{AD4990FB-4AD1-4DF5-BBBD-F72FCE90F104}"
 EndProject
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "SedBot.ChannelLayer", "SedBot.ChannelLayer\SedBot.ChannelLayer.fsproj", "{5FD6DAC7-F0CB-4975-8340-4AB29BA8F323}"
+EndProject
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "SedBot.ContentProcessing", "SedBot.ContentProcessing\SedBot.ContentProcessing.fsproj", "{8EDE0B38-D42B-4FE7-98A0-E8B4E16DD7EA}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -32,6 +36,14 @@ Global
 		{AD4990FB-4AD1-4DF5-BBBD-F72FCE90F104}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{AD4990FB-4AD1-4DF5-BBBD-F72FCE90F104}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{AD4990FB-4AD1-4DF5-BBBD-F72FCE90F104}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5FD6DAC7-F0CB-4975-8340-4AB29BA8F323}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5FD6DAC7-F0CB-4975-8340-4AB29BA8F323}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5FD6DAC7-F0CB-4975-8340-4AB29BA8F323}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5FD6DAC7-F0CB-4975-8340-4AB29BA8F323}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8EDE0B38-D42B-4FE7-98A0-E8B4E16DD7EA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8EDE0B38-D42B-4FE7-98A0-E8B4E16DD7EA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8EDE0B38-D42B-4FE7-98A0-E8B4E16DD7EA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8EDE0B38-D42B-4FE7-98A0-E8B4E16DD7EA}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

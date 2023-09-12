@@ -7,7 +7,7 @@ open Funogram.Telegram
 open Funogram.Telegram.Types
 open Microsoft.FSharp.Core
 open SedBot.Common
-open SedBot.Utilities
+open SedBot.Common.Utilities
 open Microsoft.Extensions.Logging
 
 let private log = Logger.get "responseTelegramActor"

@@ -10,7 +10,7 @@ open Funogram.Telegram.Types
 open SedBot
 open SedBot.Common.TypeExtensions
 open SedBot.ChatCommands
-open SedBot.Utilities
+open SedBot.Common.Utilities
 open Microsoft.Extensions.Logging
 
 let mutable myUserName: string = null
@@ -50,7 +50,7 @@ let createInputFile fileType (data: byte [] voption) : InputFile voption =
     match data with
     | ValueSome data ->
         let extension = extension fileType
-        let synthName = Utilities.Path.getSynthName extension
+        let synthName = Path.getSynthName extension
         let ms = new MemoryStream(data)
         InputFile.File(synthName, ms) |> ValueSome
     | _ -> ValueNone
