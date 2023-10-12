@@ -16,6 +16,7 @@
     <Compile Include="AppConfig.fs" />
     <Compile Include="Program.fs" />
     <Content Include="paket.references" />
+    <Compile Include="Actors\MessageSenderActor.fs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\SedBot.Common\SedBot.Common.fsproj" />

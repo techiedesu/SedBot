@@ -9,7 +9,7 @@ open System.Threading.Channels
 open System.Threading.Tasks
 
 open SedBot.Common.TypeExtensions
-open SedBot.Common.CliWrap
+open Tdesu.CliWrap.Fsharp
 open SedBot.Common.Utilities
 open FParsec
 

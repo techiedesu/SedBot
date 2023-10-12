@@ -1,5 +1,5 @@
 FSharp.SystemTextJson
-CliWrap
+Tdesu.CliWrap.Fsharp
 Microsoft.Extensions.Logging
 Serilog.Extensions.Logging
 Serilog.Sinks.Console
