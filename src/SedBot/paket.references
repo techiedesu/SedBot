@@ -6,3 +6,4 @@ Serilog.Sinks.Console
 Funogram.Telegram
 Akka.FSharp
 FParsec
+FSharp.Control.TaskSeq

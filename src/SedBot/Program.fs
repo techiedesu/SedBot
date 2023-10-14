@@ -224,8 +224,8 @@ let rec entryPoint args =
             task {
                 let config = { Config.defaultConfig with Token = token }
 
-                Actors.channelWriter.TryWrite(TgApi.TelegramSendingMessage.SetConfig config) |> ignore
-                Actors.runChannel()
+                OldActors.channelWriter.TryWrite(TgApi.TelegramSendingMessage.SetConfig config) |> ignore
+                OldActors.runChannel()
 
                 let! _ = Api.deleteWebhookBase () |> api config
                 return! startBot config updateArrived None

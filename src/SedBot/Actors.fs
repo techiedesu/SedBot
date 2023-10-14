@@ -1,4 +1,4 @@
-﻿module [<RequireQualifiedAccess>] SedBot.Actors
+﻿module SedBot.OldActors
 
 open System.Threading
 open System.Threading.Tasks
