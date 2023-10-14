@@ -210,8 +210,7 @@ project.lock.json
 *.feature.xlsx.*
 *.Specs_*.html
 
-#Paket dependency manager
-.paket/
+# Paket dependency manager
 paket-files/
 
 /src/output/
