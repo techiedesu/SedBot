@@ -1,9 +1,12 @@
+# syntax=docker/dockerfile:1.2
+
 FROM mcr.microsoft.com/dotnet/sdk:7.0 AS build
 
 COPY ./src/ ./app
 WORKDIR /app/
 
-RUN dotnet publish SedBot/SedBot.fsproj -c Release -o output --sc --os linux
+RUN --mount=type=cache,id=nuget,target=/root/.nuget/packages\
+    dotnet publish SedBot/SedBot.fsproj -c Release -o output --sc --os linux
 
 FROM debian:bullseye as host
 RUN echo "deb http://www.deb-multimedia.org bullseye main" >> /etc/apt/sources.list.d/multimedia.list

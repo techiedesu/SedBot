@@ -3,7 +3,6 @@ source https://www.nuget.org/api/v2
 git https://github.com/Dolfik1/Funogram.git master build: dotnet pack ./src/Funogram.Telegram/Funogram.Telegram.fsproj -c Release --nologo, Packages: /src/Funogram.Telegram/bin/Release/
 nuget Funogram.Telegram
 
-nuget CliWrap
 nuget Microsoft.Extensions.Logging
 nuget Serilog.Extensions.Logging
 nuget Serilog.Sinks.Console
@@ -14,3 +13,4 @@ nuget FParsec
 nuget Akka.FSharp
 nuget Tdesu.CliWrap.Fsharp
 nuget FSharp.Control.TaskSeq
+nuget SpotifyAPI.Web 7.0.0
