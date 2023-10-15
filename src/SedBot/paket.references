@@ -7,3 +7,5 @@ Akka.FSharp
 FParsec
 FSharp.Control.TaskSeq
 SpotifyAPI.Web
+Giraffe
+System.Configuration.ConfigurationManager

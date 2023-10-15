@@ -13,4 +13,7 @@ nuget FParsec
 nuget Akka.FSharp
 nuget Tdesu.CliWrap.Fsharp
 nuget FSharp.Control.TaskSeq
-nuget SpotifyAPI.Web 7.0.0
+nuget SpotifyAPI.Web
+nuget SpotifyAPI.Web.Auth
+nuget AspNet.Security.OAuth.Spotify
+nuget Giraffe

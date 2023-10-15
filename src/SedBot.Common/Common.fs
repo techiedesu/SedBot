@@ -66,7 +66,7 @@ module Json =
         options.Converters.Add(JsonFSharpConverter())
         options
 
-    let private serializeSettings =
+    let serializerSettings =
         let settings = settings()
         settings.WriteIndented <- true
         settings.DefaultIgnoreCondition <- JsonIgnoreCondition.WhenWritingNull
@@ -74,7 +74,7 @@ module Json =
         settings
 
     let serialize t =
-        JsonSerializer.Serialize(t, serializeSettings)
+        JsonSerializer.Serialize(t, serializerSettings)
 
 module It =
     let inline Value a = (^a: (member Value: ^b) a)

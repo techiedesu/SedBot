@@ -17,6 +17,7 @@
     <Content Include="paket.references" />
     <Compile Include="Actors\MessageSenderActor.fs" />
     <Compile Include="Actors\SpotifyLikedTrackAgregatorActor.fs" />
+    <Compile Include="Spotify.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
   <ItemGroup>
