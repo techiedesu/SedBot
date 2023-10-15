@@ -1,0 +1,5 @@
+packages/
+.idea/
+paket-files/
+*.sln.DotSettings
+SedBot.Tests
