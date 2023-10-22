@@ -12,3 +12,4 @@ OpenTelemetry.Exporter.Console
 OpenTelemetry.Extensions.Hosting
 OpenTelemetry.Instrumentation.AspNetCore
 Akka.Fsharp
+NLog.DiagnosticSource

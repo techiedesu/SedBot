@@ -1,4 +1,4 @@
-source https://www.nuget.org/api/v2
+source https://api.nuget.org/v3/index.json
 
 git https://github.com/Dolfik1/Funogram.git master build: dotnet pack ./src/Funogram.Telegram/Funogram.Telegram.fsproj -c Release --nologo, Packages: /src/Funogram.Telegram/bin/Release/
 nuget Funogram.Telegram
@@ -19,14 +19,15 @@ nuget AspNet.Security.OAuth.Spotify
 nuget Giraffe
 nuget Dapper.FSharp
 nuget Microsoft.Data.Sqlite
-nuget VideoLibrary
 
 nuget NLog
 nuget NLog.Schema
 nuget NLog.Web.AspNetCore
 nuget NLog.Targets.Loki
+nuget NLog.DiagnosticSource
 
 nuget OpenTelemetry
 nuget OpenTelemetry.Exporter.Console
 nuget OpenTelemetry.Extensions.Hosting
 nuget OpenTelemetry.Instrumentation.AspNetCore
+nuget Tdesu.VideoLibrary 3.2.4

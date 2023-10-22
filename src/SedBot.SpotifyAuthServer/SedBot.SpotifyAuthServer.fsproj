@@ -5,6 +5,7 @@
     <TargetFramework>net7.0</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="Actors.fs" />
     <Compile Include="Program.fs" />
     <Content Include="paket.references" />
     <None Include="appsettings.json">
@@ -12,7 +13,6 @@
     </None>
     <Content Remove="nlog.config" />
     <None Include="nlog.config" />
-    <Compile Include="Actors.fs" />
   </ItemGroup>
   <Import Project="..\.paket\Paket.Restore.targets" />
 </Project>

@@ -2,7 +2,6 @@
 
 open System
 open System.IO
-open System.Threading.Tasks
 open Microsoft.AspNetCore.Authentication.Cookies
 open Microsoft.AspNetCore.Builder
 open Microsoft.AspNetCore.Hosting
@@ -15,10 +14,6 @@ open Giraffe
 open SpotifyAPI.Web
 open Microsoft.AspNetCore.Authentication
 open OpenTelemetry.Trace
-
-// ---------------------------------
-// Web app
-// ---------------------------------
 
 // TODO: copy from https://github.com/JohnnyCrazy/SpotifyAPI-NET/blob/master/SpotifyAPI.Web.Examples/Example.ASP/Startup.cs
 // https://johnnycrazy.github.io/SpotifyAPI-NET/docs/getting_started/
@@ -41,11 +36,7 @@ type [<Sealed>] SpotifyClientBuilder(httpContextAccessor: IHttpContextAccessor,
 
         let! token = hc.GetTokenAsync("Spotify", "access_token")
 
-        return
-            match token with
-            | null ->
-                None
-            | _ -> SpotifyClient(config.WithToken(token)) |> Some
+        return SpotifyClient(config.WithToken(token))
     }
 
 let spotifyHandler : HttpHandler =
@@ -53,16 +44,9 @@ let spotifyHandler : HttpHandler =
     fun (next : HttpFunc) (ctx : HttpContext) -> task {
         let spotifyClientBuilder = ctx.RequestServices.GetService<SpotifyClientBuilder>()
         let! client = spotifyClientBuilder.BuildClient()
+        let! privateUser = client.UserProfile.Current()
 
-        match client with
-        | None ->
-            return! Successful.CREATED "unauthorized" next ctx
-
-        | Some client ->
-            let! privateUser = client.UserProfile.Current()
-            let! x = client.Library.GetTracks()
-            ctx.SetStatusCode 200
-            return! Successful.OK privateUser.Id next ctx
+        return! Successful.OK privateUser.Id next ctx
     }
 
 let webApp =
@@ -74,10 +58,6 @@ let webApp =
                 ]
         setStatusCode 404 >=> text "Not Found"
     ]
-
-// ---------------------------------
-// Error handler
-// ---------------------------------
 
 let errorHandler (ex: Exception) (logger: ILogger) =
     logger.LogError(EventId(), ex,
@@ -157,16 +137,15 @@ let configureServices (configuration: IConfiguration)
     |> ignore
     services.AddGiraffe() |> ignore
 
-let configureLogging (builder: ILoggingBuilder) =
-    builder.AddConsole().AddDebug() |> ignore // TODO: NLog!
-
 open NLog.Web
+
+let inline (^^) x = ignore x
 
 [<EntryPoint>]
 let main args =
     let contentRoot = Directory.GetCurrentDirectory()
     let webRoot     = Path.Combine(contentRoot, "WebRoot")
-    let environment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT")
+    let environment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") // TODO: parse from config?
 
     let configuration =
         ConfigurationBuilder()
@@ -183,17 +162,11 @@ let main args =
                     .UseKestrel()
                     .UseContentRoot(contentRoot)
                     .UseWebRoot(webRoot)
-                    .ConfigureLogging(fun c ->
-                        c
-                            .ClearProviders()
-                            .AddNLogWeb()
-                        |> ignore
-                    )
+                    .ConfigureLogging(fun c -> c.ClearProviders() |> ignore)
                     .Configure(configureApp)
                     .ConfigureServices(configureServices configuration)
-                    .ConfigureLogging(configureLogging)
                     |> ignore)
-        // .ConfigureAppConfiguration(fun (cb) -> cb.AddUserSecrets<Program>())
+        .UseNLog()
         .Build()
         .Run()
     0

@@ -1,11 +1,14 @@
 ﻿module SedBot.Common.YoutubeApi
 
+open System
 open System.IO
 open System.Net
+open System.Net.Http
 open System.Threading.Tasks
 open Microsoft.Data.Sqlite
 open Dapper.FSharp.SQLite
 open SedBot.Common.MaybeBuilder
+open VideoLibrary
 
 module [<RequireQualifiedAccess>] Path =
     let tryGetPath path =
@@ -60,7 +63,7 @@ type CookieItem = {
     with
     member x.CastToCookie() : Cookie =
         // TODO: Expiry? :yao_ming_face"
-        Cookie(x.Name, x.Value, x.Path, x.Host)
+        Cookie(x.Name, WebUtility.UrlEncode(x.Value), x.Path, x.Host)
 
 
 let tryGetCookies (path: string) =
@@ -85,6 +88,27 @@ type DownloadedTrack = {
     Length: int64 option
 }
 
-let downloadTrackMaxQuality (uri: string) : DownloadedTrack option Task = task {
+let downloadTrackMaxQuality (httpClient: HttpClient) (uri: string) : DownloadedTrack option Task = task {
+    let youTube = YouTube(httpClient)
+    let! videos = youTube.GetAllVideosAsync(uri)
+    let track = videos
+                |> Seq.filter (fun yv -> yv.AdaptiveKind = AdaptiveKind.Audio && yv.AudioFormat = AudioFormat.Opus)
+                |> Seq.sortByDescending (fun yv -> yv.AudioBitrate)
+                |> Array.ofSeq
+    Console.WriteLine(Json.serialize track.Length)
+                // |> Seq.tryHead
+
+    Console.WriteLine("==========================================================")
+
+    let youTube = YouTube()
+    let! videos = youTube.GetAllVideosAsync(uri)
+    let track2 = videos
+                |> Seq.filter (fun yv -> yv.AdaptiveKind = AdaptiveKind.Audio && yv.AudioFormat = AudioFormat.Opus)
+                |> Seq.sortByDescending (fun yv -> yv.AudioBitrate)
+                |> Array.ofSeq
+                // |> Seq.tryHead
+    Console.WriteLine(Json.serialize track2.Length)
+
+    // let q = track.Value.GetBytesAsync(httpClient)
     return None
 }
