@@ -61,17 +61,18 @@ module Option =
 module Json =
     open System.Text.Json.Serialization
 
-    let settings() =
-        let options = JsonSerializerOptions()
+    let applySettings (options: JsonSerializerOptions) =
         options.Converters.Add(JsonFSharpConverter())
+        options.WriteIndented <- true
+        options.DefaultIgnoreCondition <- JsonIgnoreCondition.WhenWritingNull
+        options.Encoder <- System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping
         options
 
-    let serializerSettings =
-        let settings = settings()
-        settings.WriteIndented <- true
-        settings.DefaultIgnoreCondition <- JsonIgnoreCondition.WhenWritingNull
-        settings.Encoder <- System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping
-        settings
+    let private settings() =
+        let options = JsonSerializerOptions()
+        applySettings options
+
+    let serializerSettings = settings()
 
     let serialize t =
         JsonSerializer.Serialize(t, serializerSettings)
@@ -92,3 +93,13 @@ module File =
             Error e
 
     let deleteUnit = delete >> ignore
+
+module Array =
+    let inline any<'T> (a: 'T array) =
+        Array.length a = 0
+
+    let inline emptyToNone<'T> (a: 'T array) =
+        if Object.ReferenceEquals(a, null) || any a = false then
+            None
+        else
+            Some a

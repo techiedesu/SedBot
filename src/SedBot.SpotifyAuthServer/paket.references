@@ -3,3 +3,12 @@ SpotifyAPI.Web
 SpotifyAPI.Web.Auth
 AspNet.Security.OAuth.Spotify
 System.Configuration.ConfigurationManager
+NLog
+NLog.Schema
+NLog.Web.AspNetCore
+NLog.Targets.Loki
+OpenTelemetry
+OpenTelemetry.Exporter.Console
+OpenTelemetry.Extensions.Hosting
+OpenTelemetry.Instrumentation.AspNetCore
+Akka.Fsharp

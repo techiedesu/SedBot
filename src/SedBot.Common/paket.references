@@ -5,3 +5,6 @@ Serilog.Extensions.Logging
 Serilog.Sinks.Console
 Funogram.Telegram
 FParsec
+Dapper.FSharp
+Microsoft.Data.Sqlite
+VideoLibrary

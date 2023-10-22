@@ -17,3 +17,16 @@ nuget SpotifyAPI.Web
 nuget SpotifyAPI.Web.Auth
 nuget AspNet.Security.OAuth.Spotify
 nuget Giraffe
+nuget Dapper.FSharp
+nuget Microsoft.Data.Sqlite
+nuget VideoLibrary
+
+nuget NLog
+nuget NLog.Schema
+nuget NLog.Web.AspNetCore
+nuget NLog.Targets.Loki
+
+nuget OpenTelemetry
+nuget OpenTelemetry.Exporter.Console
+nuget OpenTelemetry.Extensions.Hosting
+nuget OpenTelemetry.Instrumentation.AspNetCore

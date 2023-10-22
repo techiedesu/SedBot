@@ -2,7 +2,7 @@
 
 open System
 open System.IO
-open System.Security.Claims
+open System.Threading.Tasks
 open Microsoft.AspNetCore.Authentication.Cookies
 open Microsoft.AspNetCore.Builder
 open Microsoft.AspNetCore.Hosting
@@ -12,6 +12,9 @@ open Microsoft.Extensions.Logging
 open Microsoft.Extensions.Hosting
 open Microsoft.Extensions.DependencyInjection
 open Giraffe
+open SpotifyAPI.Web
+open Microsoft.AspNetCore.Authentication
+open OpenTelemetry.Trace
 
 // ---------------------------------
 // Web app
@@ -31,28 +34,44 @@ and [<CLIMutable>] SpotifyConfig = {
     SaveTokens: bool
 }
 
-type SimpleClaim = {
-    Type: string
-    Value: string
-}
+type [<Sealed>] SpotifyClientBuilder(httpContextAccessor: IHttpContextAccessor,
+                                     config: SpotifyClientConfig) =
+    member this.BuildClient() = task {
+        let hc = httpContextAccessor.HttpContext
 
-let greet =
-    fun (next : HttpFunc) (ctx : HttpContext) ->
-        let claim = ctx.User.FindFirst "name"
-        let name = claim.Value
-        text ("Hello " + name) next ctx
+        let! token = hc.GetTokenAsync("Spotify", "access_token")
 
-let showClaims =
-    fun (next : HttpFunc) (ctx : HttpContext) ->
-        let claims = ctx.User.Claims
-        let simpleClaims = Seq.map (fun (i : Claim) -> {Type = i.Type; Value = i.Value}) claims
-        json simpleClaims next ctx
+        return
+            match token with
+            | null ->
+                None
+            | _ -> SpotifyClient(config.WithToken(token)) |> Some
+    }
+
+let spotifyHandler : HttpHandler =
+
+    fun (next : HttpFunc) (ctx : HttpContext) -> task {
+        let spotifyClientBuilder = ctx.RequestServices.GetService<SpotifyClientBuilder>()
+        let! client = spotifyClientBuilder.BuildClient()
+
+        match client with
+        | None ->
+            return! Successful.CREATED "unauthorized" next ctx
+
+        | Some client ->
+            let! privateUser = client.UserProfile.Current()
+            let! x = client.Library.GetTracks()
+            ctx.SetStatusCode 200
+            return! Successful.OK privateUser.Id next ctx
+    }
 
 let webApp =
     choose [
-        GET >=> choose [
-            route "/" >=> text "Public endpoint."
-        ]
+        requiresAuthentication (challenge "Spotify" >=> text "please authenticate") >=>
+            GET >=>
+                choose [
+                    route "/" >=> spotifyHandler
+                ]
         setStatusCode 404 >=> text "Not Found"
     ]
 
@@ -60,8 +79,9 @@ let webApp =
 // Error handler
 // ---------------------------------
 
-let errorHandler (ex : Exception) (logger : ILogger) =
-    logger.LogError(EventId(), ex, "An unhandled exception has occurred while executing the request.")
+let errorHandler (ex: Exception) (logger: ILogger) =
+    logger.LogError(EventId(), ex,
+                    "An unhandled exception has occurred while executing the request.")
 
     clearResponse
     >=> setStatusCode 500
@@ -71,20 +91,39 @@ let errorHandler (ex : Exception) (logger : ILogger) =
 // Config and Main
 // ---------------------------------
 
-let configureApp (app : IApplicationBuilder) =
-    app.UseAuthentication()
+let configureApp (app: IApplicationBuilder) =
+    app
+       .UseAuthentication()
+       .UseHttpsRedirection()
        .UseGiraffeErrorHandler(errorHandler)
        .UseStaticFiles()
-       .UseGiraffe webApp
+       .UseGiraffe(webApp)
 
-let configureServices (configuration: IConfiguration) (services: IServiceCollection) =
-    let spotifyConfig = configuration.GetRequiredSection(nameof(SpotifyConfig)).Get<SpotifyConfig>()
+
+let configureServices (configuration: IConfiguration)
+    (services: IServiceCollection) =
+    let spotifyConfig =
+        configuration
+            .GetRequiredSection(nameof(SpotifyConfig))
+            .Get<SpotifyConfig>()
 
     services
-        .AddHttpContextAccessor()
-        // services.AddSingleton(SpotifyClientConfig.CreateDefault());
-        // services.AddScoped<SpotifyClientBuilder>();
+        .AddOpenTelemetry()
+        .WithTracing(fun c ->
+            c
+                .AddAspNetCoreInstrumentation()
+                .AddConsoleExporter()
+            |> ignore
+        ) |> ignore
 
+    services
+        .AddHttpContextAccessor() |> ignore
+    services
+        .AddSingleton(SpotifyClientConfig.CreateDefault())
+        .AddScoped<SpotifyClientBuilder>()
+        |> ignore
+
+    services
         .AddAuthorization(fun c ->
             c.AddPolicy("spotify",
                         fun policy ->
@@ -103,24 +142,38 @@ let configureServices (configuration: IConfiguration) (services: IServiceCollect
             c.ClientSecret <- spotifyConfig.ClientSecret
             c.CallbackPath <- spotifyConfig.CallbackPath
             c.SaveTokens <- spotifyConfig.SaveTokens
+
+            let scopes =
+                [|
+                    Scopes.UserTopRead
+                    Scopes.UserReadEmail
+                    Scopes.UserReadPrivate
+                    Scopes.PlaylistReadPrivate
+                    Scopes.UserLibraryRead
+                    Scopes.PlaylistReadCollaborative
+                |] |> String.concat ","
+            c.Scope.Add(scopes)
         )
     |> ignore
     services.AddGiraffe() |> ignore
 
 let configureLogging (builder: ILoggingBuilder) =
-    let filter (l: LogLevel) = l.Equals LogLevel.Error
-    builder.AddFilter(filter).AddConsole().AddDebug() |> ignore
+    builder.AddConsole().AddDebug() |> ignore // TODO: NLog!
+
+open NLog.Web
 
 [<EntryPoint>]
 let main args =
     let contentRoot = Directory.GetCurrentDirectory()
     let webRoot     = Path.Combine(contentRoot, "WebRoot")
+    let environment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT")
 
     let configuration =
         ConfigurationBuilder()
             .AddEnvironmentVariables()
             .AddCommandLine(args)
             .AddJsonFile("appsettings.json")
+            .AddJsonFile($"appsettings.{environment}.json", optional = true)
             .Build()
 
     Host.CreateDefaultBuilder()
@@ -130,10 +183,17 @@ let main args =
                     .UseKestrel()
                     .UseContentRoot(contentRoot)
                     .UseWebRoot(webRoot)
+                    .ConfigureLogging(fun c ->
+                        c
+                            .ClearProviders()
+                            .AddNLogWeb()
+                        |> ignore
+                    )
                     .Configure(configureApp)
                     .ConfigureServices(configureServices configuration)
                     .ConfigureLogging(configureLogging)
                     |> ignore)
+        // .ConfigureAppConfiguration(fun (cb) -> cb.AddUserSecrets<Program>())
         .Build()
         .Run()
     0
