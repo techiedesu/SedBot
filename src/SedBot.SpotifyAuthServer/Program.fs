@@ -15,12 +15,9 @@ open SpotifyAPI.Web
 open Microsoft.AspNetCore.Authentication
 open OpenTelemetry.Trace
 
-// TODO: copy from https://github.com/JohnnyCrazy/SpotifyAPI-NET/blob/master/SpotifyAPI.Web.Examples/Example.ASP/Startup.cs
-// https://johnnycrazy.github.io/SpotifyAPI-NET/docs/getting_started/
-// TODO: add nlog & Loki + Promtail
-
 type [<CLIMutable>] AppConfig = {
     Spotify: SpotifyConfig
+    S3: S3Storage
 }
 and [<CLIMutable>] SpotifyConfig = {
     ClientId: string
@@ -28,19 +25,20 @@ and [<CLIMutable>] SpotifyConfig = {
     CallbackPath: string
     SaveTokens: bool
 }
+and [<CLIMutable>] S3Storage ={
+    UseHttps: bool
+    Host: string
+}
 
 type [<Sealed>] SpotifyClientBuilder(httpContextAccessor: IHttpContextAccessor,
                                      config: SpotifyClientConfig) =
     member this.BuildClient() = task {
         let hc = httpContextAccessor.HttpContext
-
         let! token = hc.GetTokenAsync("Spotify", "access_token")
-
         return SpotifyClient(config.WithToken(token))
     }
 
 let spotifyHandler : HttpHandler =
-
     fun (next : HttpFunc) (ctx : HttpContext) -> task {
         let spotifyClientBuilder = ctx.RequestServices.GetService<SpotifyClientBuilder>()
         let! client = spotifyClientBuilder.BuildClient()
@@ -66,10 +64,6 @@ let errorHandler (ex: Exception) (logger: ILogger) =
     clearResponse
     >=> setStatusCode 500
     >=> text ex.Message
-
-// ---------------------------------
-// Config and Main
-// ---------------------------------
 
 let configureApp (app: IApplicationBuilder) =
     app
@@ -138,8 +132,6 @@ let configureServices (configuration: IConfiguration)
     services.AddGiraffe() |> ignore
 
 open NLog.Web
-
-let inline (^^) x = ignore x
 
 [<EntryPoint>]
 let main args =

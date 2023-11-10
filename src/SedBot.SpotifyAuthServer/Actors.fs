@@ -6,14 +6,17 @@ open Akka.FSharp
 type Track = string // TODO: make struct?
 
 type FetchTracksMail = {
-    Tracks: Track seq
+    Tracks: Track array
 }
 
 let fetchTrackActors (mailbox: Actor<FetchTracksMail>) =
     let rec loop () = actor {
         let! mail = mailbox.Receive()
 
-        mail.Tracks |> Seq.iter (fun t -> ()) // TODO: parallel?
+        let q =
+            mail.Tracks
+            |> Array.map (fun t -> ())
+        // TODO: parallel?
 
         return! loop()
     }

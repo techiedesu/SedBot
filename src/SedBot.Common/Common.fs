@@ -3,6 +3,7 @@ module [<AutoOpen>] SedBot.Common.TypeExtensions
 open System
 open System.IO
 open System.Text.Json
+open System.Threading.Tasks
 open Microsoft.FSharp.Core
 
 let inline (^) f x = f x
@@ -29,6 +30,7 @@ let extension (ft: FileType) =
     | Voice -> ".ogg"
     | Audio -> ".mp3"
 
+[<RequireQualifiedAccess>]
 module String =
     let removeFromStart (text: string) (input: string) =
         if input = null || text = null then
@@ -47,6 +49,7 @@ module String =
             let res = Array.length ^ str.Split(substr)
             res - 1
 
+[<RequireQualifiedAccess>]
 module Option =
     let anyOf2 a b =
         a |> Option.orElse b
@@ -58,6 +61,7 @@ module Option =
         | true ->
             Some ()
 
+[<RequireQualifiedAccess>]
 module Json =
     open System.Text.Json.Serialization
 
@@ -77,12 +81,14 @@ module Json =
     let serialize t =
         JsonSerializer.Serialize(t, serializerSettings)
 
+[<RequireQualifiedAccess>]
 module It =
     let inline Value a = (^a: (member Value: ^b) a)
     let inline Key a = (^a: (member Key: ^b) a)
     let inline KeyIs v a = ((^a: (member Key: ^b) a) = v)
     let inline Width a = (^a: (member Width: ^b) a)
 
+[<RequireQualifiedAccess>]
 module File =
     let delete filePath =
         try
@@ -94,6 +100,7 @@ module File =
 
     let deleteUnit = delete >> ignore
 
+[<RequireQualifiedAccess>]
 module Array =
     let inline any<'T> (a: 'T array) =
         Array.length a = 0
@@ -103,3 +110,25 @@ module Array =
             None
         else
             Some a
+
+[<RequireQualifiedAccess>]
+module TaskSeq =
+    let inline map ([<InlineIfLambda>] projection: 'T -> 'U) (source: 'T seq Task) = task {
+        let! source = source
+        return source |> Seq.map projection
+    }
+
+    let inline groupBy ([<InlineIfLambda>] projection: 'T -> 'TKey) (source: 'T seq Task) = task {
+        let! source = source
+        return source |> Seq.groupBy projection
+    }
+
+    let inline fold ([<InlineIfLambda>] folder: 'TAcc -> 'T -> 'TAcc) (acc: 'TAcc) (source: 'T seq Task) = task {
+        let! source = source
+        return source |> Seq.fold folder acc
+    }
+
+    let inline reduce ([<InlineIfLambda>] reducer: 'T -> 'T -> 'T) (source: 'T seq Task) = task {
+        let! source = source
+        return source |> Seq.reduce reducer
+    }

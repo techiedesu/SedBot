@@ -1,0 +1,54 @@
+services:
+  minio:
+    image: minio/minio
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio_storage:/data
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    command: server --console-address ":9001" /data
+  
+  grafana:
+    image: grafana/grafana:8.2.2
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./config/grafana-datasources.yaml:/etc/grafana/provisioning/datasources/datasources.yaml
+    ports:
+      - "22172:3000"
+  prometheus:
+    image: prom/prometheus:v2.30.3
+    volumes:
+      - ./config/prometheus.yaml:/etc/prometheus/prometheus.yaml
+      - prometheus-data:/prometheus
+    command:
+      - '--storage.tsdb.path=/prometheus'
+      - '--config.file=/etc/prometheus/prometheus.yaml'
+      - '--storage.tsdb.retention.time=14d'
+  
+  loki: 
+    image: grafana/loki:2.3.0
+    volumes:
+      - ./config/loki.yaml:/etc/loki/local--config.yaml
+    command: -config.file=/etc/loki/local-config.yaml
+
+  promtail:
+    image: grafana/promtail:2.3.0
+    volumes:
+      - ./config/promtail.yaml:/etc/promtail/config.yml
+    command: -config.file=/etc/promtail/config.yml
+
+  tempo:
+    image: grafana/tempo:latest
+    ports:
+      - "6831:6831/udp"
+    command: -config.file=/etc/tempo.yaml
+    volumes:
+      - ./config/tempo.yaml:/etc/tempo.yaml
+
+volumes:
+  minio_storage:
+  prometheus-data:
+  grafana-data:

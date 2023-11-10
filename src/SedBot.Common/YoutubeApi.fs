@@ -50,9 +50,9 @@ let private tryGetFirefoxProfiles () = maybe {
     |] |> Array.emptyToNone
 }
 
-Dapper.FSharp.SQLite.OptionTypes.register()
+OptionTypes.register()
 
-type CookieItem = {
+type FirefoxCookieItem = {
     Id: int64
     Name: string
     Value: string
@@ -63,20 +63,30 @@ type CookieItem = {
     with
     member x.CastToCookie() : Cookie =
         // TODO: Expiry? :yao_ming_face"
-        Cookie(x.Name, WebUtility.UrlEncode(x.Value), x.Path, x.Host)
+        // Cookie(x.Name, WebUtility.UrlEncode(x.Value), x.Path, x.Host)
+        Cookie(x.Name, x.Value, x.Path, x.Host)
 
+type CookieItem = {
+    Url: string
+    Header: string
+}
 
-let tryGetCookies (path: string) =
-    use connection = new SqliteConnection($"Data Source={path};")
-    let cookieTable = table'<CookieItem> "moz_cookies"
+// let tryGetCookies (path: string) = task {
+//         use connection = new SqliteConnection($"Data Source={path};")
+//         let cookieTable = table'<FirefoxCookieItem> "moz_cookies"
+//
+//         let selectQuery = select {
+//             for _ in cookieTable do ()
+//         }
+//
+//         let! res = selectQuery
+//                    |> connection.SelectAsync<FirefoxCookieItem>
+//                    |> TaskSeq.groupBy (fun c -> c.Host)
+//                    |> TaskSeq.reduce (fun acc -> acc)
+//         return res
+//     }
 
-    let selectQuery = select {
-        for _ in cookieTable do ()
-    }
-
-    selectQuery |> connection.SelectAsync<CookieItem>
-
-let applyCookiesToHttpClient (items: CookieItem seq) (cc: CookieContainer) =
+let applyCookiesToHttpClient (items: FirefoxCookieItem seq) (cc: CookieContainer) =
     for item in items do
         cc.Add(item.CastToCookie())
     cc
@@ -88,27 +98,18 @@ type DownloadedTrack = {
     Length: int64 option
 }
 
-let downloadTrackMaxQuality (httpClient: HttpClient) (uri: string) : DownloadedTrack option Task = task {
-    let youTube = YouTube(httpClient)
+// TODO: Fix max quality
+let downloadTrack (httpClient: HttpClient) (uri: string) : DownloadedTrack option Task = task {
+    let youTube = YouTube.Default
     let! videos = youTube.GetAllVideosAsync(uri)
     let track = videos
                 |> Seq.filter (fun yv -> yv.AdaptiveKind = AdaptiveKind.Audio && yv.AudioFormat = AudioFormat.Opus)
                 |> Seq.sortByDescending (fun yv -> yv.AudioBitrate)
                 |> Array.ofSeq
-    Console.WriteLine(Json.serialize track.Length)
-                // |> Seq.tryHead
 
-    Console.WriteLine("==========================================================")
+    let track = Seq.head track
+    let! bytes = track.GetBytesAsync()
+    File.WriteAllBytes("foo.mp3", bytes)
 
-    let youTube = YouTube()
-    let! videos = youTube.GetAllVideosAsync(uri)
-    let track2 = videos
-                |> Seq.filter (fun yv -> yv.AdaptiveKind = AdaptiveKind.Audio && yv.AudioFormat = AudioFormat.Opus)
-                |> Seq.sortByDescending (fun yv -> yv.AudioBitrate)
-                |> Array.ofSeq
-                // |> Seq.tryHead
-    Console.WriteLine(Json.serialize track2.Length)
-
-    // let q = track.Value.GetBytesAsync(httpClient)
     return None
 }
