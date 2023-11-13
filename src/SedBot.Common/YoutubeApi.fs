@@ -34,7 +34,15 @@ type FirefoxProfile = {
 // TODO: containers support!
 
 let private tryGetFirefoxProfiles () = maybe {
-    let profilesPath = @"%APPDATA%\Mozilla\Firefox\Profiles\"
+    let profilesPath =
+        match getOperationSystem() with
+        | OperationSystem.Windows ->
+            @"%APPDATA%\Mozilla\Firefox\Profiles\"
+        | OperationSystem.Linux ->
+            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".mozilla/firefox/")
+        | _ ->
+            failwith "Not supported platform"
+
     let! profilesPath = Path.tryGetPath profilesPath
     let! profileDirs =
         Path.tryGetDirectories profilesPath

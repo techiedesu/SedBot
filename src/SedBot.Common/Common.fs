@@ -132,3 +132,25 @@ module TaskSeq =
         let! source = source
         return source |> Seq.reduce reducer
     }
+
+type OperationSystem =
+    | Windows
+    | Linux
+    | FreeBSD
+    | Android
+    | Browser
+    | Other
+
+let getOperationSystem () =
+    if OperatingSystem.IsAndroid() then
+        OperationSystem.Android
+    elif OperatingSystem.IsLinux() then
+        OperationSystem.Linux
+    elif OperatingSystem.IsWindows() then
+        OperationSystem.Windows
+    elif OperatingSystem.IsFreeBSD() then
+        OperationSystem.FreeBSD
+    elif OperatingSystem.IsBrowser() then
+        OperationSystem.Browser
+    else
+        OperationSystem.Other
