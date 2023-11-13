@@ -107,12 +107,24 @@ module CommandParser =
             else
                 commandPatternInternal botUsername text SuperGroup
 
-    let (|Command|) (item: CommandPipelineItem) =
+    let (|CommandWithArgs|) (item: CommandPipelineItem) =
         match item.Message with
         | { Text = Some text; Chat = { Type = cType } } ->
             commandPatternInternal (item.BotUsername.Substring(1)) text cType
         | _ ->
             None, None
+
+    let (|Command|) (item: CommandPipelineItem) =
+        match item.Message with
+        | { Text = Some text; Chat = { Type = cType } } ->
+            commandPatternInternal (item.BotUsername.Substring(1)) text cType |> fst
+        | _ ->
+            None
+
+    let (|IsCommand|_|) (commandName: string) (item: CommandPipelineItem) =
+        match item with
+        | Command (Some c) -> c = commandName |> Option.ofBool
+        | _ -> None
 
     let (|%>) (item: CommandPipelineItem) (messageProcessor: CommandPipelineItem -> CommandPipelineItem) =
         match item.Command with
@@ -161,7 +173,7 @@ module CommandParser =
         match item.Message, item with
         | { MessageId = msgId
             Chat = { Id = chatId }
-            ReplyToMessage = Some replyToMessage }, Command (Some "raw", _)
+            ReplyToMessage = Some replyToMessage }, IsCommand "raw"
          ->
             let res = CommandType.RawMessageInfo({
                 TelegramOmniMessageId = (chatId, msgId)
@@ -176,7 +188,7 @@ module CommandParser =
         | { Chat = { Id = chatId }
             ReplyToMessage = Some { MessageId = msgId
                                     Document = Some { MimeType = Some "video/mp4"
-                                                      FileId = fileId } } }, Command (Some "rev", _) ->
+                                                      FileId = fileId } } }, IsCommand "rev" ->
             let res = CommandType.Reverse({
                 TelegramOmniMessageId = (chatId, msgId)
                 File = fileId, FileType.Gif
@@ -185,7 +197,7 @@ module CommandParser =
 
         | { Chat = { Id = chatId }
             ReplyToMessage = Some { MessageId = msgId
-                                    Video = Some { FileId = fileId } } }, Command (Some "rev", _) ->
+                                    Video = Some { FileId = fileId } } }, IsCommand "rev" ->
             let res = CommandType.Reverse({
                 TelegramOmniMessageId = (chatId, msgId)
                 File = fileId, FileType.Video
@@ -200,7 +212,7 @@ module CommandParser =
         | { Chat = { Id = chatId }
             ReplyToMessage = Some { MessageId = msgId
                                     Document = Some { MimeType = Some "video/mp4"
-                                                      FileId = fileId } } }, Command (Some "vflip", _) ->
+                                                      FileId = fileId } } }, IsCommand "vflip" ->
             let res = CommandType.VerticalFlip({
                 TelegramOmniMessageId = (chatId, msgId)
                 File = fileId, FileType.Gif
@@ -209,7 +221,7 @@ module CommandParser =
 
         | { Chat = { Id = chatId }
             ReplyToMessage = Some { MessageId = msgId
-                                    Video = Some { FileId = fileId } } }, Command (Some "vflip", _) ->
+                                    Video = Some { FileId = fileId } } }, IsCommand "vflip" ->
             let res = CommandType.VerticalFlip({
                 TelegramOmniMessageId = (chatId, msgId)
                 File = fileId, FileType.Video
@@ -218,7 +230,7 @@ module CommandParser =
 
         | { Chat = { Id = chatId }
             ReplyToMessage = Some { MessageId = msgId
-                                    Photo = Some photos } }, Command (Some "vflip", _) ->
+                                    Photo = Some photos } }, IsCommand "vflip" ->
             let fileId =
                 photos
                 |> Array.sortBy It.Width
@@ -240,7 +252,7 @@ module CommandParser =
         | { Chat = { Id = chatId }
             ReplyToMessage = Some { MessageId = msgId
                                     Document = Some { MimeType = Some "video/mp4"
-                                                      FileId = fileId } } }, Command (Some "hflip", _)
+                                                      FileId = fileId } } }, IsCommand "hflip"
             ->
             let res = CommandType.HorizontalFlip({
                     TelegramOmniMessageId = (chatId, msgId)
@@ -250,7 +262,7 @@ module CommandParser =
 
         | { Chat = { Id = chatId }
             ReplyToMessage = Some { MessageId = msgId
-                                    Video = Some { FileId = fileId } } }, Command (Some "hflip", _)
+                                    Video = Some { FileId = fileId } } }, IsCommand "hflip"
             ->
             let res = CommandType.HorizontalFlip({
                     TelegramOmniMessageId = (chatId, msgId)
@@ -260,7 +272,7 @@ module CommandParser =
 
         | { Chat = { Id = chatId }
             ReplyToMessage = Some { MessageId = msgId
-                                    Photo = Some photos } }, Command (Some "hflip", _)
+                                    Photo = Some photos } }, IsCommand "hflip"
             ->
             let fileId =
                 photos
@@ -283,7 +295,7 @@ module CommandParser =
         | { Chat = { Id = chatId }
             ReplyToMessage = Some { MessageId = msgId
                                     Document = Some { MimeType = Some "video/mp4"
-                                                      FileId = fileId } } }, Command (Some "clock", _) ->
+                                                      FileId = fileId } } }, IsCommand "clock" ->
             let res = CommandType.ClockwiseRotation({
                 TelegramOmniMessageId = (chatId, msgId)
                 File = fileId, FileType.Gif
@@ -292,7 +304,7 @@ module CommandParser =
 
         | { Chat = { Id = chatId }
             ReplyToMessage = Some { MessageId = msgId
-                                    Video = Some { FileId = fileId } } }, Command (Some "clock", _) ->
+                                    Video = Some { FileId = fileId } } }, IsCommand "clock" ->
             let res = CommandType.ClockwiseRotation({
                     TelegramOmniMessageId = (chatId, msgId)
                     File = fileId, FileType.Video
@@ -301,7 +313,7 @@ module CommandParser =
 
         | { Chat = { Id = chatId }
             ReplyToMessage = Some { MessageId = msgId
-                                    Photo = Some photos } }, Command (Some "clock", _) ->
+                                    Photo = Some photos } }, IsCommand "clock" ->
             let fileId =
                 photos
                 |> Array.sortBy It.Width
@@ -327,7 +339,7 @@ module CommandParser =
                     MimeType = Some "video/mp4"
                     FileId = fileId
                 }
-            } }, Command (Some "cclock", _) ->
+            } }, IsCommand "cclock" ->
             let res = CommandType.CounterClockwiseRotation({
                     TelegramOmniMessageId = (chatId, msgId)
                     File = fileId, FileType.Gif
@@ -336,7 +348,7 @@ module CommandParser =
 
         | { Chat = { Id = chatId }
             ReplyToMessage = Some { MessageId = msgId
-                                    Video = Some { FileId = fileId } } }, Command (Some "cclock", _) ->
+                                    Video = Some { FileId = fileId } } }, IsCommand "cclock" ->
             let res =
                 CommandType.CounterClockwiseRotation({
                     TelegramOmniMessageId = (chatId, msgId)
@@ -346,7 +358,7 @@ module CommandParser =
             item.SetCommand(res)
 
         | { Chat = { Id = chatId }
-            ReplyToMessage = Some { MessageId = msgId; Photo = Some photos } } , Command (Some "cclock", _)  ->
+            ReplyToMessage = Some { MessageId = msgId; Photo = Some photos } } , IsCommand "cclock" ->
             let fileId =
                 photos
                 |> Array.sortBy It.Width
@@ -366,7 +378,7 @@ module CommandParser =
         match item.Message, item with
         | { Chat = { Id = chatId }
             ReplyToMessage = Some { MessageId = msgId
-                                    Audio = Some { FileId = fileId } } }, Command (Some "dist", _) ->
+                                    Audio = Some { FileId = fileId } } }, IsCommand "dist" ->
             let res = CommandType.Distortion({
                     TelegramOmniMessageId = (chatId, msgId)
                     File = fileId, FileType.Audio
@@ -376,7 +388,7 @@ module CommandParser =
         | { Chat = { Id = chatId }
             ReplyToMessage = Some { MessageId = msgId
                                     Voice = Some { MimeType = Some "audio/ogg"
-                                                   FileId = fileId } } }, Command (Some "dist", _) ->
+                                                   FileId = fileId } } }, IsCommand "dist" ->
             let res = CommandType.Distortion({
                     TelegramOmniMessageId = (chatId, msgId)
                     File = fileId, FileType.Voice
@@ -387,7 +399,7 @@ module CommandParser =
         | { Chat = { Id = chatId }
             ReplyToMessage = Some { MessageId = msgId
                                     Document = Some { MimeType = Some "video/mp4"
-                                                      FileId = fileId } } }, Command (Some "dist", _)
+                                                      FileId = fileId } } }, IsCommand "dist"
             ->
             let res = CommandType.Distortion({
                     TelegramOmniMessageId = (chatId, msgId)
@@ -398,7 +410,7 @@ module CommandParser =
 
         | { Chat = { Id = chatId }
             ReplyToMessage = Some { MessageId = msgId
-                                    Video = Some { FileId = fileId } } }, Command (Some "dist", _) ->
+                                    Video = Some { FileId = fileId } } }, IsCommand "dist" ->
             let res = CommandType.Distortion({
                     TelegramOmniMessageId = (chatId, msgId)
                     File = fileId, FileType.Video
@@ -408,7 +420,7 @@ module CommandParser =
 
         | { Chat = { Id = chatId }
             ReplyToMessage = Some { MessageId = msgId
-                                    Photo = Some photos } }, Command (Some "dist", _) ->
+                                    Photo = Some photos } }, IsCommand "dist" ->
             let fileId =
                 photos
                 |> Array.sortBy It.Width
@@ -452,7 +464,7 @@ module CommandParser =
         match item.Message, item with
         | { Chat = { Id = chatId }
             MessageId = msgId
-            ReplyToMessage = Some { Text = Some data } }, Command (Some "jq", Some args) ->
+            ReplyToMessage = Some { Text = Some data } }, CommandWithArgs (Some "jq", Some args) ->
             let res =
                 CommandType.Jq({
                     TelegramOmniMessageId = (chatId, msgId)
