@@ -103,7 +103,7 @@ module File =
 [<RequireQualifiedAccess>]
 module Array =
     let inline any<'T> (a: 'T array) =
-        Array.length a = 0
+        Array.length a > 0
 
     let inline emptyToNone<'T> (a: 'T array) =
         if Object.ReferenceEquals(a, null) || any a = false then

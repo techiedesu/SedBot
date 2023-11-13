@@ -1,8 +1,10 @@
 ﻿module SedBot.Tests.YoutubeApiTests
 
+open System
 open System.Net.Http
 open NUnit.Framework
 open SedBot.Common
+open SedBot.Common.YoutubeApi
 
 let [<Test>] download() = task {
     let hc = HttpClient()
@@ -10,11 +12,20 @@ let [<Test>] download() = task {
     ()
 }
 
-// let [<Test>] foo () = task {
-//     let! q = tryGetCookies @"C:\Users\td\AppData\Roaming\Mozilla\Firefox\Profiles\bowa4fv7.default-release\cookies.sqlite"
-//     let q = Array.ofSeq q
-//     Json.serialize q |> Console.WriteLine
-// }
+let [<Test>] foo () = task {
+    let q = tryGetFirefoxProfiles()
+
+    let! q = tryGetCookies q.Value[0].SqliteDbPath
+    Json.serialize q |> System.Console.WriteLine
+
+    let hch = new HttpClientHandler()
+    q |> Array.iter (fun x -> hch.CookieContainer.Add(x.CastToCookie()))
+    let hc = new HttpClient(hch)
+    hc.DefaultRequestHeaders.Add("User-Agent", $"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{getChromeVer()} Safari/537.36")
+    // let! res = downloadTrack hc "https://music.youtube.com/watch?v=L_uhcuSXlTM&si=5sFw8VqLG21pQDb"
+    let! res = downloadTrack hc "https://youtu.be/cOv1GoWVcY4"
+    Console.WriteLine(res.IsSome)
+}
 //
 // let [<Test>] tryFetchVideoInfo () = task {
 //     let! cookieItems = tryGetCookies @"C:\Users\td\AppData\Roaming\Mozilla\Firefox\Profiles\eveth9jr.default-release\cookies.sqlite"
