@@ -4,30 +4,30 @@ open System
 
 [<Sealed>]
 type MaybeBuilder() =
-    member inline _.Bind(optionValue, f) =
+    static member inline Bind(optionValue, f) =
         match optionValue with
         | None -> None
         | Some value -> f value
 
-    member inline _.Return maybeNull =
+    static member inline Return maybeNull =
        if Object.ReferenceEquals(maybeNull, null) then
            None
        else
            Some maybeNull
 
-    member inline _.ReturnFrom (optionValue: 'a option) = optionValue
+    static member inline ReturnFrom (optionValue: 'a option) = optionValue
 
-    member inline _.Combine(optionValue, f) =
+    static member inline Combine(optionValue, f) =
         match optionValue with
         | Some _ -> optionValue
         | _ -> f()
 
-    member inline _.Delay f = f
+    static member inline Delay f = f
 
-    member inline _.Run f = f()
+    static member inline Run f = f()
 
-    member inline _.Zero() = None
-    member inline _.TryWith(expr, handler) =
+    static member inline Zero() = None
+    static member inline TryWith(expr, handler) =
         try
             expr()
         with
