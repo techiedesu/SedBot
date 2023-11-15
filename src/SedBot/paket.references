@@ -10,3 +10,4 @@ SpotifyAPI.Web
 Giraffe
 System.Configuration.ConfigurationManager
 Tdesu.VideoLibrary
+AspNet.Security.OAuth.Spotify

@@ -30,4 +30,4 @@ nuget OpenTelemetry
 nuget OpenTelemetry.Exporter.Console
 nuget OpenTelemetry.Extensions.Hosting
 nuget OpenTelemetry.Instrumentation.AspNetCore
-nuget Tdesu.VideoLibrary 3.2.4
+nuget Tdesu.VideoLibrary
