@@ -1,6 +1,7 @@
 ﻿module SedBot.Common.YoutubeApi
 
 open System
+open System.Diagnostics
 open System.IO
 open System.Net
 open System.Linq
@@ -30,10 +31,6 @@ type FirefoxProfile = {
     Path: string
     SqliteDbPath: string
 }
-
-// TODO: windows only. make linux/darwin support?
-// TODO: whitelist/blacklist firefox profiles?
-// TODO: containers support!
 
 let tryGetFirefoxProfiles () = maybe {
     let profilesPath =
@@ -72,43 +69,7 @@ type FirefoxCookieItem = {
 }
     with
     member x.CastToCookie() : Cookie =
-        // def __init__(self,
-        //      version: int | None,
-        //      name: str,
-        //      value: str | None,
-        //      port: str | None,
-        //      port_specified: bool,
-        //      domain: str,
-        //      domain_specified: bool,
-        //      domain_initial_dot: bool,
-        //      path: str,
-        //      path_specified: bool,
-        //      secure: bool,
-        //      expires: int | None,
-        //      discard: bool,
-        //      comment: str | None,
-        //      comment_url: str | None,
-        //      rest: dict[str, str],
-        //      rfc2109: bool = ...) -> None
-
-        // c = cookie_lib.Cookie(0,
-        //               name,
-        //               value,
-        //               None,
-        //               False,
-        //               host,
-        //               host.startswith('.'),
-        //               host.startswith('.'),
-        //               path,
-        //               False,
-        //               isSecure,
-        //               expiry,
-        //               expiry == "",
-        //               None, None, {})
-
-        // TODO: Expiry? :yao_ming_face"
         Cookie(x.Name, WebUtility.UrlEncode(x.Value), x.Path, x.Host)
-        // Cookie(x.Name, x.Value, x.Path, x.Host)
 
 type CookieItem = {
     Url: string
@@ -123,10 +84,7 @@ let tryGetCookies (path: string) = task {
             for _ in cookieTable do ()
         }
 
-        let! res = selectQuery
-                   |> connection.SelectAsync<FirefoxCookieItem>
-                   // |> TaskSeq.groupBy (fun c -> c.Host)
-                   // |> TaskSeq.fold (fun acc -> snd acc)
+        let! res = selectQuery |> connection.SelectAsync<FirefoxCookieItem>
         return res.ToArray()
     }
 
@@ -142,10 +100,8 @@ type DownloadedTrack = {
     Length: int64 option
 }
 
-// TODO: Fix max quality
 let downloadTrack (httpClient: HttpClient) (uri: string) : DownloadedTrack option Task = task {
     let youTube = YouTube(httpClient)
-    // let youTube = YouTube()
     let! videos = youTube.GetAllVideosAsync(uri)
     let videos = Array.ofSeq videos
     let tracks = videos
@@ -153,25 +109,8 @@ let downloadTrack (httpClient: HttpClient) (uri: string) : DownloadedTrack optio
                 |> Seq.sortByDescending (fun yv -> yv.AudioBitrate)
                 |> Array.ofSeq
 
-    let res1 = Json.serialize videos
-
-    let youTube = YouTube()
-    let! videos = youTube.GetAllVideosAsync(uri)
-    let videos = Array.ofSeq videos
-    let tracks = videos
-                |> Seq.filter (fun yv -> yv.AdaptiveKind = AdaptiveKind.Audio && yv.AudioFormat = AudioFormat.Opus)
-                |> Seq.sortByDescending (fun yv -> yv.AudioBitrate)
-                |> Array.ofSeq
-
-    let res2 = Json.serialize videos
-
-    let res = res1 = res2
-    Console.WriteLine(res)
-
-    // let track = Seq.head tracks
-    // let! bytes = track.GetBytesAsync()
-    // File.WriteAllBytes("foo.mp3", bytes)
-
+    let track = Seq.tryHead tracks
+    let bytes = track |> Option.map (fun t -> t.GetBytesAsync()) // .ContinueWith(fun (x: Task<byte array>) -> x.Result)
     return None
 }
 

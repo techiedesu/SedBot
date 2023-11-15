@@ -7,7 +7,7 @@ open SedBot.Common
 open SedBot.Common.YoutubeApi
 
 let [<Test>] download() = task {
-    let hc = HttpClient()
+    let hc = new HttpClient()
     let! x = YoutubeApi.downloadTrack hc "https://music.youtube.com/watch?v=PLAHsB7EJpA&si=RR07PvNLLjfi4alt"
     ()
 }
