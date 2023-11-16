@@ -12,19 +12,16 @@ let [<Test>] download() = task {
     ()
 }
 
-let [<Test>] foo () = task {
-    let q = tryGetFirefoxProfiles()
+let [<Test>] ``Download high quality music`` () = task {
+    let firefoxProfiles = tryGetFirefoxProfiles()
+    let! cookies = tryGetCookies firefoxProfiles.Value[0].SqliteDbPath
 
-    let! q = tryGetCookies q.Value[0].SqliteDbPath
-    Json.serialize q |> System.Console.WriteLine
-
-    let hch = new HttpClientHandler()
-    q |> Array.iter (fun x -> hch.CookieContainer.Add(x.CastToCookie()))
-    let hc = new HttpClient(hch)
+    let httpClientHandler = new HttpClientHandler()
+    cookies |> Array.iter (fun cookie -> httpClientHandler.CookieContainer.Add(cookie.CastToCookie()))
+    let hc = new HttpClient(httpClientHandler)
     hc.DefaultRequestHeaders.Add("User-Agent", $"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{getChromeVer()} Safari/537.36")
-    // let! res = downloadTrack hc "https://music.youtube.com/watch?v=L_uhcuSXlTM&si=5sFw8VqLG21pQDb"
     let! res = downloadTrack hc "https://youtu.be/cOv1GoWVcY4"
-    Console.WriteLine(res.IsSome)
+    ()
 }
 //
 // let [<Test>] tryFetchVideoInfo () = task {

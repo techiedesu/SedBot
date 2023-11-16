@@ -1,30 +1,15 @@
 ﻿module SedBot.Common.YoutubeApi
 
 open System
-open System.Diagnostics
 open System.IO
 open System.Net
 open System.Linq
 open System.Net.Http
-open System.Threading.Tasks
 open Microsoft.Data.Sqlite
 open Dapper.FSharp.SQLite
 open Microsoft.FSharp.Collections
 open SedBot.Common.MaybeBuilder
 open VideoLibrary
-
-module [<RequireQualifiedAccess>] Path =
-    let tryGetPath path =
-        if Path.Exists(path) then
-            Some ^ Path.GetFullPath(path)
-        else
-            None
-
-    let tryGetDirectories path =
-        if Path.Exists(path) then
-            Some ^ Directory.GetDirectories(path)
-        else
-            None
 
 type FirefoxProfile = {
     Name: string
@@ -100,7 +85,7 @@ type DownloadedTrack = {
     Length: int64 option
 }
 
-let downloadTrack (httpClient: HttpClient) (uri: string) : DownloadedTrack option Task = task {
+let downloadTrack (httpClient: HttpClient) (uri: string) = task {
     let youTube = YouTube(httpClient)
     let! videos = youTube.GetAllVideosAsync(uri)
     let videos = Array.ofSeq videos
@@ -110,11 +95,14 @@ let downloadTrack (httpClient: HttpClient) (uri: string) : DownloadedTrack optio
                 |> Array.ofSeq
 
     let track = Seq.tryHead tracks
-    let bytes = track |> Option.map (fun t -> t.GetBytesAsync()) // .ContinueWith(fun (x: Task<byte array>) -> x.Result)
-    return None
+    match track with
+    | None ->
+        return None
+    | Some track ->
+        return track.GetBytesAsync() |> Some
 }
 
-let rand = new Random()
+let rand = Random()
 
 let private chromeVersions =
     [|

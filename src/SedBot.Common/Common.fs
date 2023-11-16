@@ -61,6 +61,12 @@ module Option =
         | true ->
             Some ()
 
+    let inline ofValueOption (v: 'T ValueOption) =
+        if v.IsSome then
+            Some v.Value
+        else
+            None
+
 [<RequireQualifiedAccess>]
 module Json =
     open System.Text.Json.Serialization
@@ -100,6 +106,19 @@ module File =
 
     let deleteUnit = delete >> ignore
 
+module [<RequireQualifiedAccess>] Path =
+    let tryGetPath path =
+        if Path.Exists(path) then
+            Some ^ Path.GetFullPath(path)
+        else
+            None
+
+    let tryGetDirectories path =
+        if Path.Exists(path) then
+            Some ^ Directory.GetDirectories(path)
+        else
+            None
+
 [<RequireQualifiedAccess>]
 module Array =
     let inline any<'T> (a: 'T array) =
@@ -131,6 +150,12 @@ module TaskSeq =
     let inline reduce ([<InlineIfLambda>] reducer: 'T -> 'T -> 'T) (source: 'T seq Task) = task {
         let! source = source
         return source |> Seq.reduce reducer
+    }
+
+module TaskOption =
+    let ofObj (v: 'v Task) = task {
+        let! v = v
+        return Some v
     }
 
 type OperationSystem =

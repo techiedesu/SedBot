@@ -13,3 +13,4 @@ OpenTelemetry.Extensions.Hosting
 OpenTelemetry.Instrumentation.AspNetCore
 Akka.Fsharp
 NLog.DiagnosticSource
+AWSSDK.S3

@@ -8,3 +8,4 @@ FParsec
 Dapper.FSharp
 Microsoft.Data.Sqlite
 Tdesu.VideoLibrary
+Npgsql 

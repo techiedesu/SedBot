@@ -11,3 +11,5 @@ Giraffe
 System.Configuration.ConfigurationManager
 Tdesu.VideoLibrary
 AspNet.Security.OAuth.Spotify
+AWSSDK.S3
+Npgsql

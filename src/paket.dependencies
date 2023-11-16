@@ -31,3 +31,5 @@ nuget OpenTelemetry.Exporter.Console
 nuget OpenTelemetry.Extensions.Hosting
 nuget OpenTelemetry.Instrumentation.AspNetCore
 nuget Tdesu.VideoLibrary
+nuget AWSSDK.S3
+nuget Npgsql
