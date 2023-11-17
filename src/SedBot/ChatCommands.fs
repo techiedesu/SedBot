@@ -6,6 +6,7 @@ open Funogram.Telegram.Types
 
 open SedBot.Common
 open SedBot.ProcessingChannels
+open SedBot.Common.MaybeBuilder
 
 type FunogramMessage = Types.Message
 
@@ -73,10 +74,14 @@ module CommandParser =
 
         static member GetCommand(item: CommandPipelineItem) =
             match item.Command with
-            | ValueSome command ->
-                command
             | ValueNone ->
                 CommandType.Nope
+            | ValueSome command ->
+                command
+
+    module [<RequireQualifiedAccess>] CommandPipelineItem =
+        let set (item: CommandPipelineItem) command =
+            item.SetCommand(command)
 
     let rec commandPatternInternal botUsername (text: string) chatType =
         let tryGetArgs rawArgs =
@@ -121,6 +126,47 @@ module CommandParser =
         | _ ->
             None
 
+    let (|Message|) (item: CommandPipelineItem) =
+        item.Message
+
+    let (|WhenReplyDocumentMimeTypeIs|_|) (mimeType: string) (item: CommandPipelineItem) =
+        match item with
+        | Message { ReplyToMessage = Some { Document = Some { MimeType = Some mimeType' } } } ->
+            Option.ofBool (mimeType = mimeType')
+        | _ ->
+            None
+
+    let (|ReplyDocumentFileId|) (item: CommandPipelineItem) =
+        match item with
+        | Message { ReplyToMessage = Some { Document = Some { FileId = fileId } } } -> Some fileId
+        | _ -> None
+
+    let (|ReplyGifFileId|) (item: CommandPipelineItem) =
+        match item with
+        | Message { ReplyToMessage = Some { Document = Some { FileId = fileId } } } & WhenReplyDocumentMimeTypeIs "video/mp4" -> Some (fileId, FileType.Gif)
+        | _ -> None
+
+    let (|ReplyVideoFileId|) (item: CommandPipelineItem) =
+        match item with
+        | Message { ReplyToMessage = Some { Document = Some { FileId = fileId } } } -> Some (fileId, FileType.Video)
+        | _ -> None
+
+    let (|ReplyPhotos|) (item: CommandPipelineItem) =
+        match item with
+        | Message { ReplyToMessage = Some { Photo = photos } }-> photos
+        | _ -> None
+
+    let (|ChatId|) (item: CommandPipelineItem) =
+        match item with Message { Chat = { Id = id } } -> Some id
+
+    let (|MessageId|) (item: CommandPipelineItem) =
+        match item with Message { MessageId = id } -> Some id
+
+    let (|ReplyToMessageId|) (item: CommandPipelineItem) =
+        match item with
+        | Message { ReplyToMessage = Some { MessageId = id } } -> Some id
+        | _ -> None
+
     let (|IsCommand|_|) (commandName: string) (item: CommandPipelineItem) =
         match item with
         | Command (Some c) -> c = commandName |> Option.ofBool
@@ -141,40 +187,31 @@ module CommandParser =
                 else
                     None
 
-        match item.Message with
-        | { MessageId = srcMsgId
-            Chat = { Id = chatId }
-            Text = Some expression
-            ReplyToMessage = Some {
-                Text = text
-                MessageId = msgId
-                Caption = caption
-            }
-          } ->
-            let expression = tryGetValidExpression expression
-            match expression with
-            | Some expression ->
-                let text = Option.anyOf2 text caption
+        match item with
+        | Message { MessageId = srcMsgId; Chat = { Id = chatId }; Text = Some expression; ReplyToMessage = Some { Text = text; MessageId = msgId; Caption = caption } } ->
+            maybe {
+                let! expression = tryGetValidExpression expression
+                let! text = maybe {
+                    return! text
+                    return! caption
+                }
 
-                match text with
-                | Some text ->
-                    let res = CommandType.Sed({
-                        TelegramOmniMessageId = (chatId, msgId)
-                        SrcMsgId = srcMsgId
-                        Expression = expression
-                        Text = text
-                    })
-                    item.SetCommand(res)
-                | None -> item
-            | _ -> item
-        | _ -> item
+                let res = CommandType.Sed({
+                    TelegramOmniMessageId = (chatId, msgId)
+                    SrcMsgId = srcMsgId
+                    Expression = expression
+                    Text = text
+                })
+                return item.SetCommand(res) } |> Option.defaultValue item
+        | _ ->
+            item
 
     let private handleRawMessageInfo (item: CommandPipelineItem) : CommandPipelineItem =
-        match item.Message, item with
-        | { MessageId = msgId
+        match item with
+        | Message {
+            MessageId = msgId
             Chat = { Id = chatId }
-            ReplyToMessage = Some replyToMessage }, IsCommand "raw"
-         ->
+            ReplyToMessage = Some replyToMessage } & IsCommand "raw" ->
             let res = CommandType.RawMessageInfo({
                 TelegramOmniMessageId = (chatId, msgId)
                 ReplyTo = replyToMessage
@@ -183,58 +220,39 @@ module CommandParser =
         | _ ->
             item
 
-    let private handleReverse (item: CommandPipelineItem) : CommandPipelineItem =
-        match item.Message, item with
-        | { Chat = { Id = chatId }
-            ReplyToMessage = Some { MessageId = msgId
-                                    Document = Some { MimeType = Some "video/mp4"
-                                                      FileId = fileId } } }, IsCommand "rev" ->
+    let private handleReverse (item: CommandPipelineItem) =
+        match item with
+        | IsCommand "rev"
+            & ChatId (Some chatId)
+            & ReplyToMessageId (Some msgId)
+            & (ReplyGifFileId (Some file) | ReplyVideoFileId (Some file)) ->
             let res = CommandType.Reverse({
                 TelegramOmniMessageId = (chatId, msgId)
-                File = fileId, FileType.Gif
+                File = file
             })
-            item.SetCommand(res)
-
-        | { Chat = { Id = chatId }
-            ReplyToMessage = Some { MessageId = msgId
-                                    Video = Some { FileId = fileId } } }, IsCommand "rev" ->
-            let res = CommandType.Reverse({
-                TelegramOmniMessageId = (chatId, msgId)
-                File = fileId, FileType.Video
-            })
-            item.SetCommand(res)
-
+            CommandPipelineItem.set item res
         | _ ->
             item
 
     let private handleVerticalFlip (item: CommandPipelineItem) : CommandPipelineItem =
-        match item.Message, item with
-        | { Chat = { Id = chatId }
-            ReplyToMessage = Some { MessageId = msgId
-                                    Document = Some { MimeType = Some "video/mp4"
-                                                      FileId = fileId } } }, IsCommand "vflip" ->
+        match item with
+        | IsCommand "vflip"
+            & ChatId (Some chatId)
+            & ReplyToMessageId (Some msgId)
+            & (ReplyGifFileId (Some file) | ReplyVideoFileId (Some file)) ->
             let res = CommandType.VerticalFlip({
                 TelegramOmniMessageId = (chatId, msgId)
-                File = fileId, FileType.Gif
+                File = file
             })
             item.SetCommand(res)
 
-        | { Chat = { Id = chatId }
-            ReplyToMessage = Some { MessageId = msgId
-                                    Video = Some { FileId = fileId } } }, IsCommand "vflip" ->
-            let res = CommandType.VerticalFlip({
-                TelegramOmniMessageId = (chatId, msgId)
-                File = fileId, FileType.Video
-            })
-            item.SetCommand(res)
-
-        | { Chat = { Id = chatId }
-            ReplyToMessage = Some { MessageId = msgId
-                                    Photo = Some photos } }, IsCommand "vflip" ->
+        | IsCommand "vflip"
+            & ChatId (Some chatId)
+            & ReplyToMessageId (Some msgId)
+            & ReplyPhotos (Some photos) ->
             let fileId =
                 photos
-                |> Array.sortBy It.Width
-                |> Array.rev
+                |> Array.sortByDescending It.Width
                 |> Array.head
                 |> fun p -> p.FileId
 
@@ -248,32 +266,21 @@ module CommandParser =
         | _ -> item
 
     let private handleHorizontalFlip (item: CommandPipelineItem) : CommandPipelineItem =
-        match item.Message, item with
-        | { Chat = { Id = chatId }
-            ReplyToMessage = Some { MessageId = msgId
-                                    Document = Some { MimeType = Some "video/mp4"
-                                                      FileId = fileId } } }, IsCommand "hflip"
-            ->
+        match item with
+        | IsCommand "hflip"
+            & ChatId (Some chatId)
+            & ReplyToMessageId (Some msgId)
+            & (ReplyGifFileId (Some file) | ReplyVideoFileId (Some file)) ->
             let res = CommandType.HorizontalFlip({
                     TelegramOmniMessageId = (chatId, msgId)
-                    File = fileId, FileType.Gif
+                    File = file
                 })
             item.SetCommand(res)
 
-        | { Chat = { Id = chatId }
-            ReplyToMessage = Some { MessageId = msgId
-                                    Video = Some { FileId = fileId } } }, IsCommand "hflip"
-            ->
-            let res = CommandType.HorizontalFlip({
-                    TelegramOmniMessageId = (chatId, msgId)
-                    File = fileId, FileType.Video
-                })
-            item.SetCommand(res)
-
-        | { Chat = { Id = chatId }
-            ReplyToMessage = Some { MessageId = msgId
-                                    Photo = Some photos } }, IsCommand "hflip"
-            ->
+        | IsCommand "hflip"
+            & ChatId (Some chatId)
+            & ReplyToMessageId (Some msgId)
+            & ReplyPhotos (Some photos) ->
             let fileId =
                 photos
                 |> Array.sortBy It.Width
@@ -291,29 +298,21 @@ module CommandParser =
         | _ -> item
 
     let private handleClockwiseRotation (item: CommandPipelineItem) : CommandPipelineItem =
-        match item.Message, item with
-        | { Chat = { Id = chatId }
-            ReplyToMessage = Some { MessageId = msgId
-                                    Document = Some { MimeType = Some "video/mp4"
-                                                      FileId = fileId } } }, IsCommand "clock" ->
+        match item with
+        | IsCommand "clock"
+            & ChatId (Some chatId)
+            & ReplyToMessageId (Some msgId)
+            & (ReplyGifFileId (Some file) | ReplyVideoFileId (Some file)) ->
             let res = CommandType.ClockwiseRotation({
                 TelegramOmniMessageId = (chatId, msgId)
-                File = fileId, FileType.Gif
+                File = file
             })
             item.SetCommand(res)
 
-        | { Chat = { Id = chatId }
-            ReplyToMessage = Some { MessageId = msgId
-                                    Video = Some { FileId = fileId } } }, IsCommand "clock" ->
-            let res = CommandType.ClockwiseRotation({
-                    TelegramOmniMessageId = (chatId, msgId)
-                    File = fileId, FileType.Video
-            })
-            item.SetCommand(res)
-
-        | { Chat = { Id = chatId }
-            ReplyToMessage = Some { MessageId = msgId
-                                    Photo = Some photos } }, IsCommand "clock" ->
+        | IsCommand "clock"
+            & ReplyPhotos (Some photos)
+            & ChatId (Some chatId)
+            & ReplyToMessageId (Some msgId) ->
             let fileId =
                 photos
                 |> Array.sortBy It.Width
@@ -331,34 +330,21 @@ module CommandParser =
             item
 
     let private handleCounterclockwiseRotation (item: CommandPipelineItem) : CommandPipelineItem =
-        match item.Message, item with
-        | { Chat = { Id = chatId }
-            ReplyToMessage = Some {
-                MessageId = msgId
-                Document = Some {
-                    MimeType = Some "video/mp4"
-                    FileId = fileId
-                }
-            } }, IsCommand "cclock" ->
+        match item with
+        | IsCommand "cclock"
+            & ChatId (Some chatId)
+            & ReplyToMessageId (Some msgId)
+            & (ReplyGifFileId (Some file) | ReplyVideoFileId (Some file)) ->
             let res = CommandType.CounterClockwiseRotation({
                     TelegramOmniMessageId = (chatId, msgId)
-                    File = fileId, FileType.Gif
+                    File = file
                 })
             item.SetCommand(res)
 
-        | { Chat = { Id = chatId }
-            ReplyToMessage = Some { MessageId = msgId
-                                    Video = Some { FileId = fileId } } }, IsCommand "cclock" ->
-            let res =
-                CommandType.CounterClockwiseRotation({
-                    TelegramOmniMessageId = (chatId, msgId)
-                    File = fileId, FileType.Video
-                })
-
-            item.SetCommand(res)
-
-        | { Chat = { Id = chatId }
-            ReplyToMessage = Some { MessageId = msgId; Photo = Some photos } } , IsCommand "cclock" ->
+        | IsCommand "cclock"
+            & ReplyPhotos (Some photos)
+            & ChatId (Some chatId)
+            & ReplyToMessageId (Some msgId) ->
             let fileId =
                 photos
                 |> Array.sortBy It.Width
@@ -375,32 +361,15 @@ module CommandParser =
         | _ -> item
 
     let private handleDistortion (item: CommandPipelineItem) : CommandPipelineItem =
-        match item.Message, item with
-        | { Chat = { Id = chatId }
-            ReplyToMessage = Some { MessageId = msgId
-                                    Audio = Some { FileId = fileId } } }, IsCommand "dist" ->
+        match item with
+        | Message { Chat = { Id = chatId }; ReplyToMessage = Some { MessageId = msgId; Audio = Some { FileId = fileId } } } & IsCommand "dist" ->
             let res = CommandType.Distortion({
                     TelegramOmniMessageId = (chatId, msgId)
                     File = fileId, FileType.Audio
                 })
             item.SetCommand(res)
 
-        | { Chat = { Id = chatId }
-            ReplyToMessage = Some { MessageId = msgId
-                                    Voice = Some { MimeType = Some "audio/ogg"
-                                                   FileId = fileId } } }, IsCommand "dist" ->
-            let res = CommandType.Distortion({
-                    TelegramOmniMessageId = (chatId, msgId)
-                    File = fileId, FileType.Voice
-                })
-
-            item.SetCommand(res)
-
-        | { Chat = { Id = chatId }
-            ReplyToMessage = Some { MessageId = msgId
-                                    Document = Some { MimeType = Some "video/mp4"
-                                                      FileId = fileId } } }, IsCommand "dist"
-            ->
+        | Message { ReplyToMessage = Some { MessageId = msgId; Document = Some { MimeType = Some "video/mp4"; FileId = fileId } } } & IsCommand "dist" & ChatId (Some chatId) ->
             let res = CommandType.Distortion({
                     TelegramOmniMessageId = (chatId, msgId)
                     File = fileId, FileType.Gif
@@ -408,19 +377,30 @@ module CommandParser =
 
             item.SetCommand(res)
 
-        | { Chat = { Id = chatId }
-            ReplyToMessage = Some { MessageId = msgId
-                                    Video = Some { FileId = fileId } } }, IsCommand "dist" ->
+        | Message { Chat = { Id = chatId }; ReplyToMessage = Some { MessageId = msgId; Voice = Some { MimeType = Some "audio/ogg"; FileId = fileId } } } & IsCommand "dist" ->
             let res = CommandType.Distortion({
-                    TelegramOmniMessageId = (chatId, msgId)
-                    File = fileId, FileType.Video
-                })
+                TelegramOmniMessageId = (chatId, msgId)
+                File = fileId, FileType.Voice
+            })
 
             item.SetCommand(res)
 
-        | { Chat = { Id = chatId }
-            ReplyToMessage = Some { MessageId = msgId
-                                    Photo = Some photos } }, IsCommand "dist" ->
+
+        | IsCommand "dist"
+            & ChatId (Some chatId)
+            & ReplyToMessageId (Some msgId)
+            & ReplyVideoFileId (Some file) ->
+            let res = CommandType.Distortion({
+                TelegramOmniMessageId = (chatId, msgId)
+                File = file
+            })
+
+            item.SetCommand(res)
+
+        |  IsCommand "dist"
+            & ChatId (Some chatId)
+            & ReplyPhotos (Some photos)
+            & ReplyToMessageId (Some msgId) ->
             let fileId =
                 photos
                 |> Array.sortBy It.Width
@@ -437,34 +417,34 @@ module CommandParser =
         | _ -> item
 
     let private handleClown (item: CommandPipelineItem) =
-        match item.Message with
-        | { Chat = { Id = chatId }
-            Text = Some command } when command.Contains("🤡") ->
+        match item with
+        | ChatId (Some chatId)
+            & Message { Text = Some command } when command.Contains("🤡") ->
             let res = CommandType.Clown({
                 ChatId = chatId
                 Count = String.getCountOfOccurrences command "🤡"
             })
             item.SetCommand(res)
 
-        | { Chat = { Id = chatId }
-            Caption = Some command } when command.Contains("🤡") ->
+        | ChatId (Some chatId)
+            & Message { Caption = Some command } when command.Contains("🤡") ->
             let res = CommandType.Clown({
                 ChatId = chatId
                 Count = String.getCountOfOccurrences command "🤡"
             })
             item.SetCommand(res)
 
-        | { Chat = { Id = chatId }
-            Sticker = Some { Emoji = Some emoji } } when emoji.Contains("🤡") ->
+        | Message { Chat = { Id = chatId }; Sticker = Some { Emoji = Some emoji } } when emoji.Contains("🤡") ->
             let res = CommandType.Clown({ ChatId = chatId; Count = 1 })
             item.SetCommand(res)
         | _ -> item
 
     let private handleJq (item: CommandPipelineItem) =
-        match item.Message, item with
-        | { Chat = { Id = chatId }
-            MessageId = msgId
-            ReplyToMessage = Some { Text = Some data } }, CommandWithArgs (Some "jq", Some args) ->
+        match item with
+        | ChatId (Some chatId)
+            & MessageId (Some msgId)
+            & Message { ReplyToMessage = Some { Text = Some data } }
+            & CommandWithArgs (Some "jq", Some args) ->
             let res =
                 CommandType.Jq({
                     TelegramOmniMessageId = (chatId, msgId)

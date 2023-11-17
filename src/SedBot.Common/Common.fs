@@ -5,6 +5,7 @@ open System.IO
 open System.Text.Json
 open System.Threading.Tasks
 open Microsoft.FSharp.Core
+open SedBot.Common.MaybeBuilder
 
 let inline (^) f x = f x
 
@@ -51,10 +52,12 @@ module String =
 
 [<RequireQualifiedAccess>]
 module Option =
-    let anyOf2 a b =
-        a |> Option.orElse b
+    let inline anyOf2 a b = maybe {
+        return! a
+        return! b
+    }
 
-    let ofBool (v: bool) =
+    let inline ofBool (v: bool) =
         match v with
         | false ->
             None
