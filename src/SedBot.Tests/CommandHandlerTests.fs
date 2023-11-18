@@ -2,7 +2,7 @@
 
 open Funogram.Telegram.Types
 open NUnit.Framework
-open SedBot.ChatCommands
+open SedBot.Commands
 
 [<TestCase("sample_bot", "/send@sample_bot horny bonk", "supergroup", "send", "horny,bonk")>]
 [<TestCase("sample_bot", "/send@sample_bot horny bonk", "private", "send", "horny,bonk")>]
@@ -21,7 +21,7 @@ let [<Test>] ``Command handler works properly`` (botName, command, chatType, exp
         | "channel" -> ChatType.Channel
         | s -> failwith $"Can't handle -> {s}"
 
-    match CommandParser.commandPatternInternal botName command chatType with
+    match ActivePatterns.commandPatternInternal botName command chatType with
     | Some command, Some args ->
         Assert.AreEqual(command, expectedCommand)
         Assert.AreEqual(expectedArgs, System.String.Join(",", args))

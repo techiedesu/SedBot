@@ -11,12 +11,14 @@
     <Compile Include="Api.fs" />
     <Compile Include="TgApi.fs" />
     <Compile Include="Actors.fs" />
-    <Compile Include="ChatCommands.fs" />
     <Compile Include="Commands.fs" />
     <Compile Include="AppConfig.fs" />
     <Content Include="paket.references" />
     <Compile Include="Actors\MessageSenderActor.fs" />
     <Compile Include="Actors\SpotifyLikedTrackAgregatorActor.fs" />
+    <Compile Include="Commands\Types.fs" />
+    <Compile Include="Commands\ActivePatterns.fs" />
+    <Compile Include="Commands\CommandParser.fs" />
     <Compile Include="Spotify.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>

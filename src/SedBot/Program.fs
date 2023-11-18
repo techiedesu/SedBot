@@ -8,8 +8,9 @@ open Funogram.Telegram
 open Funogram.Telegram.Bot
 open Funogram.Telegram.Types
 open SedBot
+open SedBot.Commands
+open SedBot.ChatCommands.Types
 open SedBot.Common.TypeExtensions
-open SedBot.ChatCommands
 open SedBot.Common.Utilities
 open Microsoft.Extensions.Logging
 
@@ -76,7 +77,7 @@ let updateArrivedInternal ctx (message: Message) =
                 Expression = exp
                 Text = text
          } ->
-            let! res = Commands.sed text exp
+            let! res = Handlers.sed text exp
 
             match res with
             | ValueSome res ->
@@ -90,7 +91,7 @@ let updateArrivedInternal ctx (message: Message) =
             Expression = expression
             Text = data
          } ->
-            let! res = expression |> Commands.jq data
+            let! res = expression |> Handlers.jq data
 
             match res with
             | ValueSome res ->
@@ -106,7 +107,7 @@ let updateArrivedInternal ctx (message: Message) =
 
             match file with
             | ValueSome srcStream ->
-                let! res = Commands.reverse srcStream fileType
+                let! res = Handlers.reverse srcStream fileType
                 do! sendFileAsReply res fileType chatId msgId
             | _ ->
                 do! TgApi.sendMessageAndDeleteAfter chatId "Reverse command failed. This message will be deleted after 35 s." 35000
@@ -119,7 +120,7 @@ let updateArrivedInternal ctx (message: Message) =
 
             match file with
             | ValueSome srcStream ->
-                let! res = Commands.vFlip srcStream fileType
+                let! res = Handlers.vFlip srcStream fileType
                 do! sendFileAsReply res fileType chatId msgId
             | _ ->
                 do! TgApi.sendMessageAndDeleteAfter chatId "VerticalFlip command failed. This message will be deleted after 35 s." 35000
@@ -132,7 +133,7 @@ let updateArrivedInternal ctx (message: Message) =
 
             match file with
             | ValueSome srcStream ->
-                let! res = Commands.hFlip srcStream fileType
+                let! res = Handlers.hFlip srcStream fileType
                 do! sendFileAsReply res fileType chatId msgId
             | _ ->
                 do! TgApi.sendMessageAndDeleteAfter chatId "HorizontalFlip command failed. This message will be deleted after 35 s." 35000
@@ -145,7 +146,7 @@ let updateArrivedInternal ctx (message: Message) =
 
             match file with
             | ValueSome srcStream ->
-                let! res = Commands.distort srcStream fileType
+                let! res = Handlers.distort srcStream fileType
                 do! sendFileAsReply res fileType chatId msgId
             | _ ->
                 do! TgApi.sendMessageAndDeleteAfter chatId "Distortion command failed. This message will be deleted after 35 s." 35000
@@ -158,7 +159,7 @@ let updateArrivedInternal ctx (message: Message) =
 
             match file with
             | ValueSome srcStream ->
-                let! res = Commands.clock srcStream fileType
+                let! res = Handlers.clock srcStream fileType
                 do! sendFileAsReply res fileType chatId msgId
             | _ ->
                 do! TgApi.sendMessageAndDeleteAfter chatId "ClockwiseRotation command failed. This message will be deleted after 35 s." 35000
@@ -171,7 +172,7 @@ let updateArrivedInternal ctx (message: Message) =
 
             match file with
             | ValueSome srcStream ->
-                let! res = Commands.cclock srcStream fileType
+                let! res = Handlers.cclock srcStream fileType
                 do! sendFileAsReply res fileType chatId msgId
             | _ ->
                 do! TgApi.sendMessageAndDeleteAfter chatId "CounterClockwiseRotation command failed. This message will be deleted after 35 s." 35000

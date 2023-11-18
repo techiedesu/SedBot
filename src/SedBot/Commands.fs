@@ -1,4 +1,4 @@
-module SedBot.Commands
+module SedBot.Commands.Handlers
 
 open System.IO
 open System.Threading.Tasks
