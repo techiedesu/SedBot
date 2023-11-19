@@ -40,13 +40,13 @@ let handleSed (item: CommandPipelineItem) : CommandPipelineItem =
 
 let handleRawMessageInfo (item: CommandPipelineItem) =
     match item with
-    | Message {
-        MessageId = msgId
-        Chat = { Id = chatId }
-        ReplyToMessage = Some replyToMessage } & IsCommand "raw" ->
+    | IsCommand "raw"
+        & MessageId (Some msgId)
+        & ChatId (Some chatId)
+        & ReplyMessage (Some replyMessage) ->
         let res = CommandType.RawMessageInfo({
             TelegramOmniMessageId = (chatId, msgId)
-            ReplyTo = replyToMessage
+            ReplyTo = replyMessage
         })
         item.SetCommand(res)
     | _ ->
@@ -71,29 +71,11 @@ let handleVerticalFlip (item: CommandPipelineItem) =
     | IsCommand "vflip"
         & ChatId (Some chatId)
         & ReplyToMessageId (Some msgId)
-        & (ReplyGifFileId (Some file) | ReplyVideoFileId (Some file)) ->
+        & (ReplyGifFileId (Some file) | ReplyVideoFileId (Some file) | ReplyPhotoMaxQualityId (Some file)) ->
         let res = CommandType.VerticalFlip({
             TelegramOmniMessageId = (chatId, msgId)
             File = file
         })
-        item.SetCommand(res)
-
-    | IsCommand "vflip"
-        & ChatId (Some chatId)
-        & ReplyToMessageId (Some msgId)
-        & ReplyPhotos (Some photos) ->
-        let fileId =
-            photos
-            |> Array.sortByDescending It.Width
-            |> Array.head
-            |> fun p -> p.FileId
-
-        let res =
-            CommandType.VerticalFlip({
-                TelegramOmniMessageId = (chatId, msgId)
-                File = fileId, FileType.Picture
-            })
-
         item.SetCommand(res)
     | _ -> item
 
@@ -102,29 +84,11 @@ let handleHorizontalFlip (item: CommandPipelineItem) =
     | IsCommand "hflip"
         & ChatId (Some chatId)
         & ReplyToMessageId (Some msgId)
-        & (ReplyGifFileId (Some file) | ReplyVideoFileId (Some file)) ->
+        & (ReplyGifFileId (Some file) | ReplyVideoFileId (Some file) | ReplyPhotoMaxQualityId (Some file)) ->
         let res = CommandType.HorizontalFlip({
             TelegramOmniMessageId = (chatId, msgId)
             File = file
         })
-        item.SetCommand(res)
-
-    | IsCommand "hflip"
-        & ChatId (Some chatId)
-        & ReplyToMessageId (Some msgId)
-        & ReplyPhotos (Some photos) ->
-        let fileId =
-            photos
-            |> Array.sortBy It.Width
-            |> Array.rev
-            |> Array.head
-            |> fun p -> p.FileId
-
-        let res = CommandType.HorizontalFlip({
-            TelegramOmniMessageId = (chatId, msgId)
-            File = fileId, FileType.Picture
-        })
-
         item.SetCommand(res)
     | _ -> item
 
@@ -133,29 +97,11 @@ let handleClockwiseRotation (item: CommandPipelineItem) =
     | IsCommand "clock"
         & ChatId (Some chatId)
         & ReplyToMessageId (Some msgId)
-        & (ReplyGifFileId (Some file) | ReplyVideoFileId (Some file)) ->
+        & (ReplyGifFileId (Some file) | ReplyVideoFileId (Some file) | ReplyPhotoMaxQualityId (Some file)) ->
         let res = CommandType.ClockwiseRotation({
             TelegramOmniMessageId = (chatId, msgId)
             File = file
         })
-        item.SetCommand(res)
-
-    | IsCommand "clock"
-        & ReplyPhotos (Some photos)
-        & ChatId (Some chatId)
-        & ReplyToMessageId (Some msgId) ->
-        let fileId =
-            photos
-            |> Array.sortBy It.Width
-            |> Array.rev
-            |> Array.head
-            |> fun p -> p.FileId
-
-        let res = CommandType.ClockwiseRotation({
-            TelegramOmniMessageId = (chatId, msgId)
-            File = fileId, FileType.Picture
-        })
-
         item.SetCommand(res)
     | _ ->
         item
@@ -165,29 +111,11 @@ let handleCounterclockwiseRotation (item: CommandPipelineItem) =
     | IsCommand "cclock"
         & ChatId (Some chatId)
         & ReplyToMessageId (Some msgId)
-        & (ReplyGifFileId (Some file) | ReplyVideoFileId (Some file)) ->
+        & (ReplyGifFileId (Some file) | ReplyVideoFileId (Some file) | ReplyPhotoMaxQualityId (Some file)) ->
         let res = CommandType.CounterClockwiseRotation({
                 TelegramOmniMessageId = (chatId, msgId)
                 File = file
             })
-        item.SetCommand(res)
-
-    | IsCommand "cclock"
-        & ReplyPhotos (Some photos)
-        & ChatId (Some chatId)
-        & ReplyToMessageId (Some msgId) ->
-        let fileId =
-            photos
-            |> Array.sortBy It.Width
-            |> Array.rev
-            |> Array.head
-            |> fun p -> p.FileId
-
-        let res = CommandType.CounterClockwiseRotation({
-            TelegramOmniMessageId = chatId, msgId
-            File = fileId, FileType.Picture
-        })
-
         item.SetCommand(res)
     | _ -> item
 
@@ -200,53 +128,23 @@ let handleDistortion (item: CommandPipelineItem) =
             | ReplyAudioFileId (Some file)
             | ReplyVideoFileId (Some file)
             | ReplyGifFileId (Some file)
+            | ReplyPhotoMaxQualityId (Some file)
         ) ->
         let res = CommandType.Distortion({
             TelegramOmniMessageId = (chatId, msgId)
             File = file
         })
         item.SetCommand(res)
-
-    | IsCommand "dist"
-        & ChatId (Some chatId)
-        & ReplyPhotos (Some photos)
-        & ReplyToMessageId (Some msgId) ->
-        let fileId =
-            photos
-            |> Array.sortBy It.Width
-            |> Array.rev
-            |> Array.head
-            |> fun p -> p.FileId
-
-        let res = CommandType.Distortion({
-            TelegramOmniMessageId = (chatId, msgId)
-            File = fileId, FileType.Picture
-        })
-
-        item.SetCommand(res)
     | _ -> item
 
 let handleClown (item: CommandPipelineItem) =
     match item with
     | ChatId (Some chatId)
-        & Message { Text = Some command } when command.Contains("🤡") ->
+        & (Text (Some text) | Caption (Some text) | StickerEmoji (Some text)) when text.Contains("🤡") ->
         let res = CommandType.Clown({
             ChatId = chatId
-            Count = String.getCountOfOccurrences command "🤡"
+            Count = String.getCountOfOccurrences text "🤡"
         })
-        item.SetCommand(res)
-
-    | ChatId (Some chatId)
-        & Message { Caption = Some command } when command.Contains("🤡") ->
-        let res = CommandType.Clown({
-            ChatId = chatId
-            Count = String.getCountOfOccurrences command "🤡"
-        })
-        item.SetCommand(res)
-
-    | ChatId (Some chatId)
-        & Message { Sticker = Some { Emoji = Some emoji } } when emoji.Contains("🤡") ->
-        let res = CommandType.Clown({ ChatId = chatId; Count = 1 })
         item.SetCommand(res)
     | _ -> item
 
@@ -256,12 +154,11 @@ let handleJq (item: CommandPipelineItem) =
         & MessageId (Some msgId)
         & ReplyMessage (Some { Text = Some data })
         & CommandWithArgs (Some "jq", Some args) ->
-        let res =
-            CommandType.Jq({
-                TelegramOmniMessageId = (chatId, msgId)
-                Text = data
-                Expression = args |> String.concat " "
-            })
+        let res = CommandType.Jq({
+            TelegramOmniMessageId = (chatId, msgId)
+            Text = data
+            Expression = args |> String.concat " "
+        })
 
         item.SetCommand(res)
     | _ ->

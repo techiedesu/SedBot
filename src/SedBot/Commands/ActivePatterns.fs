@@ -56,6 +56,17 @@ let (|Command|) (item: CommandPipelineItem) =
 let (|Message|) (item: CommandPipelineItem) =
     item.Message
 
+let (|Text|) (item: CommandPipelineItem) =
+    item.Message.Text
+
+let (|Caption|) (item: CommandPipelineItem) =
+    item.Message.Caption
+
+let (|StickerEmoji|) (item: CommandPipelineItem) =
+    match item with
+    | Message { Sticker = Some { Emoji = emoji } } -> emoji
+    | _ -> None
+
 let (|ReplyMessage|) (item: CommandPipelineItem) =
     item.Message.ReplyToMessage
 
@@ -96,9 +107,21 @@ let (|ReplyVideoFileId|) (item: CommandPipelineItem) =
     | Message { ReplyToMessage = Some { Video = Some { FileId = fileId } } } -> Some (fileId, FileType.Video)
     | _ -> None
 
-let (|ReplyPhotos|) (item: CommandPipelineItem) =
+let (|ReplyPhoto|) (item: CommandPipelineItem) =
     match item with
     | Message { ReplyToMessage = Some { Photo = photos } } -> photos
+    | _ -> None
+
+let (|ReplyPhotoMaxQualityId|) (item: CommandPipelineItem) =
+    match item with
+    | ReplyPhoto (Some photos) ->
+        let fileId =
+            photos
+            |> Array.sortBy It.Width
+            |> Array.rev
+            |> Array.head
+            |> fun p -> p.FileId
+        Some (fileId, FileType.Picture)
     | _ -> None
 
 let (|ChatId|) (item: CommandPipelineItem) =
