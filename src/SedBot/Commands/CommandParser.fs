@@ -19,7 +19,9 @@ let handleSed (item: CommandPipelineItem) : CommandPipelineItem =
                 None
 
     match item with
-    | Message { MessageId = srcMsgId; Chat = { Id = chatId }; Text = Some expression }
+    | ChatId (Some chatId)
+        & MessageId (Some srcMsgId)
+        & Message { Text = Some expression }
         & ReplyMessage (Some { Text = text; MessageId = msgId; Caption = caption }) ->
         maybe {
             let! expression = tryGetValidExpression expression

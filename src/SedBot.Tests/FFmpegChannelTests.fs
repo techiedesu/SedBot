@@ -90,31 +90,30 @@ let ``Vflip and hflip works properly`` () =
     }
 
 [<Test>]
-let ``No audio with reverse works properly`` () =
-    task {
-        let args =
-            { FFmpegObjectState.Create(
-                  (new StreamReader("cb3fce1ba6ad45309515cbaf323ba18b.mp4"))
-                      .BaseStream
-              ) with
-                VideoReverse = true
-                RemoveAudio = true }
+let ``No audio with reverse works properly`` () = task {
+    let args =
+        { FFmpegObjectState.Create(
+              (new StreamReader("cb3fce1ba6ad45309515cbaf323ba18b.mp4"))
+                  .BaseStream
+          ) with
+            VideoReverse = true
+            RemoveAudio = true }
 
-        let! res = FFmpeg.execute args
+    let! res = FFmpeg.execute args
+
+    match res with
+    | Result.Ok res ->
+        let resFile = "works_nosound.mp4"
+        do! File.WriteAllBytesAsync(resFile, res.ToArray())
+
+        res.Position <- 0
+        let! res = FFmpeg.getStreamsInfo res
 
         match res with
-        | Result.Ok res ->
-            let resFile = "works_nosound.mp4"
-            do! File.WriteAllBytesAsync(resFile, res.ToArray())
-
-            res.Position <- 0
-            let! res = FFmpeg.getStreamsInfo res
-
-            match res with
-            | Result.Ok res -> Assert.True(File.Exists(resFile) && res.Length = 1)
-            | Result.Error err -> Assert.Fail(err)
+        | Result.Ok res -> Assert.True(File.Exists(resFile) && res.Length = 1)
         | Result.Error err -> Assert.Fail(err)
-    }
+    | Result.Error err -> Assert.Fail(err)
+}
 
 [<Test>]
 let ``Clock works properly`` () =
