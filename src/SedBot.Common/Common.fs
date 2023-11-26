@@ -1,6 +1,7 @@
 module [<AutoOpen>] SedBot.Common.TypeExtensions
 
 open System
+open System.Collections.Generic
 open System.IO
 open System.Text.Json
 open System.Threading.Tasks
@@ -70,6 +71,15 @@ module Option =
         else
             None
 
+    let inline ofCSharpTryPattern (status, value) =
+        if status then Some value
+        else None
+
+    let inline iterIgnore (action: 'a -> 'b) (value: 'a option) =
+        match value with
+        | None -> ()
+        | Some v -> action v |> ignore
+
 [<RequireQualifiedAccess>]
 module Json =
     open System.Text.Json.Serialization
@@ -96,6 +106,14 @@ module It =
     let inline Key a = (^a: (member Key: ^b) a)
     let inline KeyIs v a = ((^a: (member Key: ^b) a) = v)
     let inline Width a = (^a: (member Width: ^b) a)
+
+[<RequireQualifiedAccess>]
+module Dictionary =
+    let inline getValue key (d: #IDictionary<'TKey, 'TValue>) =
+        d[key]
+
+    let inline tryGetValue key (d: #IDictionary<'TKey, 'TValue>) =
+        d.TryGetValue key |> Option.ofCSharpTryPattern
 
 [<RequireQualifiedAccess>]
 module File =
@@ -154,6 +172,10 @@ module TaskSeq =
         let! source = source
         return source |> Seq.reduce reducer
     }
+
+[<RequireQualifiedAccess>]
+module Int32 =
+    let inline tryParse (str: string) = str |> Int32.TryParse |> Option.ofCSharpTryPattern
 
 module TaskOption =
     let ofObj (v: 'v Task) = task {

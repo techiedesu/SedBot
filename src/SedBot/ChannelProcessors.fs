@@ -1,4 +1,4 @@
-﻿module SedBot.OldActors
+﻿module SedBot.ChannelProcessors
 
 open System.Threading
 open System.Threading.Tasks

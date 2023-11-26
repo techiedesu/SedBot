@@ -100,73 +100,61 @@ and StreamInfo = {
 }
 
 module FFmpeg =
-    let getStreamsInfo (stream: Stream) =
-        task {
-            let errSb = StringBuilder()
-            let resSb = StringBuilder()
+    let getStreamsInfo (stream: Stream) = task {
+        let errSb = StringBuilder()
+        let resSb = StringBuilder()
 
-            let! executionResult =
-                "ffprobe"
-                |> wrap
-                |> withStandardInputPipe (PipeSource.FromStream stream)
-                |> withStandardErrorPipe (PipeTarget.ToStringBuilder errSb)
-                |> withStandardOutputPipe (PipeTarget.ToStringBuilder(resSb))
-                |> withArgument "-i pipe: -show_streams"
-                |> withValidation CommandResultValidation.None
-                |> executeBufferedAsync Console.OutputEncoding
+        let! executionResult =
+            "ffprobe"
+            |> wrap
+            |> withStandardInputPipe (PipeSource.FromStream stream)
+            |> withStandardErrorPipe (PipeTarget.ToStringBuilder errSb)
+            |> withStandardOutputPipe (PipeTarget.ToStringBuilder(resSb))
+            |> withArgument "-i pipe: -show_streams"
+            |> withValidation CommandResultValidation.None
+            |> executeBufferedAsync Console.OutputEncoding
 
-            do! stream.DisposeAsync()
+        do! stream.DisposeAsync()
 
-            if executionResult.ExitCode = 0 then
-                let res = resSb.ToString()
-                let letterOrDigitPE c = isNoneOf "=\n\r" c
+        if executionResult.ExitCode = 0 then
+            let res = resSb.ToString()
+            let letterOrDigitPE c = isNoneOf "=\n\r" c
 
-                let kvPEr =
-                    many1Satisfy2 (fun c -> letterOrDigitPE c && (c = '[' |> not)) letterOrDigitPE
+            let kvPEr = many1Satisfy2 (fun c -> letterOrDigitPE c && (c = '[' |> not)) letterOrDigitPE
+            let valuePE = many1SatisfyL letterOrDigitPE "value"
+            let kvPE = kvPEr .>> (pstring "=") .>>. valuePE
+            let kvPE1 = many (kvPE .>> (optional newline))
 
-                let valuePE = many1SatisfyL letterOrDigitPE "value"
+            let kvPE2 =
+                (optional newline)
+                >>. (pstring "[STREAM]")
+                >>. newline
+                >>. kvPE1
+                .>> (pstring "[/STREAM]")
+                .>> (optional newline)
 
-                let kvPE = kvPEr .>> (pstring "=") .>>. valuePE
+            let kvPE3 = many kvPE2
 
-                let kvPE1 = many (kvPE .>> (optional newline))
+            match run kvPE3 (res.Trim()) with
+            | Success (result, _, _) ->
+                let res: StreamsInfo = [|
+                    for res in result do
+                       let dict = Dictionary(res |> List.map KeyValuePair)
 
-                let kvPE2 =
-                    (optional newline)
-                    >>. (pstring "[STREAM]")
-                    >>. newline
-                    >>. kvPE1
-                    .>> (pstring "[/STREAM]")
-                    .>> (optional newline)
+                       { Index =
+                           dict |> Dictionary.tryGetValue "index" |> Option.bind Int32.tryParse
+                         CodecName =
+                           dict |> Dictionary.tryGetValue "codec_name"
+                         CodecLongName =
+                           dict |> Dictionary.tryGetValue "codec_long_name"
+                         Kv = dict }
+                |]
 
-                let kvPE3 = many kvPE2
-
-                match run kvPE3 (res.Trim()) with
-                | Success (result, _, _) ->
-                    let res: StreamsInfo = [|
-                        for res in result do
-                           let dict = Dictionary(res |> List.map KeyValuePair)
-
-                           { Index =
-                               dict
-                               |> Seq.tryFind ^ It.KeyIs "index"
-                               |> Option.map (It.Value >> int)
-                             CodecName =
-                               dict
-                               |> Seq.tryFind ^ It.KeyIs "codec_name"
-                               |> Option.map It.Value
-                             CodecLongName =
-                               dict
-                               |> Seq.tryFind ^ It.KeyIs "codec_long_name"
-                               |> Option.map It.Value
-                             Kv = dict }
-                    |]
-
-                    return res |> Result.Ok
-                | Failure (errorMsg, _, _) -> return errorMsg |> Result.Error
-            else
-                return errSb.ToString() |> Result.Error
-
-        }
+                return res |> Result.Ok
+            | Failure (errorMsg, _, _) -> return errorMsg |> Result.Error
+        else
+            return errSb.ToString() |> Result.Error
+    }
 
     let voiceDistortion (data: AudioDistortion) = task {
         let target = new MemoryStream()
@@ -247,81 +235,80 @@ module FFmpeg =
             return errSb.ToString() |> Result.Error
     }
 
-    let execute (data: FFmpegObjectState) =
-        task {
-            let target = new MemoryStream()
-            let errSb = StringBuilder()
+    let execute (data: FFmpegObjectState) = task {
+        let target = new MemoryStream()
+        let errSb = StringBuilder()
 
-            let audioReverse =
-                match data.AudioReverse, data.RemoveAudio with
-                | true, false -> " -af areverse"
-                | _, true -> " -an"
-                | _, _ -> ""
+        let audioReverse =
+            match data.AudioReverse, data.RemoveAudio with
+            | true, false -> " -af areverse"
+            | _, true -> " -an"
+            | _, _ -> ""
 
-            let videoReverse =
-                match data.VideoReverse with
-                | true -> " -vf reverse -color_range 2 -pix_fmt yuvj420p"
-                | _ -> ""
+        let videoReverse =
+            match data.VideoReverse with
+            | true -> " -vf reverse -color_range 2 -pix_fmt yuvj420p"
+            | _ -> ""
 
-            let vFlip =
-                match data.VerticalFlip with
-                | true -> " -vf vflip -q:v 0 -color_range 2 -pix_fmt yuvj420p"
-                | _ -> ""
+        let vFlip =
+            match data.VerticalFlip with
+            | true -> " -vf vflip -q:v 0 -color_range 2 -pix_fmt yuvj420p"
+            | _ -> ""
 
-            let hFlip =
-                match data.HorizontalFlip with
-                | true -> " -vf hflip -q:v 0 -color_range 2 -pix_fmt yuvj420p"
-                | _ -> ""
+        let hFlip =
+            match data.HorizontalFlip with
+            | true -> " -vf hflip -q:v 0 -color_range 2 -pix_fmt yuvj420p"
+            | _ -> ""
 
-            let clock =
-                match data.Clock with
-                | true -> " -vf \"transpose=clock\" -color_range 2 -pix_fmt yuvj420p"
-                | _ -> ""
+        let clock =
+            match data.Clock with
+            | true -> " -vf \"transpose=clock\" -color_range 2 -pix_fmt yuvj420p"
+            | _ -> ""
 
-            let cClock =
-                match data.CClock with
-                | true -> " -vf \"transpose=cclock\" -color_range 2 -pix_fmt yuvj420p"
-                | _ -> ""
+        let cClock =
+            match data.CClock with
+            | true -> " -vf \"transpose=cclock\" -color_range 2 -pix_fmt yuvj420p"
+            | _ -> ""
 
-            // FFmpeg can't read moov (MPEG headers) at the end of a file when using a pipe. Have to "dump" to a filesystem.
-            data.Src.Position <- 0
-            let memSrc = new MemoryStream()
-            do! data.Src.CopyToAsync(memSrc)
+        // FFmpeg can't read moov (MPEG headers) at the end of a file when using a pipe. Have to "dump" to a filesystem.
+        data.Src.Position <- 0
+        let memSrc = new MemoryStream()
+        do! data.Src.CopyToAsync(memSrc)
 
-            let inputFile =
-                if data.IsPicture then
-                    ".jpg"
-                else
-                    ".mp4"
-                |> Path.getSynthName
-
-            do! File.WriteAllBytesAsync(inputFile, memSrc.ToArray())
-
-            let args = $"{inputFile}{audioReverse}{videoReverse}{vFlip}{hFlip}{clock}{cClock}"
-
-            let contentSpecific =
-                if data.IsPicture |> not then
-                    // "-f mp4 -movflags frag_keyframe+empty_moov -vcodec libx264"
-                    "-f mp4 -movflags frag_keyframe+empty_moov -c:a libopus -c:v libx264"
-                else
-                    "-f mjpeg"
-
-            let! executionResult =
-                "ffmpeg"
-                |> wrap
-                |> withStandardErrorPipe (PipeTarget.ToStringBuilder errSb)
-                |> withStandardOutputPipe (PipeTarget.ToStream(target, ValueNone))
-                |> withArguments [ $"-i {args} {contentSpecific} pipe:1" ]
-                |> withValidation CommandResultValidation.None
-                |> executeBufferedAsync Console.OutputEncoding
-
-            File.deleteUnit inputFile
-
-            if executionResult.ExitCode = 0 then
-                return target |> Result.Ok
+        let inputFile =
+            if data.IsPicture then
+                ".jpg"
             else
-                return errSb.ToString() |> Result.Error
-        }
+                ".mp4"
+            |> Path.getSynthName
+
+        do! File.WriteAllBytesAsync(inputFile, memSrc.ToArray())
+
+        let args = $"{inputFile}{audioReverse}{videoReverse}{vFlip}{hFlip}{clock}{cClock}"
+
+        let contentSpecific =
+            if data.IsPicture |> not then
+                // "-f mp4 -movflags frag_keyframe+empty_moov -vcodec libx264"
+                "-f mp4 -movflags frag_keyframe+empty_moov -c:a libopus -c:v libx264"
+            else
+                "-f mjpeg"
+
+        let! executionResult =
+            "ffmpeg"
+            |> wrap
+            |> withStandardErrorPipe (PipeTarget.ToStringBuilder errSb)
+            |> withStandardOutputPipe (PipeTarget.ToStream(target, ValueNone))
+            |> withArguments [ $"-i {args} {contentSpecific} pipe:1" ]
+            |> withValidation CommandResultValidation.None
+            |> executeBufferedAsync Console.OutputEncoding
+
+        File.deleteUnit inputFile
+
+        if executionResult.ExitCode = 0 then
+            return target |> Result.Ok
+        else
+            return errSb.ToString() |> Result.Error
+    }
 
 
 type ImageMagickObjectState = { Src: Stream
@@ -563,35 +550,33 @@ let rec startVflipFfmpeg () =
             do! Task.Delay(40)
     }
 
-type FfmpegHflipGifItem =
-    { Stream: MemoryStream
-      FileType: FileType
-      Tcs: TaskCompletionSource<byte [] voption> }
+type FfmpegHflipGifItem = {
+    Stream: MemoryStream
+    FileType: FileType
+    Tcs: TaskCompletionSource<byte [] voption>
+}
 
 let ffmpegHflipChannel = Channel.CreateUnbounded<FfmpegHflipGifItem>()
 
-let startHflipFfmpeg () =
-    task {
-        let log = Logger.get "HorizontalFlipProcessor"
-        log.LogDebug("Spawned!")
+let startHflipFfmpeg () = task {
+    let log = Logger.get "HorizontalFlipProcessor"
+    log.LogDebug("Spawned!")
 
-        while true do
-            let! { Tcs = tcs
-                   Stream = stream
-                   FileType = _ } = ffmpegHflipChannel.Reader.ReadAsync()
+    while true do
+        let! { Tcs = tcs; Stream = stream} = ffmpegHflipChannel.Reader.ReadAsync()
 
-            let args = { FFmpegObjectState.Create(stream) with HorizontalFlip = true }
-            let! res = FFmpeg.execute args
+        let args = { FFmpegObjectState.Create(stream) with HorizontalFlip = true }
+        let! res = FFmpeg.execute args
 
-            match res with
-            | Result.Ok res ->
-                log.LogDebug("Reverse success: {length}", res.Length)
-                tcs.SetResult(res.ToArray() |> ValueSome)
-            | Result.Error err ->
-                log.LogDebug("Reverse fail: {err}", err)
-                tcs.SetResult(ValueNone)
+        match res with
+        | Result.Ok res ->
+            log.LogDebug("Reverse success: {length}", res.Length)
+            tcs.SetResult(res.ToArray() |> ValueSome)
+        | Result.Error err ->
+            log.LogDebug("Reverse fail: {err}", err)
+            tcs.SetResult(ValueNone)
 
-            do! Task.Delay(40)
+        do! Task.Delay(40)
     }
 
 let mutable private cts = TaskCompletionSource()

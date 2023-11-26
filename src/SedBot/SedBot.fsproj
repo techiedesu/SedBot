@@ -10,7 +10,7 @@
   <ItemGroup>
     <Compile Include="Api.fs" />
     <Compile Include="TgApi.fs" />
-    <Compile Include="Actors.fs" />
+    <Compile Include="ChannelProcessors.fs" />
     <Compile Include="Commands.fs" />
     <Compile Include="AppConfig.fs" />
     <Content Include="paket.references" />
@@ -20,6 +20,7 @@
     <Compile Include="Commands\ActivePatterns.fs" />
     <Compile Include="Commands\CommandParser.fs" />
     <Compile Include="Spotify.fs" />
+    <Compile Include="UpdatesHandler.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
   <ItemGroup>
