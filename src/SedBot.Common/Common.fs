@@ -40,6 +40,9 @@ module String =
         else
             text.Trim().Substring(input.Length)
 
+    let startsWith (text: string) (input: string) =
+        text.StartsWith(input)
+
     let isNullOfWhiteSpace = String.IsNullOrWhiteSpace
     let isNotNulOfWhiteSpace = String.IsNullOrWhiteSpace >> not
 

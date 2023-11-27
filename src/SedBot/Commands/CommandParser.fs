@@ -9,14 +9,20 @@ open SedBot.ProcessingChannels
 open SedBot.Common.MaybeBuilder
 
 let handleSed (item: CommandPipelineItem) : CommandPipelineItem =
+    // Too many valid expressions. For example ":)", "q"...
+    // Let's limit the range of valid expressions
+    let hasValidPrefix (expression: string) =
+        let startWith = String.startsWith expression
+        String.isNotNulOfWhiteSpace expression && (startWith "s/" || startWith "s@")
+
     let tryGetValidExpression (expression: string) =
         let isValidExpression expression =
             Process.getStatusCode "sed" [| "-E"; expression |] "data" = 0
 
-        if isValidExpression expression then
-                Some expression
-            else
-                None
+        if hasValidPrefix expression && isValidExpression expression then
+            Some expression
+        else
+            None
 
     match item with
     | ChatId (Some chatId)
