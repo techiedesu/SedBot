@@ -6,7 +6,7 @@ Host requirements:
 * ffmpeg
 * jq
 * imagemagick
-* dotnet 7
+* dotnet 8
 
 ## Docker
 
