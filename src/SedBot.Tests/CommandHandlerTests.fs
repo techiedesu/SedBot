@@ -23,10 +23,10 @@ let [<Test>] ``Command handler works properly`` (botName, command, chatType, exp
 
     match ActivePatterns.commandPatternInternal botName command chatType with
     | Some command, Some args ->
-        Assert.AreEqual(command, expectedCommand)
-        Assert.AreEqual(expectedArgs, System.String.Join(",", args))
+        Assert.That(command, Is.EqualTo expectedCommand)
+        Assert.That(System.String.Join(",", args), Is.EqualTo expectedArgs)
     | Some command, None ->
-        Assert.AreEqual(command, expectedCommand)
-        Assert.AreEqual(expectedArgs, "")
+        Assert.That(command, Is.EqualTo expectedCommand)
+        Assert.That("", Is.EqualTo expectedArgs)
     | _ ->
         Assert.Fail("Broken")

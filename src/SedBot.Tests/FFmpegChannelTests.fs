@@ -27,7 +27,7 @@ let ``Reverse audio and video works properly`` () =
 
             match res with
             | Result.Ok _ ->
-                Assert.True(
+                Assert.That(
                     File.Exists(resFile)
                     && File.ReadAllBytes(resFile).Length > 0
                 )
@@ -57,7 +57,7 @@ let ``Remove audio with reverse works properly`` () =
             let! res = FFmpeg.getStreamsInfo res
 
             match res with
-            | Result.Ok res -> Assert.True(File.Exists(resFile) && res.Length = 1)
+            | Result.Ok res -> Assert.That(File.Exists(resFile) && res.Length = 1)
             | Result.Error err -> Assert.Fail(err)
         | Result.Error err -> Assert.Fail(err)
     }
@@ -84,7 +84,7 @@ let ``Vflip and hflip works properly`` () =
             let! res = FFmpeg.getStreamsInfo res
 
             match res with
-            | Result.Ok res -> Assert.True(File.Exists(resFile) && res.Length = 2)
+            | Result.Ok res -> Assert.That(File.Exists(resFile) && res.Length = 2)
             | Result.Error err -> Assert.Fail(err)
         | Result.Error err -> Assert.Fail(err)
     }
@@ -110,7 +110,7 @@ let ``No audio with reverse works properly`` () = task {
         let! res = FFmpeg.getStreamsInfo res
 
         match res with
-        | Result.Ok res -> Assert.True(File.Exists(resFile) && res.Length = 1)
+        | Result.Ok res -> Assert.That(File.Exists(resFile) && res.Length = 1)
         | Result.Error err -> Assert.Fail(err)
     | Result.Error err -> Assert.Fail(err)
 }
@@ -135,7 +135,7 @@ let ``Clock works properly`` () =
             let! res = FFmpeg.getStreamsInfo res
 
             match res with
-            | Result.Ok res -> Assert.True(File.Exists(resFile) && res.Length = 1)
+            | Result.Ok res -> Assert.That(File.Exists(resFile) && res.Length = 1)
             | Result.Error err -> Assert.Fail(err)
         | Result.Error err -> Assert.Fail(err)
     }
@@ -149,6 +149,6 @@ let ``Get file info`` () =
                     .BaseStream
 
         match res with
-        | Result.Ok res -> Assert.AreEqual(2, res.Length)
+        | Result.Ok res -> Assert.That(res.Length, Is.EqualTo 2)
         | Result.Error err -> Assert.Fail(err)
     }
