@@ -1,10 +1,7 @@
 ﻿module rec SedBot.Common.YoutubeRepository
 
 open System
-open System.Threading.Tasks
-open Microsoft.Extensions.Logging
 open Npgsql
-open Dapper.FSharp
 open Dapper.FSharp.PostgreSQL
 open Microsoft.FSharp.Collections
 
@@ -16,8 +13,8 @@ type YoutubeTrack = {
 
 let createYoutubeRepository collectionString =
     let connection = NpgsqlDataSourceBuilder(collectionString)
-    use connection = connection.Build() // :> Dapper.FSharp.IDbConnection
-    use connection = connection.CreateConnection()
+    let connection = connection.Build()
+    let connection = connection.CreateConnection()
 
     let youtubeTracksTable = table'<YoutubeTrack> "YoutubeTracks" |> inSchema "dbo"
 
@@ -31,9 +28,10 @@ let createYoutubeRepository collectionString =
 
     let tryGetEntity (id: string) = task {
         let query = select {
-            for _ in youtubeTracksTable do ()
+            for y in youtubeTracksTable do where (y.Id = id)
         }
-        ()
+        let! res = connection.SelectAsync<YoutubeTrack>(query)
+        return Seq.tryHead res
     }
 
     addEntity, tryGetEntity

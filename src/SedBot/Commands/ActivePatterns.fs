@@ -21,15 +21,15 @@ let rec public commandPatternInternal botUsername (text: string) chatType =
     if text.StartsWith "t!" then
         match text.Split " " |> List.ofArray with
         | [ command ] ->
-            Some (command.Substring(2)), None
+            Some (command.Substring(2).ToLowerInvariant()), None
         | head :: args ->
-            Some (head.Substring(2)), tryGetArgs (args |> String.concat " ")
+            Some (head.Substring(2).ToLowerInvariant()), tryGetArgs (args |> String.concat " ")
         | _ ->
             None, None
     elif chatType = SuperGroup then
         let command = Regex.Match(text, "(\/)(.*?)((@" + botUsername + " (\*.))|(@" + botUsername + "))")
         if command.Length > 0 then
-            Some (command.Value.Substring(1, command.Value.Length - botUsername.Length - 2)), tryGetArgs (text.Substring(command.Value |> String.length))
+            Some (command.Value.Substring(1, command.Value.Length - botUsername.Length - 2).ToLowerInvariant()), tryGetArgs (text.Substring(command.Value |> String.length))
         else
             None, None
     else
@@ -117,7 +117,7 @@ let (|ReplyPhotoMaxQualityId|) (item: CommandPipelineItem) =
     | ReplyPhoto (Some photos) ->
         let fileId =
             photos
-            |> Array.sortBy It.Width
+            |> Array.sortBy _.Width
             |> Array.rev
             |> Array.head
             |> fun p -> p.FileId
@@ -138,6 +138,11 @@ let (|ReplyToMessageId|) (item: CommandPipelineItem) =
 let (|IsCommand|_|) (commandName: string) (item: CommandPipelineItem) =
     match item with
     | Command (Some c) -> c = commandName |> Option.ofBool
+    | _ -> None
+
+let (|IsHelpCommand|) (item: CommandPipelineItem) =
+    match item with
+    | Command (Some c) -> c = "help" |> Option.ofBool
     | _ -> None
 
 let (|%>) (item: CommandPipelineItem) (messageProcessor: CommandPipelineItem -> CommandPipelineItem) =

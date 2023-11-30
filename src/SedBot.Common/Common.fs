@@ -104,13 +104,6 @@ module Json =
         JsonSerializer.Serialize(t, serializerSettings)
 
 [<RequireQualifiedAccess>]
-module It =
-    let inline Value a = (^a: (member Value: ^b) a)
-    let inline Key a = (^a: (member Key: ^b) a)
-    let inline KeyIs v a = ((^a: (member Key: ^b) a) = v)
-    let inline Width a = (^a: (member Width: ^b) a)
-
-[<RequireQualifiedAccess>]
 module Dictionary =
     let inline getValue key (d: #IDictionary<'TKey, 'TValue>) =
         d[key]
