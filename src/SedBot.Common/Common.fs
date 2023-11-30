@@ -173,10 +173,37 @@ module TaskSeq =
 module Int32 =
     let inline tryParse (str: string) = str |> Int32.TryParse |> Option.ofCSharpTryPattern
 
+[<RequireQualifiedAccess>]
 module TaskOption =
-    let ofObj (v: 'v Task) = task {
+    let inline ofObj (v: 'v Task) = task {
         let! v = v
         return Some v
+    }
+
+[<RequireQualifiedAccess>]
+module TaskVOption =
+    let inline map ([<InlineIfLambda>] mapping) (v: 'v voption Task) = task {
+        match! v with
+        | ValueNone ->
+            return ValueNone
+        | ValueSome v ->
+            return ValueSome (mapping v)
+    }
+
+    let inline bind ([<InlineIfLambda>] binding) (v: 'v voption Task) = task {
+        match! v with
+        | ValueNone ->
+            return ValueNone
+        | ValueSome v ->
+            return binding v
+    }
+
+    let inline taskBind ([<InlineIfLambda>] binding) (v: 'v voption Task) = task {
+        match! v with
+        | ValueNone ->
+            return ValueNone
+        | ValueSome v ->
+            return! binding v
     }
 
 type OperationSystem =

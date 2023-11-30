@@ -2,7 +2,6 @@
 
 open System.IO
 
-open System.Threading.Tasks
 open Funogram.Telegram.Bot
 open Funogram.Telegram.Types
 open SedBot
@@ -27,26 +26,20 @@ let private replyAsFileType fileType chatId inputFile msgId =
     | Audio ->
         TgApi.sendAudioReply chatId inputFile msgId
 
-let private createInputFile fileType (data: byte [] voption) : InputFile voption =
-    match data with
-    | ValueSome data ->
-        let extension = extension fileType
-        let synthName = Path.getSynthName extension
-        let ms = new MemoryStream(data)
-        InputFile.File(synthName, ms) |> ValueSome
-    | _ -> ValueNone
+let private createInputFile fileType (data: byte[]) : InputFile =
+    let extension = extension fileType
+    let synthName = Path.getSynthName extension
+    let ms = new MemoryStream(data)
+    InputFile.File(synthName, ms)
 
 let private sendFileAsReply data fileType chatId msgId =
     let inputFile = createInputFile fileType data
-
-    match inputFile with
-    | ValueSome inputFile ->
-        replyAsFileType fileType chatId inputFile msgId
-    | _ ->
-        ValueTask.CompletedTask
+    replyAsFileType fileType chatId inputFile msgId
 
 let private updateArrivedInternal botUsername ctx (message: Message) = task {
     let res = CommandParser.processMessage message botUsername
+
+    let placeholder = sprintf "%s command failed. This message will be deleted after 35 s.\n\n You can send file to @tdesu for investigation."
 
     match res with
     | Sed {
@@ -60,7 +53,7 @@ let private updateArrivedInternal botUsername ctx (message: Message) = task {
         | ValueSome res ->
             do! TgApi.sendMessageReply chatId res replyMsgId
         | _ ->
-            do! TgApi.sendMessageAndDeleteAfter chatId "Sed command failed. This message will be deleted after 35 s." 35000
+            do! TgApi.sendMessageAndDeleteAfter chatId (placeholder "Sed") 35000
 
     | Jq {
         TelegramOmniMessageId = chatId, msgId
@@ -73,85 +66,74 @@ let private updateArrivedInternal botUsername ctx (message: Message) = task {
         | ValueSome res ->
             do! TgApi.sendMarkupMessageReply chatId $"```json\n{res}\n```" msgId ParseMode.Markdown
         | _ ->
-            do! TgApi.sendMessageAndDeleteAfter chatId "Jq command failed. This message will be deleted after 35 s." 35000
+            do! TgApi.sendMessageAndDeleteAfter chatId (placeholder "Jq") 35000
 
-    | Reverse {
-        TelegramOmniMessageId = chatId, msgId
-        File = fileId, fileType
-     } ->
-        let! file = fileId |> Api.tryGetFileAsStream ctx
+    | Reverse { TelegramOmniMessageId = chatId, msgId; File = fileId, fileType } ->
+        let! res = fileId |> Api.tryGetFileAsStream ctx |> TaskVOption.taskBind (Handlers.reverse fileType)
 
-        match file with
-        | ValueSome srcStream ->
-            let! res = Handlers.reverse srcStream fileType
+        match res with
+        | ValueSome res ->
             do! sendFileAsReply res fileType chatId msgId
-        | _ ->
-            do! TgApi.sendMessageAndDeleteAfter chatId "Reverse command failed. This message will be deleted after 35 s." 35000
+        | ValueNone ->
+            do! TgApi.sendMessageAndDeleteAfter chatId (placeholder "Reverse") 35000
 
     | VerticalFlip {
         TelegramOmniMessageId = chatId, msgId
         File = fileId, fileType
      } ->
-        let! file = fileId |> Api.tryGetFileAsStream ctx
+        let! res = fileId |> Api.tryGetFileAsStream ctx |> TaskVOption.taskBind (Handlers.vFlip fileType)
 
-        match file with
-        | ValueSome srcStream ->
-            let! res = Handlers.vFlip srcStream fileType
+        match res with
+        | ValueSome res ->
             do! sendFileAsReply res fileType chatId msgId
-        | _ ->
-            do! TgApi.sendMessageAndDeleteAfter chatId "VerticalFlip command failed. This message will be deleted after 35 s." 35000
+        |ValueNone ->
+            do! TgApi.sendMessageAndDeleteAfter chatId (placeholder "VerticalFlip") 35000
 
     | HorizontalFlip {
         TelegramOmniMessageId = chatId, msgId
         File = fileId, fileType
      } ->
-        let! file = fileId |> Api.tryGetFileAsStream ctx
+        let! res = fileId |> Api.tryGetFileAsStream ctx |> TaskVOption.taskBind (Handlers.hFlip fileType)
 
-        match file with
-        | ValueSome srcStream ->
-            let! res = Handlers.hFlip srcStream fileType
+        match res with
+        | ValueSome res ->
             do! sendFileAsReply res fileType chatId msgId
-        | _ ->
-            do! TgApi.sendMessageAndDeleteAfter chatId "HorizontalFlip command failed. This message will be deleted after 35 s." 35000
+        | ValueNone ->
+            do! TgApi.sendMessageAndDeleteAfter chatId (placeholder "HorizontalFlip") 35000
 
     | Distortion {
         TelegramOmniMessageId = chatId, msgId
         File = fileId, fileType
      } ->
-        let! file = fileId |> Api.tryGetFileAsStream ctx
+        let! res = fileId |> Api.tryGetFileAsStream ctx |> TaskVOption.taskBind (Handlers.distort fileType)
 
-        match file with
-        | ValueSome srcStream ->
-            let! res = Handlers.distort srcStream fileType
+        match res with
+        | ValueSome res ->
             do! sendFileAsReply res fileType chatId msgId
-        | _ ->
-            do! TgApi.sendMessageAndDeleteAfter chatId "Distortion command failed. This message will be deleted after 35 s." 35000
+        | ValueNone ->
+            do! TgApi.sendMessageAndDeleteAfter chatId (placeholder "Distortion") 35000
 
     | ClockwiseRotation {
-        TelegramOmniMessageId = chatId, msgId
-        File = fileId, fileType
-     } ->
-        let! file = fileId |> Api.tryGetFileAsStream ctx
+        TelegramOmniMessageId = chatId, msgId; File = fileId, fileType } ->
+        let! res = fileId |> Api.tryGetFileAsStream ctx |> TaskVOption.taskBind (Handlers.clock fileType)
 
-        match file with
-        | ValueSome srcStream ->
-            let! res = Handlers.clock srcStream fileType
+        match res with
+        | ValueSome res ->
             do! sendFileAsReply res fileType chatId msgId
-        | _ ->
-            do! TgApi.sendMessageAndDeleteAfter chatId "ClockwiseRotation command failed. This message will be deleted after 35 s." 35000
+        | ValueNone ->
+            do! TgApi.sendMessageAndDeleteAfter chatId (placeholder "ClockwiseRotation") 35000
 
     | CounterClockwiseRotation {
         TelegramOmniMessageId = chatId, msgId
         File = fileId, fileType
      } ->
-        let! file = fileId |> Api.tryGetFileAsStream ctx
+        let! res = fileId |> Api.tryGetFileAsStream ctx |> TaskVOption.taskBind (Handlers.cclock fileType)
 
-        match file with
-        | ValueSome srcStream ->
-            let! res = Handlers.cclock srcStream fileType
+        match res with
+        | ValueSome res ->
             do! sendFileAsReply res fileType chatId msgId
-        | _ ->
-            do! TgApi.sendMessageAndDeleteAfter chatId "CounterClockwiseRotation command failed. This message will be deleted after 35 s." 35000
+        | ValueNone ->
+            do! TgApi.sendMessageAndDeleteAfter chatId (placeholder "CounterClockwiseRotation") 35000
 
     | Clown {
         ChatId = chatId
@@ -162,15 +144,8 @@ let private updateArrivedInternal botUsername ctx (message: Message) = task {
                 "🤡"
         } |> Seq.take count |> String.concat "")
 
-    | RawMessageInfo {
-        ReplyTo = {
-            MessageId = messageId
-            Chat = {
-                Id = replyChatId
-            }
-        } as replyTo
-     } ->
-        do! TgApi.sendMarkupMessageReplyAndDeleteAfter replyChatId $"`{(Json.serialize replyTo)}`" ParseMode.Markdown messageId 30000
+    | RawMessageInfo { ReplyTo = { MessageId = msgId; Chat = { Id = chatId } } as replyTo } ->
+        do! TgApi.sendMarkupMessageReplyAndDeleteAfter chatId $"`{(Json.serialize replyTo)}`" ParseMode.Markdown msgId 30000
 
     | Nope -> ()
 }
