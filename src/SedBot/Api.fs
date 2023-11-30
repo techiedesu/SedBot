@@ -6,7 +6,7 @@ open Funogram.Telegram
 open Funogram.Telegram.Bot
 open Funogram.Telegram.Types
 
-let mutable hc = new HttpClient()
+let private hc = new HttpClient()
 
 let sendAnimationReply chatId animation replyToMessageId =
     Req.SendAnimation.Make(ChatId.Int chatId, animation, replyToMessageId = replyToMessageId)
@@ -54,4 +54,3 @@ let tryGetFileAsBytes ctx fileId = task {
         | _ -> return ValueNone
     | _ -> return ValueNone
 }
-

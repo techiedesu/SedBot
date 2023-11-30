@@ -12,19 +12,19 @@ open SedBot.Common.Utilities
 
 let private log = Logger.get "UpdatesHandler"
 
-let private replyAsFileType fileType chatId inputFile msgId =
+let private replyAsFileType fileType omniMsgId inputFile =
     match fileType with
     | Gif
     | Sticker ->
-        TgApi.sendAnimationReply chatId inputFile msgId
+        TgApi.sendAnimationReply omniMsgId inputFile
     | Video ->
-        TgApi.sendVideoReply chatId inputFile msgId
+        TgApi.sendVideoReply omniMsgId inputFile
     | Picture ->
-        TgApi.sendPhotoReply chatId inputFile msgId
+        TgApi.sendPhotoReply omniMsgId inputFile
     | Voice ->
-        TgApi.sendVoiceReply chatId inputFile msgId
+        TgApi.sendVoiceReply omniMsgId inputFile
     | Audio ->
-        TgApi.sendAudioReply chatId inputFile msgId
+        TgApi.sendAudioReply omniMsgId inputFile
 
 let private createInputFile fileType (data: byte[]) : InputFile =
     let extension = extension fileType
@@ -32,9 +32,9 @@ let private createInputFile fileType (data: byte[]) : InputFile =
     let ms = new MemoryStream(data)
     InputFile.File(synthName, ms)
 
-let private sendFileAsReply data fileType chatId msgId =
+let private sendFileAsReply data fileType omniMsgId =
     let inputFile = createInputFile fileType data
-    replyAsFileType fileType chatId inputFile msgId
+    replyAsFileType fileType omniMsgId inputFile
 
 let private updateArrivedInternal botUsername ctx (message: Message) = task {
     let res = CommandParser.processMessage message botUsername
@@ -43,7 +43,7 @@ let private updateArrivedInternal botUsername ctx (message: Message) = task {
 
     match res with
     | Sed {
-            TelegramOmniMessageId = chatId, replyMsgId
+            TelegramOmniMessageId = omniMsgId
             Expression = exp
             Text = text
      } ->
@@ -51,12 +51,12 @@ let private updateArrivedInternal botUsername ctx (message: Message) = task {
 
         match res with
         | ValueSome res ->
-            do! TgApi.sendMessageReply chatId res replyMsgId
+            do! TgApi.sendMessageReply omniMsgId res
         | _ ->
-            do! TgApi.sendMessageAndDeleteAfter chatId (placeholder "Sed") 35000
+            do! TgApi.sendMessageAndDeleteAfter (fst omniMsgId) (placeholder "Sed") 35000
 
     | Jq {
-        TelegramOmniMessageId = chatId, msgId
+        TelegramOmniMessageId = omniMsgId
         Expression = expression
         Text = data
      } ->
@@ -64,76 +64,76 @@ let private updateArrivedInternal botUsername ctx (message: Message) = task {
 
         match res with
         | ValueSome res ->
-            do! TgApi.sendMarkupMessageReply chatId $"```json\n{res}\n```" msgId ParseMode.Markdown
+            do! TgApi.sendMarkupMessageReply omniMsgId $"```json\n{res}\n```" ParseMode.Markdown
         | _ ->
-            do! TgApi.sendMessageAndDeleteAfter chatId (placeholder "Jq") 35000
+            do! TgApi.sendMessageAndDeleteAfter (fst omniMsgId) (placeholder "Jq") 35000
 
-    | Reverse { TelegramOmniMessageId = chatId, msgId; File = fileId, fileType } ->
+    | Reverse { TelegramOmniMessageId = omniMsgId; File = fileId, fileType } ->
         let! res = fileId |> Api.tryGetFileAsStream ctx |> TaskVOption.taskBind (Handlers.reverse fileType)
 
         match res with
         | ValueSome res ->
-            do! sendFileAsReply res fileType chatId msgId
+            do! sendFileAsReply res fileType omniMsgId
         | ValueNone ->
-            do! TgApi.sendMessageAndDeleteAfter chatId (placeholder "Reverse") 35000
+            do! TgApi.sendMessageAndDeleteAfter (fst omniMsgId) (placeholder "Reverse") 35000
 
     | VerticalFlip {
-        TelegramOmniMessageId = chatId, msgId
+        TelegramOmniMessageId = omniMsgId
         File = fileId, fileType
      } ->
         let! res = fileId |> Api.tryGetFileAsStream ctx |> TaskVOption.taskBind (Handlers.vFlip fileType)
 
         match res with
         | ValueSome res ->
-            do! sendFileAsReply res fileType chatId msgId
+            do! sendFileAsReply res fileType omniMsgId
         |ValueNone ->
-            do! TgApi.sendMessageAndDeleteAfter chatId (placeholder "VerticalFlip") 35000
+            do! TgApi.sendMessageAndDeleteAfter (fst omniMsgId) (placeholder "VerticalFlip") 35000
 
     | HorizontalFlip {
-        TelegramOmniMessageId = chatId, msgId
+        TelegramOmniMessageId = omniMsgId
         File = fileId, fileType
      } ->
         let! res = fileId |> Api.tryGetFileAsStream ctx |> TaskVOption.taskBind (Handlers.hFlip fileType)
 
         match res with
         | ValueSome res ->
-            do! sendFileAsReply res fileType chatId msgId
+            do! sendFileAsReply res fileType omniMsgId
         | ValueNone ->
-            do! TgApi.sendMessageAndDeleteAfter chatId (placeholder "HorizontalFlip") 35000
+            do! TgApi.sendMessageAndDeleteAfter (fst omniMsgId) (placeholder "HorizontalFlip") 35000
 
     | Distortion {
-        TelegramOmniMessageId = chatId, msgId
+        TelegramOmniMessageId = omniMsgId
         File = fileId, fileType
      } ->
         let! res = fileId |> Api.tryGetFileAsStream ctx |> TaskVOption.taskBind (Handlers.distort fileType)
 
         match res with
         | ValueSome res ->
-            do! sendFileAsReply res fileType chatId msgId
+            do! sendFileAsReply res fileType omniMsgId
         | ValueNone ->
-            do! TgApi.sendMessageAndDeleteAfter chatId (placeholder "Distortion") 35000
+            do! TgApi.sendMessageAndDeleteAfter (fst omniMsgId) (placeholder "Distortion") 35000
 
     | ClockwiseRotation {
-        TelegramOmniMessageId = chatId, msgId; File = fileId, fileType } ->
+        TelegramOmniMessageId = omniMsgId; File = fileId, fileType } ->
         let! res = fileId |> Api.tryGetFileAsStream ctx |> TaskVOption.taskBind (Handlers.clock fileType)
 
         match res with
         | ValueSome res ->
-            do! sendFileAsReply res fileType chatId msgId
+            do! sendFileAsReply res fileType omniMsgId
         | ValueNone ->
-            do! TgApi.sendMessageAndDeleteAfter chatId (placeholder "ClockwiseRotation") 35000
+            do! TgApi.sendMessageAndDeleteAfter (fst omniMsgId) (placeholder "ClockwiseRotation") 35000
 
     | CounterClockwiseRotation {
-        TelegramOmniMessageId = chatId, msgId
+        TelegramOmniMessageId = omniMsgId
         File = fileId, fileType
      } ->
         let! res = fileId |> Api.tryGetFileAsStream ctx |> TaskVOption.taskBind (Handlers.cclock fileType)
 
         match res with
         | ValueSome res ->
-            do! sendFileAsReply res fileType chatId msgId
+            do! sendFileAsReply res fileType omniMsgId
         | ValueNone ->
-            do! TgApi.sendMessageAndDeleteAfter chatId (placeholder "CounterClockwiseRotation") 35000
+            do! TgApi.sendMessageAndDeleteAfter (fst omniMsgId) (placeholder "CounterClockwiseRotation") 35000
 
     | Clown {
         ChatId = chatId
@@ -145,7 +145,7 @@ let private updateArrivedInternal botUsername ctx (message: Message) = task {
         } |> Seq.take count |> String.concat "")
 
     | RawMessageInfo { ReplyTo = { MessageId = msgId; Chat = { Id = chatId } } as replyTo } ->
-        do! TgApi.sendMarkupMessageReplyAndDeleteAfter chatId $"`{(Json.serialize replyTo)}`" ParseMode.Markdown msgId 30000
+        do! TgApi.sendMarkupMessageReplyAndDeleteAfter (chatId, msgId) $"`{(Json.serialize replyTo)}`" ParseMode.Markdown 30000
 
     | Nope -> ()
 }

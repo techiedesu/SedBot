@@ -32,11 +32,11 @@ let sendMessageAndDeleteAfter chatId text ms =
     channel.Writer.WriteAsync(TelegramSendingMessage.SendMessageAndDeleteAfter (chatId, text, ms))
 
 /// Send message as reply to chat
-let sendMessageReply chatId text replyToMessageId =
+let sendMessageReply (chatId, replyToMessageId) text =
     channel.Writer.WriteAsync(TelegramSendingMessage.MessageReply (chatId, text, replyToMessageId))
 
 /// Send message as reply to chat with parse mode (Markdown or Html)
-let sendMarkupMessageReply chatId text replyToMessageId parseMode =
+let sendMarkupMessageReply (chatId, replyToMessageId) text parseMode =
     channel.Writer.WriteAsync(TelegramSendingMessage.MarkupMessageReply (chatId, text, replyToMessageId, parseMode))
 
 /// Send message to chat with parse mode (Markdown or Html) and delete after some milliseconds
@@ -44,29 +44,29 @@ let sendMarkupMessageAndDeleteAfter chatId text parseMode ms =
     channel.Writer.WriteAsync(TelegramSendingMessage.SendMarkupMessageAndDeleteAfter (chatId, text, parseMode, ms))
 
 /// Send message reply to chat with parse mode (Markdown or Html) and delete after some milliseconds
-let sendMarkupMessageReplyAndDeleteAfter chatId text parseMode replyToMessageId ms =
+let sendMarkupMessageReplyAndDeleteAfter (chatId, replyToMessageId) text parseMode ms =
     channel.Writer.WriteAsync(TelegramSendingMessage.SendMarkupMessageReplyAndDeleteAfter (chatId, text, parseMode, replyToMessageId, ms))
 
 /// Delete message in chat
-let deleteMessage chatId messageId =
+let deleteMessage (chatId, messageId) =
     channel.Writer.WriteAsync(TelegramSendingMessage.DeleteMessage (chatId, messageId))
 
 /// Send animation as reply
-let sendAnimationReply chatId animation replyToMessageId =
+let sendAnimationReply (chatId, replyToMessageId) animation =
     channel.Writer.WriteAsync(TelegramSendingMessage.SendAnimationReply (chatId, animation, replyToMessageId))
 
 /// Send video as reply
-let sendVideoReply chatId video replyToMessageId =
+let sendVideoReply (chatId, replyToMessageId) video =
     channel.Writer.WriteAsync(TelegramSendingMessage.SendVideoReply (chatId, video, replyToMessageId))
 
 /// Send photo as reply
-let sendPhotoReply chatId photo replyToMessageId =
+let sendPhotoReply (chatId, replyToMessageId) photo =
     channel.Writer.WriteAsync(TelegramSendingMessage.SendPhotoReply (chatId, photo, replyToMessageId))
 
 /// Send photo as reply
-let sendVoiceReply chatId voice replyToMessageId =
+let sendVoiceReply (chatId, replyToMessageId) voice =
     channel.Writer.WriteAsync(TelegramSendingMessage.SendVoiceReply (chatId, voice, replyToMessageId))
 
 /// Send audio as reply
-let sendAudioReply chatId photo replyToMessageId =
+let sendAudioReply (chatId, replyToMessageId) photo =
     channel.Writer.WriteAsync(TelegramSendingMessage.SendAudioReply (chatId, photo, replyToMessageId))
