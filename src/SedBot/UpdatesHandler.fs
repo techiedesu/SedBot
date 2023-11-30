@@ -3,7 +3,6 @@
 open System.IO
 
 open System.Threading.Tasks
-open Funogram.Telegram
 open Funogram.Telegram.Bot
 open Funogram.Telegram.Types
 open SedBot
@@ -72,7 +71,7 @@ let private updateArrivedInternal botUsername ctx (message: Message) = task {
 
         match res with
         | ValueSome res ->
-            do! TgApi.sendMarkupMessageReply chatId $"```\n{res}\n```" msgId ParseMode.Markdown
+            do! TgApi.sendMarkupMessageReply chatId $"```json\n{res}\n```" msgId ParseMode.Markdown
         | _ ->
             do! TgApi.sendMessageAndDeleteAfter chatId "Jq command failed. This message will be deleted after 35 s." 35000
 
