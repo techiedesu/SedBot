@@ -298,7 +298,7 @@ module FFmpeg =
             |> wrap
             |> withStandardErrorPipe (PipeTarget.ToStringBuilder errSb)
             |> withStandardOutputPipe (PipeTarget.ToStream(target, ValueNone))
-            |> withArguments [ $"-i {args} {contentSpecific} pipe:1" ]
+            |> withArguments [ $"-i {args} -strict -2 {contentSpecific} pipe:1" ]
             |> withValidation CommandResultValidation.None
             |> executeBufferedAsync Console.OutputEncoding
 
@@ -315,6 +315,12 @@ type ImageMagickObjectState = { Src: Stream
                                 FileType: FileType }
 
 module ImageMagick =
+    let private preprocessWithFfmpeg isPicture (stream: Stream) = task {
+        let args = { FFmpegObjectState.Create(stream) with IsPicture = isPicture }
+        let! res = FFmpeg.execute args
+        return res
+    }
+
     let convert (data: ImageMagickObjectState) =
         task {
             let target = new MemoryStream()
@@ -329,8 +335,12 @@ module ImageMagick =
             let outFile = "out" + Path.getSynthName fileType
 
             data.Src.Position <- 0
+            let! src = preprocessWithFfmpeg (data.FileType = FileType.Picture) data.Src
+            let src = Result.get src
+            src.Position <- 0
+
             let memSrc = new MemoryStream()
-            do! data.Src.CopyToAsync(memSrc)
+            do! src.CopyToAsync(memSrc)
             do! File.WriteAllBytesAsync(inputFile, memSrc.ToArray())
 
             let! executionResult =
@@ -338,7 +348,14 @@ module ImageMagick =
                 "magick"
                 |> wrap
                 |> withStandardErrorPipe (PipeTarget.ToStringBuilder errSb)
-                |> withArguments [ inputFile; "-scale"; "512x512>";"-liquid-rescale"; "50%"; "-scale"; "200%"; outFile ]
+                |> withArguments [
+                    inputFile
+                    "-coalesce"
+                    "-scale"; "512x512"
+                    "-liquid-rescale"; "50%"
+                    "-scale"; "200%"
+                    outFile
+                ]
                 |> withValidation CommandResultValidation.None
                 |> executeBufferedAsync Console.OutputEncoding
 

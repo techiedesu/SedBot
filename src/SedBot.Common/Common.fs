@@ -84,6 +84,13 @@ module Option =
         | Some v -> action v |> ignore
 
 [<RequireQualifiedAccess>]
+module Result =
+    let inline get (r: Result<_, _>) =
+        match r with
+        | Error err -> raise (Exception(string err))
+        | Ok r -> r
+
+[<RequireQualifiedAccess>]
 module Json =
     open System.Text.Json.Serialization
 

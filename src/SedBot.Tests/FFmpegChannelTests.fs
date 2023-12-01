@@ -5,35 +5,32 @@ open NUnit.Framework
 open SedBot.ProcessingChannels
 
 [<Test>]
-let ``Reverse audio and video works properly`` () =
-    task {
-        let args =
-            { FFmpegObjectState.Create(
-                  (new StreamReader("VID_20221007_163400_126.mp4"))
-                      .BaseStream
-              ) with
-                AudioReverse = true
-                VideoReverse = true }
+let ``Reverse audio and video works properly`` () = task {
+    let args = {
+        FFmpegObjectState.Create((new StreamReader("VID_20221007_163400_126.mp4")).BaseStream) with
+            AudioReverse = true
+            VideoReverse = true
+    }
 
-        let! res = FFmpeg.execute args
+    let! res = FFmpeg.execute args
+
+    match res with
+    | Result.Ok res ->
+        let resFile = "works.mp4"
+        do! File.WriteAllBytesAsync(resFile, res.ToArray())
+
+        res.Position <- 0
+        let! res = FFmpeg.getStreamsInfo res
 
         match res with
-        | Result.Ok res ->
-            let resFile = "works.mp4"
-            do! File.WriteAllBytesAsync(resFile, res.ToArray())
-
-            res.Position <- 0
-            let! res = FFmpeg.getStreamsInfo res
-
-            match res with
-            | Result.Ok _ ->
-                Assert.That(
-                    File.Exists(resFile)
-                    && File.ReadAllBytes(resFile).Length > 0
-                )
-            | Result.Error err -> Assert.Fail(err)
+        | Result.Ok _ ->
+            Assert.That(
+                File.Exists(resFile)
+                && File.ReadAllBytes(resFile).Length > 0
+            )
         | Result.Error err -> Assert.Fail(err)
-    }
+    | Result.Error err -> Assert.Fail(err)
+}
 
 [<Test>]
 let ``Remove audio with reverse works properly`` () =
