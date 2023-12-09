@@ -10,6 +10,8 @@ open SedBot.Commands
 [<TestCase("sample_bot", "t!send", "private", "send", "")>]
 [<TestCase("sample_bot", "/send@sample_bot", "private", "send", "")>]
 [<TestCase("sample_bot", "/send@sample_bot", "private", "send", "")>]
+[<TestCase("sample_bot", "/send", "private", "send", "")>]
+[<TestCase("sample_bot", "/send ", "private", "send", "")>]
 let [<Test>] ``Command handler works properly`` (botName, command, chatType, expectedCommand, expectedArgs) =
     let chatType =
         match chatType with

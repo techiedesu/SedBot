@@ -19,7 +19,7 @@ let ``liquid rescale works properly`` () =
 
         match res with
         | Result.Ok (res, fileName) ->
-            File.deleteUnit fileName
+            File.deleteign fileName
             let res = res.ToArray()
             do! File.WriteAllBytesAsync("liquid_out.mp4", res)
             Assert.That(res.Length > 0)

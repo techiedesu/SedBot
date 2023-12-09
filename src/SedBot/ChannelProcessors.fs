@@ -9,7 +9,7 @@ open SedBot.Common
 open SedBot.Common.Utilities
 open Microsoft.Extensions.Logging
 
-let private log = Logger.get "responseTelegramActor"
+let private log = Logger.get "ChannelProcessors"
 
 let channelWriter = TgApi.channel.Writer
 let channelReader = TgApi.channel.Reader
@@ -18,6 +18,9 @@ let private channelWorker() = task {
     let mutable cfg = ValueNone
     let api request =
         match cfg with
+        | ValueNone ->
+            log.LogError("Funogram configuration empty. Won't continue. Request: {request}", Json.serialize request)
+
         | ValueSome botConfig ->
             request
             |> Funogram.Api.api botConfig
@@ -27,7 +30,6 @@ let private channelWorker() = task {
                     log.LogDebug("Result: {res}", Json.serialize res) with
                 | ex ->
                     log.LogError("Got response: {ex}", ex)
-        | _ -> ()
 
     while true do
         let! message = channelReader.ReadAsync()

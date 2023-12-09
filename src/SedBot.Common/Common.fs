@@ -131,7 +131,7 @@ module File =
         | e ->
             Error e
 
-    let deleteUnit = delete >> ignore
+    let deleteign = delete >> ignore
 
 module [<RequireQualifiedAccess>] Path =
     let tryGetPath path =

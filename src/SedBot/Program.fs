@@ -5,6 +5,8 @@ open Funogram.Telegram
 open Funogram.Telegram.Bot
 open Funogram.Telegram.Types
 open SedBot
+open SedBot.ChatCommands.Types
+open SedBot.Commands
 open SedBot.Common.TypeExtensions
 open SedBot.Common.Utilities
 open Microsoft.Extensions.Logging
@@ -37,6 +39,12 @@ let rec entryPoint args =
             ChannelProcessors.runChannel()
 
             task {
+
+                let help = CommandParser.processInlineHelp ()
+
+                let botCommands : BotCommand list = help |> List.map (fun ici -> { Command = ici.Command; Description = ici.Description })
+                let! _ = Api.sendNewCommands (Array.ofList botCommands) |> api config
+
                 let! _ = Api.deleteWebhookBase () |> api config
                 let! botInfoResult = Api.getMe |> api config
 

@@ -16,7 +16,7 @@ let rec public commandPatternInternal botUsername (text: string) chatType =
         if Seq.isEmpty matched then
             None
         else
-            matched |> Seq.map (fun m -> m.Value) |> Array.ofSeq |> Some
+            matched |> Seq.map _.Value |> Array.ofSeq |> Some
 
     if text.StartsWith "t!" then
         match text.Split " " |> List.ofArray with
@@ -33,8 +33,8 @@ let rec public commandPatternInternal botUsername (text: string) chatType =
         else
             None, None
     else
-        let command = Regex.Match(text, "(\/.*?)")
-        if command.Length > 0 && command.Value <> "/" then
+        let command = Regex.Match(text.Trim(), "(?:\/)([A-z]*)(@?)")
+        if command.Success && command.Groups[2].Value = "" then
             Some (command.Value.Substring(1, command.Value.Length - 1)), tryGetArgs (text.Substring(command.Value.Length))
         else
             commandPatternInternal botUsername text SuperGroup
@@ -49,7 +49,8 @@ let (|CommandWithArgs|) (item: CommandPipelineItem) =
 let (|Command|) (item: CommandPipelineItem) =
     match item.Message with
     | { Text = Some text; Chat = { Type = cType } } ->
-        commandPatternInternal (item.BotUsername.Substring(1)) text cType |> fst
+        let res = commandPatternInternal (item.BotUsername.Substring(1)) text cType |> fst
+        res
     | _ ->
         None
 
@@ -140,10 +141,8 @@ let (|IsCommand|_|) (commandName: string) (item: CommandPipelineItem) =
     | Command (Some c) -> c = commandName |> Option.ofBool
     | _ -> None
 
-let (|IsHelpCommand|) (item: CommandPipelineItem) =
-    match item with
-    | Command (Some c) -> c = "help" |> Option.ofBool
-    | _ -> None
+let (|InlineHelp|_|) (item: CommandPipelineItem) =
+    item.ProvideInlineHelp |> Option.ofBool
 
 let (|%>) (item: CommandPipelineItem) (messageProcessor: CommandPipelineItem -> CommandPipelineItem) =
     match item.Command with

@@ -18,9 +18,9 @@ open Microsoft.Extensions.Logging
 module Process =
     let private log = Logger.get "SedBot.Utilities.Process"
 
-    let runTextProcess procName args data = task {
+    let rec runTextProcess procName args data = task {
         log.LogDebug(
-            "runTextProcess: process name: {procName};; args: {args};; data: {data}",
+            $"{nameof runTextProcess}: process name: {{procName}};; args: {{args}};; data: {{data}}",
             procName, args, data
         )
 
@@ -31,17 +31,17 @@ module Process =
             procName
             |> wrap
             |> withEscapedArguments args
-            |> withStandardInputPipe  (PipeSource.FromString      data)
-            |> withStandardErrorPipe  (PipeTarget.ToStringBuilder stderr)
-            |> withStandardOutputPipe (PipeTarget.ToStringBuilder stdout)
+            |> withStandardInputPipe  ^ PipeSource.FromString data
+            |> withStandardErrorPipe  ^ PipeTarget.ToStringBuilder stderr
+            |> withStandardOutputPipe ^ PipeTarget.ToStringBuilder stdout
             |> withValidation CommandResultValidation.None
             |> executeBufferedAsync Encoding.UTF8
 
         let exitCode = executionResult.ExitCode
         if exitCode = 0 then
-            return ValueSome ^ stdout.ToString()
+            return string stdout |> ValueSome
         else
-            log.LogError("runTextProcess: wrong exit code: {exitCode}, stderr: {stdErr}", exitCode, stderr)
+            log.LogError($"{nameof runTextProcess}: wrong exit code: {{exitCode}}, stderr: {{stdErr}}", exitCode, stderr)
             return ValueNone
     }
 
@@ -153,7 +153,7 @@ module FFmpeg =
                 return res |> Result.Ok
             | Failure (errorMsg, _, _) -> return errorMsg |> Result.Error
         else
-            return errSb.ToString() |> Result.Error
+            return string errSb |> Result.Error
     }
 
     let voiceDistortion (data: AudioDistortion) = task {
@@ -173,7 +173,7 @@ module FFmpeg =
 
         if executionResult.ExitCode = 0 then
             use sr = new StreamReader(outputFileName)
-            File.deleteUnit data.AudioFileName
+            File.deleteign data.AudioFileName
             let ms = new MemoryStream()
             do! sr.BaseStream.CopyToAsync(ms)
             return (ms, outputFileName) |> Result.Ok
@@ -198,7 +198,7 @@ module FFmpeg =
 
         if executionResult.ExitCode = 0 then
             use sr = new StreamReader(outputFileName)
-            File.deleteUnit data.AudioFileName
+            File.deleteign data.AudioFileName
             let ms = new MemoryStream()
             do! sr.BaseStream.CopyToAsync(ms)
             return (ms, outputFileName) |> Result.Ok
@@ -226,8 +226,8 @@ module FFmpeg =
         match executionResult.ExitCode with
         | 0 ->
             use sr = new StreamReader(outputFileName)
-            File.deleteUnit data.AudioFileName
-            File.deleteUnit data.VideoFileName
+            File.deleteign data.AudioFileName
+            File.deleteign data.VideoFileName
             let ms = new MemoryStream()
             do! sr.BaseStream.CopyToAsync(ms)
             return (ms, outputFileName) |> Result.Ok
@@ -302,7 +302,7 @@ module FFmpeg =
             |> withValidation CommandResultValidation.None
             |> executeBufferedAsync Console.OutputEncoding
 
-        File.deleteUnit inputFile
+        File.deleteign inputFile
 
         if executionResult.ExitCode = 0 then
             return target |> Result.Ok
@@ -321,91 +321,89 @@ module ImageMagick =
         return res
     }
 
-    let convert (data: ImageMagickObjectState) =
-        task {
-            let target = new MemoryStream()
-            let errSb = StringBuilder()
+    let convert (data: ImageMagickObjectState) = task {
+        let target = new MemoryStream()
+        let errSb = StringBuilder()
 
-            let fileType =
-                match data.FileType with
-                | FileType.Picture -> ".jpg"
-                | _ -> ".mp4"
+        let fileType =
+            match data.FileType with
+            | FileType.Picture -> ".jpg"
+            | _ -> ".mp4"
 
-            let inputFile = "in" + Path.getSynthName fileType
-            let outFile = "out" + Path.getSynthName fileType
+        let inputFile = "in" + Path.getSynthName fileType
+        let outFile = "out" + Path.getSynthName fileType
 
-            data.Src.Position <- 0
-            let! src = preprocessWithFfmpeg (data.FileType = FileType.Picture) data.Src
-            let src = Result.get src
-            src.Position <- 0
+        data.Src.Position <- 0
+        let! src = preprocessWithFfmpeg (data.FileType = FileType.Picture) data.Src
+        let src = Result.get src
+        src.Position <- 0
 
-            let memSrc = new MemoryStream()
-            do! src.CopyToAsync(memSrc)
-            do! File.WriteAllBytesAsync(inputFile, memSrc.ToArray())
+        let memSrc = new MemoryStream()
+        do! src.CopyToAsync(memSrc)
+        do! File.WriteAllBytesAsync(inputFile, memSrc.ToArray())
 
-            let! executionResult =
-                // "convert"
-                "magick"
-                |> wrap
-                |> withStandardErrorPipe (PipeTarget.ToStringBuilder errSb)
-                |> withArguments [
-                    inputFile
-                    "-coalesce"
-                    "-scale"; "512x512"
-                    "-liquid-rescale"; "50%"
-                    "-scale"; "200%"
-                    outFile
-                ]
-                |> withValidation CommandResultValidation.None
-                |> executeBufferedAsync Console.OutputEncoding
+        let! executionResult =
+            "magick"
+            |> wrap
+            |> withStandardErrorPipe (PipeTarget.ToStringBuilder errSb)
+            |> withArguments [
+                inputFile
+                "-coalesce"
+                "-scale"; "512x512"
+                "-liquid-rescale"; "50%"
+                "-scale"; "200%"
+                outFile
+            ]
+            |> withValidation CommandResultValidation.None
+            |> executeBufferedAsync Console.OutputEncoding
 
-            if executionResult.ExitCode = 0 then
-                let outStream = new StreamReader(outFile)
-                do! outStream.BaseStream.CopyToAsync(target)
+        if executionResult.ExitCode = 0 then
+            let outStream = new StreamReader(outFile)
+            do! outStream.BaseStream.CopyToAsync(target)
 
-                File.deleteUnit inputFile
+            File.deleteign inputFile
 
-                return (target, outFile) |> Result.Ok
-            else
-                return errSb.ToString() |> Result.Error
-        }
+            return (target, outFile) |> Result.Ok
+        else
+            return string errSb |> Result.Error
+    }
 
-type FfmpegGifItem =
-    { Stream: MemoryStream
+type FfmpegGifItem = {
+      Stream: MemoryStream
       FileType: FileType
-      Tcs: TaskCompletionSource<byte [] voption> }
+      Tcs: TaskCompletionSource<byte [] voption>
+}
 
 let ffmpegChannel = Channel.CreateUnbounded<FfmpegGifItem>()
 
-let reverseContent () =
-    task {
-        let log = Logger.get "startReverse"
-        log.LogDebug("Spawned!")
+let reverseContent () = task {
+    let log = Logger.get "startReverse"
+    log.LogDebug("Spawned!")
 
-        while true do
-            let! { Tcs = tcs
-                   Stream = stream
-                   FileType = fileType } = ffmpegChannel.Reader.ReadAsync()
+    while true do
+        let! { Tcs = tcs
+               Stream = stream
+               FileType = fileType } = ffmpegChannel.Reader.ReadAsync()
 
-            let args =
-                { FFmpegObjectState.Create(stream) with
-                    VideoReverse = true
-                    AudioReverse = true
-                    RemoveAudio = fileType = FileType.Gif
-                    IsPicture = fileType = FileType.Picture }
+        let args =
+            { FFmpegObjectState.Create(stream) with
+                VideoReverse = true
+                AudioReverse = true
+                RemoveAudio = fileType = FileType.Gif
+                IsPicture = fileType = FileType.Picture }
 
-            let! res = FFmpeg.execute args
+        let! res = FFmpeg.execute args
 
-            match res with
-            | Result.Ok res ->
-                log.LogDebug("Reverse success: {length}", res.Length)
-                tcs.SetResult(res.ToArray() |> ValueSome)
-            | Result.Error err ->
-                log.LogDebug("Reverse fail: {err}", err)
-                tcs.SetResult(ValueNone)
+        match res with
+        | Result.Ok res ->
+            log.LogDebug("Reverse success: {length}", res.Length)
+            tcs.SetResult(res.ToArray() |> ValueSome)
+        | Result.Error err ->
+            log.LogDebug("Reverse fail: {err}", err)
+            tcs.SetResult(ValueNone)
 
-            do! Task.Delay(40)
-    }
+        do! Task.Delay(40)
+}
 
 let clockChannel = Channel.CreateUnbounded<FfmpegGifItem>()
 
@@ -440,34 +438,33 @@ let startClockFfmpeg () =
 
 let cclockChannel = Channel.CreateUnbounded<FfmpegGifItem>()
 
-let startCClockFfmpeg () =
-    task {
-        let log = Logger.get "startCclock"
-        log.LogDebug("Spawned!")
+let startCClockFfmpeg () = task {
+    let log = Logger.get "startCclock"
+    log.LogDebug("Spawned!")
 
-        while true do
-            let! { Tcs = tcs
-                   Stream = stream
-                   FileType = fileType } = cclockChannel.Reader.ReadAsync()
+    while true do
+        let! { Tcs = tcs
+               Stream = stream
+               FileType = fileType } = cclockChannel.Reader.ReadAsync()
 
-            let args =
-                { FFmpegObjectState.Create(stream) with
-                    CClock = true
-                    RemoveAudio = fileType = FileType.Gif
-                    IsPicture = fileType = FileType.Picture }
+        let args =
+            { FFmpegObjectState.Create(stream) with
+                CClock = true
+                RemoveAudio = fileType = FileType.Gif
+                IsPicture = fileType = FileType.Picture }
 
-            let! res = FFmpeg.execute args
+        let! res = FFmpeg.execute args
 
-            match res with
-            | Result.Ok res ->
-                log.LogDebug("Reverse success: {length}", res.Length)
-                tcs.SetResult(res.ToArray() |> ValueSome)
-            | Result.Error err ->
-                log.LogDebug("Reverse fail: {err}", err)
-                tcs.SetResult(ValueNone)
+        match res with
+        | Result.Ok res ->
+            log.LogDebug("Reverse success: {length}", res.Length)
+            tcs.SetResult(res.ToArray() |> ValueSome)
+        | Result.Error err ->
+            log.LogDebug("Reverse fail: {err}", err)
+            tcs.SetResult(ValueNone)
 
-            do! Task.Delay(40)
-    }
+        do! Task.Delay(40)
+}
 
 
 type MagicGifItem =
@@ -477,64 +474,63 @@ type MagicGifItem =
 
 let magicChannel = Channel.CreateUnbounded<MagicGifItem>()
 
-let startMagicDistortion () =
-    task {
-        let log = Logger.get "startMagicDistortion"
-        log.LogDebug("Spawned!")
+let startMagicDistortion () = task {
+    let log = Logger.get "startMagicDistortion"
+    log.LogDebug("Spawned!")
 
-        while true do
-            let! { Tcs = tcs
-                   Stream = stream
-                   FileType = fileType } = magicChannel.Reader.ReadAsync()
+    while true do
+        let! { Tcs = tcs
+               Stream = stream
+               FileType = fileType } = magicChannel.Reader.ReadAsync()
 
-            let! res = task {
-                match fileType with
-                | FileType.Video ->
-                    let inputFile = Path.getSynthName ".mp4"
-                    stream.Position <- 0
-                    let memSrc = new MemoryStream()
-                    do! stream.CopyToAsync(memSrc)
-                    let memSrc' = memSrc.ToArray()
-                    do! File.WriteAllBytesAsync(inputFile, memSrc')
-                    let! res = ImageMagick.convert { Src = stream; FileType = fileType }
-                    match res with
-                    | Result.Ok (_, distResultFileName) ->
-                        let! res = FFmpeg.appendAudioToVideoDistortion { VideoFileName = distResultFileName; AudioFileName = inputFile }
-                        return res
-                    | Result.Error _ ->
-                        return res
-                | Voice ->
-                    let inputFile = Path.getSynthName ".ogg"
-                    stream.Position <- 0
-                    let memSrc = new MemoryStream()
-                    do! stream.CopyToAsync(memSrc)
-                    let memSrc' = memSrc.ToArray()
-                    do! File.WriteAllBytesAsync(inputFile, memSrc')
-                    return! FFmpeg.voiceDistortion { AudioFileName = inputFile }
-                | Audio ->
-                    let inputFile = Path.getSynthName ".mp3"
-                    stream.Position <- 0
-                    let memSrc = new MemoryStream()
-                    do! stream.CopyToAsync(memSrc)
-                    let memSrc' = memSrc.ToArray()
-                    do! File.WriteAllBytesAsync(inputFile, memSrc')
-                    return! FFmpeg.audioDistortion { AudioFileName = inputFile }
-                | _ ->
-                    return! ImageMagick.convert { Src = stream; FileType = fileType }
-            }
+        let! res = task {
+            match fileType with
+            | FileType.Video ->
+                let inputFile = Path.getSynthName ".mp4"
+                stream.Position <- 0
+                let memSrc = new MemoryStream()
+                do! stream.CopyToAsync(memSrc)
+                let memSrc' = memSrc.ToArray()
+                do! File.WriteAllBytesAsync(inputFile, memSrc')
+                let! res = ImageMagick.convert { Src = stream; FileType = fileType }
+                match res with
+                | Result.Ok (_, distResultFileName) ->
+                    let! res = FFmpeg.appendAudioToVideoDistortion { VideoFileName = distResultFileName; AudioFileName = inputFile }
+                    return res
+                | Result.Error _ ->
+                    return res
+            | Voice ->
+                let inputFile = Path.getSynthName ".ogg"
+                stream.Position <- 0
+                let memSrc = new MemoryStream()
+                do! stream.CopyToAsync(memSrc)
+                let memSrc' = memSrc.ToArray()
+                do! File.WriteAllBytesAsync(inputFile, memSrc')
+                return! FFmpeg.voiceDistortion { AudioFileName = inputFile }
+            | Audio ->
+                let inputFile = Path.getSynthName ".mp3"
+                stream.Position <- 0
+                let memSrc = new MemoryStream()
+                do! stream.CopyToAsync(memSrc)
+                let memSrc' = memSrc.ToArray()
+                do! File.WriteAllBytesAsync(inputFile, memSrc')
+                return! FFmpeg.audioDistortion { AudioFileName = inputFile }
+            | _ ->
+                return! ImageMagick.convert { Src = stream; FileType = fileType }
+        }
 
-            match res with
-            | Result.Ok (res, outFileName) ->
-                log.LogDebug("Dist success: {length}", res.Length)
+        match res with
+        | Result.Ok (res, outFileName) ->
+            log.LogDebug("Dist success: {length}", res.Length)
 
-                File.deleteUnit outFileName
-                tcs.SetResult(res.ToArray() |> ValueSome)
-            | Result.Error err ->
-                log.LogDebug("Dist fail: {err}", err)
-                tcs.SetResult(ValueNone)
+            File.deleteign outFileName
+            tcs.SetResult(res.ToArray() |> ValueSome)
+        | Result.Error err ->
+            log.LogDebug("Dist fail: {err}", err)
+            tcs.SetResult(ValueNone)
 
-            do! Task.Delay(40)
-    }
+        do! Task.Delay(40)
+}
 
 type FfmpegVflipGifItem =
     { Stream: MemoryStream
@@ -543,29 +539,28 @@ type FfmpegVflipGifItem =
 
 let ffmpegVflipChannel = Channel.CreateUnbounded<FfmpegVflipGifItem>()
 
-let rec startVflipFfmpeg () =
-    task {
-        let log = Logger.get ^ nameof startVflipFfmpeg
-        log.LogDebug("Spawned!")
+let rec startVflipFfmpeg () = task {
+    let log = Logger.get ^ nameof startVflipFfmpeg
+    log.LogDebug("Spawned!")
 
-        while true do
-            let! { Tcs = tcs
-                   Stream = stream
-                   FileType = _ } = ffmpegVflipChannel.Reader.ReadAsync()
+    while true do
+        let! { Tcs = tcs
+               Stream = stream
+               FileType = _ } = ffmpegVflipChannel.Reader.ReadAsync()
 
-            let args = { FFmpegObjectState.Create(stream) with VerticalFlip = true }
-            let! res = FFmpeg.execute args
+        let args = { FFmpegObjectState.Create(stream) with VerticalFlip = true }
+        let! res = FFmpeg.execute args
 
-            match res with
-            | Result.Ok res ->
-                log.LogDebug("Reverse success: {length}", res.Length)
-                tcs.SetResult(res.ToArray() |> ValueSome)
-            | Result.Error err ->
-                log.LogDebug("Reverse fail: {err}", err)
-                tcs.SetResult(ValueNone)
+        match res with
+        | Result.Ok res ->
+            log.LogDebug("Reverse success: {length}", res.Length)
+            tcs.SetResult(res.ToArray() |> ValueSome)
+        | Result.Error err ->
+            log.LogDebug("Reverse fail: {err}", err)
+            tcs.SetResult(ValueNone)
 
-            do! Task.Delay(40)
-    }
+        do! Task.Delay(40)
+}
 
 type FfmpegHflipGifItem = {
     Stream: MemoryStream
@@ -594,7 +589,7 @@ let startHflipFfmpeg () = task {
             tcs.SetResult(ValueNone)
 
         do! Task.Delay(40)
-    }
+}
 
 let mutable private cts = TaskCompletionSource()
 

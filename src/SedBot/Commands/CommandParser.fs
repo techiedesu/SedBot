@@ -57,6 +57,12 @@ let handleRawMessageInfo (item: CommandPipelineItem) =
             ReplyTo = replyMessage
         })
         item.SetCommand(res)
+    | InlineHelp ->
+        let inlineHelp = {
+            Command = "raw"
+            Description = "Prints internal representation of message"
+        }
+        { item with CommandHelpInfo = inlineHelp :: item.CommandHelpInfo }
     | _ ->
         item
 
@@ -71,6 +77,12 @@ let handleReverse (item: CommandPipelineItem) =
             File = file
         })
         CommandPipelineItem.set item res
+    | InlineHelp ->
+        let inlineHelp = {
+            Command = "rev"
+            Description = "Applies reverse to gifs, videos, pics, voices and music"
+        }
+        { item with CommandHelpInfo = inlineHelp :: item.CommandHelpInfo }
     | _ ->
         item
 
@@ -85,6 +97,12 @@ let handleVerticalFlip (item: CommandPipelineItem) =
             File = file
         })
         item.SetCommand(res)
+    | InlineHelp ->
+        let inlineHelp = {
+            Command = "vflip"
+            Description = "Applies vertical flip to gifs, videos and pics"
+        }
+        { item with CommandHelpInfo = inlineHelp :: item.CommandHelpInfo }
     | _ -> item
 
 let handleHorizontalFlip (item: CommandPipelineItem) =
@@ -98,6 +116,12 @@ let handleHorizontalFlip (item: CommandPipelineItem) =
             File = file
         })
         item.SetCommand(res)
+    | InlineHelp ->
+        let inlineHelp = {
+            Command = "hflip"
+            Description = "Applies horizontal flip to gifs, videos and pics"
+        }
+        { item with CommandHelpInfo = inlineHelp :: item.CommandHelpInfo }
     | _ -> item
 
 let handleClockwiseRotation (item: CommandPipelineItem) =
@@ -111,6 +135,12 @@ let handleClockwiseRotation (item: CommandPipelineItem) =
             File = file
         })
         item.SetCommand(res)
+    | InlineHelp ->
+        let inlineHelp = {
+            Command = "clock"
+            Description = "Applies counterclockwise rotation to gifs, videos and pics"
+        }
+        { item with CommandHelpInfo = inlineHelp :: item.CommandHelpInfo }
     | _ ->
         item
 
@@ -123,8 +153,14 @@ let handleCounterclockwiseRotation (item: CommandPipelineItem) =
         let res = CommandType.CounterClockwiseRotation({
                 TelegramOmniMessageId = (chatId, msgId)
                 File = file
-            })
+        })
         item.SetCommand(res)
+    | InlineHelp ->
+        let inlineHelp = {
+            Command = "dist"
+            Description = "Applies distortion to gifs, videos, pics, voices and music"
+        }
+        { item with CommandHelpInfo = inlineHelp :: item.CommandHelpInfo }
     | _ -> item
 
 let handleDistortion (item: CommandPipelineItem) =
@@ -143,6 +179,12 @@ let handleDistortion (item: CommandPipelineItem) =
             File = file
         })
         item.SetCommand(res)
+    | InlineHelp ->
+        let inlineHelp = {
+            Command = "dist"
+            Description = "Applies distortion to gif, video, voices and music"
+        }
+        { item with CommandHelpInfo = inlineHelp :: item.CommandHelpInfo }
     | _ -> item
 
 let handleClown (item: CommandPipelineItem) =
@@ -172,8 +214,8 @@ let handleJq (item: CommandPipelineItem) =
     | _ ->
         item
 
-let processMessage message botUsername =
-    CommandPipelineItem.Create(message, botUsername)
+let private processMessageInternal message botUsername inlineHelp =
+    CommandPipelineItem.Create(message, botUsername, inlineHelp)
     |%> handleSed
     |%> handleJq
     |%> handleClown
@@ -184,4 +226,10 @@ let processMessage message botUsername =
     |%> handleHorizontalFlip
     |%> handleClockwiseRotation
     |%> handleCounterclockwiseRotation
-    |> CommandPipelineItem.GetCommand
+
+let processMessage message botUsername =
+    processMessageInternal message botUsername false |> CommandPipelineItem.GetCommand
+
+let processInlineHelp () =
+    processMessageInternal Ext.emptyTelegramMessage "" true
+    |> _.CommandHelpInfo

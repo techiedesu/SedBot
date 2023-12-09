@@ -56,3 +56,6 @@ let tryGetFileAsBytes ctx fileId = task {
     | _ ->
         return ValueNone
 }
+
+let sendNewCommands commands =
+    Req.SetMyCommands.Make(commands)
