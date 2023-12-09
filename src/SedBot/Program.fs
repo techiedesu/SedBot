@@ -28,22 +28,26 @@ let rec entryPoint args =
 
     while true do
         try
+            let config = {
+                Config.defaultConfig with
+                    Token = token
+                    OnError = fun ex -> logger.LogError("Got Funogram exception: {ex}", ex)
+            }
+            ChannelProcessors.channelWriter.TryWrite(TgApi.TelegramSendingMessage.SetConfig config) |> ignore
+            ChannelProcessors.runChannel()
+
             task {
-                let config = { Config.defaultConfig with Token = token }
-
-                ChannelProcessors.channelWriter.TryWrite(TgApi.TelegramSendingMessage.SetConfig config) |> ignore
-                ChannelProcessors.runChannel()
-
                 let! _ = Api.deleteWebhookBase () |> api config
                 let! botInfoResult = Api.getMe |> api config
-                let me =
+
+                let botUsername =
                     match botInfoResult with
                     | Error err ->
                         raise ^ Exception($"Can't get username: {err}")
                     | Ok res ->
                         Option.get res.Username
 
-                return! startBot config (UpdatesHandler.updateArrived me) None
+                return! startBot config (UpdatesHandler.updateArrived botUsername) None
             } |> Task.runSynchronously
         with
         | ex when ex.Message.Contains("Unauthorized") ->

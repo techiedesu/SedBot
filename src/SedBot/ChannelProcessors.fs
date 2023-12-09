@@ -14,7 +14,7 @@ let private log = Logger.get "responseTelegramActor"
 let channelWriter = TgApi.channel.Writer
 let channelReader = TgApi.channel.Reader
 
-let channelWorker() = task {
+let private channelWorker() = task {
     let mutable cfg = ValueNone
     let api request =
         match cfg with
