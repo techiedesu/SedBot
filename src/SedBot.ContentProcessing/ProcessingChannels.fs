@@ -167,7 +167,7 @@ module FFmpeg =
             |> wrap
             |> withStandardErrorPipe (PipeTarget.ToStringBuilder errSb)
             |> withStandardOutputPipe (PipeTarget.ToStream(target, ValueNone))
-            |> withArguments [ "-hwaccel auto"; "-i"; data.AudioFileName; "-ac"; "1 -map 0:a -strict -2 -acodec opus -b:a 128k -af vibrato=f=8:d=1"; outputFileName ]
+            |> withArguments [ "-i"; data.AudioFileName; "-ac"; "1 -map 0:a -strict -2 -acodec opus -b:a 128k -af vibrato=f=8:d=1"; outputFileName ]
             |> withValidation CommandResultValidation.None
             |> executeBufferedAsync Console.OutputEncoding
 
@@ -192,7 +192,7 @@ module FFmpeg =
             |> wrap
             |> withStandardErrorPipe (PipeTarget.ToStringBuilder errSb)
             |> withStandardOutputPipe (PipeTarget.ToStream(target, ValueNone))
-            |> withArguments [ $"-hwaccel auto -i {data.AudioFileName} -af vibrato=f=8:d=1 {outputFileName}" ]
+            |> withArguments [ $"-i {data.AudioFileName} -af vibrato=f=8:d=1 {outputFileName}" ]
             |> withValidation CommandResultValidation.None
             |> executeBufferedAsync Console.OutputEncoding
 
@@ -219,7 +219,7 @@ module FFmpeg =
             |> wrap
             |> withStandardErrorPipe (PipeTarget.ToStringBuilder errSb)
             |> withStandardOutputPipe (PipeTarget.ToStream(target, ValueNone))
-            |> withArgument $"-hwaccel auto -an -i {data.VideoFileName} -vn -i {data.AudioFileName} -strict -2 -c:a libopus -c:v libx264 -vf scale=out_range=full -color_range 2 -pix_fmt yuvj420p -af vibrato=f=6:d=1 -shortest {outputFileName}"
+            |> withArgument $"-an -i {data.VideoFileName} -vn -i {data.AudioFileName} -strict -2 -c:a libopus -c:v libx264 -vf scale=out_range=full -color_range 2 -pix_fmt yuvj420p -af vibrato=f=6:d=1 -shortest {outputFileName}"
             |> withValidation CommandResultValidation.None
             |> executeBufferedAsync Console.OutputEncoding
 
@@ -298,7 +298,7 @@ module FFmpeg =
             |> wrap
             |> withStandardErrorPipe (PipeTarget.ToStringBuilder errSb)
             |> withStandardOutputPipe (PipeTarget.ToStream(target, ValueNone))
-            |> withArguments [ $"-hwaccel auto -i {args} -strict -2 {contentSpecific} pipe:1" ]
+            |> withArguments [ $"-i {args} -strict -2 {contentSpecific} pipe:1" ]
             |> withValidation CommandResultValidation.None
             |> executeBufferedAsync Console.OutputEncoding
 

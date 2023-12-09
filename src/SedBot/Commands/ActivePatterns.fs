@@ -100,7 +100,7 @@ let (|ReplyVoiceFileId|) (item: CommandPipelineItem) =
 
 let (|ReplyAudioFileId|) (item: CommandPipelineItem) =
     match item with
-    | ReplyMessage (Some { Audio = Some { FileId = fileId }}) -> Some (fileId, FileType.Voice)
+    | ReplyMessage (Some { Audio = Some { FileId = fileId }}) -> Some (fileId, FileType.Audio)
     | _ -> None
 
 let (|ReplyVideoFileId|) (item: CommandPipelineItem) =
