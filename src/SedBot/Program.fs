@@ -44,7 +44,7 @@ let rec entryPoint args =
                         Option.get res.Username
 
                 return! startBot config (UpdatesHandler.updateArrived me) None
-            } |> fun x -> x.ConfigureAwait(false).GetAwaiter().GetResult()
+            } |> Task.runSynchronously
         with
         | ex when ex.Message.Contains("Unauthorized") ->
             logger.LogCritical("Wrong token? Error: {error}", ex)

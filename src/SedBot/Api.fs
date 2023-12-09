@@ -51,6 +51,8 @@ let tryGetFileAsBytes ctx fileId = task {
             let! res = hc.GetByteArrayAsync($"https://api.telegram.org/file/bot{ctx.Config.Token}/{path}")
             return res |> ValueSome
         with
-        | _ -> return ValueNone
-    | _ -> return ValueNone
+        | _ ->
+            return ValueNone
+    | _ ->
+        return ValueNone
 }

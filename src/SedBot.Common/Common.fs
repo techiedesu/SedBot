@@ -16,6 +16,9 @@ let inline (<-?) (field: _ byref) a =
     else
         field <- ValueSome a
 
+let inline isNotNull<'T when 'T: not struct> (v: 'T) =
+    obj.ReferenceEquals (v, null) |> not
+
 type FileType =
     | Gif
     | Video
@@ -144,67 +147,16 @@ module [<RequireQualifiedAccess>] Path =
             None
 
 [<RequireQualifiedAccess>]
-module Array =
-    let inline any<'T> (a: 'T array) =
-        Array.length a > 0
-
-    let inline emptyToNone<'T> (a: 'T array) =
-        if Object.ReferenceEquals(a, null) || any a = false then
-            None
-        else
-            Some a
-
-[<RequireQualifiedAccess>]
-module TaskSeq =
-    let inline map ([<InlineIfLambda>] projection: 'T -> 'U) (source: 'T seq Task) = task {
-        let! source = source
-        return source |> Seq.map projection
-    }
-
-    let inline groupBy ([<InlineIfLambda>] projection: 'T -> 'TKey) (source: 'T seq Task) = task {
-        let! source = source
-        return source |> Seq.groupBy projection
-    }
-
-    let inline fold ([<InlineIfLambda>] folder: 'TAcc -> 'T -> 'TAcc) (acc: 'TAcc) (source: 'T seq Task) = task {
-        let! source = source
-        return source |> Seq.fold folder acc
-    }
-
-    let inline reduce ([<InlineIfLambda>] reducer: 'T -> 'T -> 'T) (source: 'T seq Task) = task {
-        let! source = source
-        return source |> Seq.reduce reducer
-    }
-
-[<RequireQualifiedAccess>]
 module Int32 =
     let inline tryParse (str: string) = str |> Int32.TryParse |> Option.ofCSharpTryPattern
 
-[<RequireQualifiedAccess>]
-module TaskOption =
-    let inline ofObj (v: 'v Task) = task {
-        let! v = v
-        return Some v
-    }
+module Task =
+    let runSynchronously (t: Task) =
+        if isNotNull t && not t.IsCompleted then
+            t.ConfigureAwait(false).GetAwaiter().GetResult()
 
 [<RequireQualifiedAccess>]
 module TaskVOption =
-    let inline map ([<InlineIfLambda>] mapping) (v: 'v voption Task) = task {
-        match! v with
-        | ValueNone ->
-            return ValueNone
-        | ValueSome v ->
-            return ValueSome (mapping v)
-    }
-
-    let inline bind ([<InlineIfLambda>] binding) (v: 'v voption Task) = task {
-        match! v with
-        | ValueNone ->
-            return ValueNone
-        | ValueSome v ->
-            return binding v
-    }
-
     let inline taskBind ([<InlineIfLambda>] binding) (v: 'v voption Task) = task {
         match! v with
         | ValueNone ->
@@ -212,25 +164,3 @@ module TaskVOption =
         | ValueSome v ->
             return! binding v
     }
-
-type OperationSystem =
-    | Windows
-    | Linux
-    | FreeBSD
-    | Android
-    | Browser
-    | Other
-
-let getOperationSystem () =
-    if OperatingSystem.IsAndroid() then
-        OperationSystem.Android
-    elif OperatingSystem.IsLinux() then
-        OperationSystem.Linux
-    elif OperatingSystem.IsWindows() then
-        OperationSystem.Windows
-    elif OperatingSystem.IsFreeBSD() then
-        OperationSystem.FreeBSD
-    elif OperatingSystem.IsBrowser() then
-        OperationSystem.Browser
-    else
-        OperationSystem.Other

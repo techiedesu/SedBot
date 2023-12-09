@@ -17,7 +17,6 @@
     </None>
     <Compile Include="ImageMagickTests.fs" />
     <Compile Include="FfmpegCommandsTests.fs" />
-    <Compile Include="YoutubeApiTests.fs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\SedBot\SedBot.fsproj" />

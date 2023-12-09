@@ -9,9 +9,7 @@
     <Compile Include="Common.fs" />
     <Compile Include="ActivePatterns.fs" />
     <Compile Include="Utilities.fs" />
-    <Compile Include="YoutubeApi.fs" />
     <Content Include="paket.references" />
-    <Compile Include="YoutubeRepository.fs" />
   </ItemGroup>
   <Import Project="..\.paket\Paket.Restore.targets" />
 </Project>
