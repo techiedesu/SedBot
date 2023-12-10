@@ -19,8 +19,8 @@ type MaybeBuilder() =
 
     member inline _.Combine(optionValue, f) =
         match optionValue with
+        | None -> f()
         | Some _ -> optionValue
-        | _ -> f()
 
     member inline _.Delay f = f
 

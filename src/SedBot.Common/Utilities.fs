@@ -1,6 +1,5 @@
 module SedBot.Common.Utilities
 
-open System
 open Microsoft.Extensions.Logging
 open Serilog
 open Serilog.Extensions.Logging
@@ -26,8 +25,3 @@ module Logger =
 
     let get name =
         factory.CreateLogger(name)
-
-module Path =
-    let getSynthName extension =
-        Guid.NewGuid().ToString().Replace("-", "") + extension
-

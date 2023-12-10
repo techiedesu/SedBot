@@ -7,7 +7,6 @@
   <ItemGroup>
     <Compile Include="MaybeBuilder.fs" />
     <Compile Include="Common.fs" />
-    <Compile Include="ActivePatterns.fs" />
     <Compile Include="Utilities.fs" />
     <Content Include="paket.references" />
   </ItemGroup>

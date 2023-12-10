@@ -6,7 +6,6 @@ open System.IO
 open System.Text.Json
 open System.Threading.Tasks
 open Microsoft.FSharp.Core
-open SedBot.Common.MaybeBuilder
 
 let inline (^) f x = f x
 
@@ -37,12 +36,6 @@ let extension (ft: FileType) =
 
 [<RequireQualifiedAccess>]
 module String =
-    let removeFromStart (text: string) (input: string) =
-        if input = null || text = null then
-            text
-        else
-            text.Trim().Substring(input.Length)
-
     let startsWith (text: string) (input: string) =
         text.StartsWith(input)
 
@@ -59,23 +52,12 @@ module String =
 
 [<RequireQualifiedAccess>]
 module Option =
-    let inline anyOf2 a b = maybe {
-        return! a
-        return! b
-    }
-
     let inline ofBool (v: bool) =
         match v with
         | false ->
             None
         | true ->
             Some ()
-
-    let inline ofValueOption (v: 'T ValueOption) =
-        if v.IsSome then
-            Some v.Value
-        else
-            None
 
     let inline ofCSharpTryPattern (status, value) =
         if status then Some value
@@ -133,19 +115,6 @@ module File =
 
     let deleteign = delete >> ignore
 
-module [<RequireQualifiedAccess>] Path =
-    let tryGetPath path =
-        if Path.Exists(path) then
-            Some ^ Path.GetFullPath(path)
-        else
-            None
-
-    let tryGetDirectories path =
-        if Path.Exists(path) then
-            Some ^ Directory.GetDirectories(path)
-        else
-            None
-
 [<RequireQualifiedAccess>]
 module Int32 =
     let inline tryParse (str: string) = str |> Int32.TryParse |> Option.ofCSharpTryPattern
@@ -164,3 +133,8 @@ module TaskVOption =
         | ValueSome v ->
             return! binding v
     }
+
+[<RequireQualifiedAccess>]
+module Path =
+    let getSynthName extension =
+        Guid.NewGuid().ToString().Replace("-", "") + extension

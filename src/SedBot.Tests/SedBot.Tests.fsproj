@@ -7,16 +7,16 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="FFmpegChannelTests.fs" />
-    <Content Include="paket.references" />
     <Compile Include="CommandHandlerTests.fs" />
+    <Compile Include="ImageMagickTests.fs" />
+    <Compile Include="FfmpegCommandsTests.fs" />
     <None Include="VID_20221007_163400_126.mp4">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <None Include="cb3fce1ba6ad45309515cbaf323ba18b.mp4">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-    <Compile Include="ImageMagickTests.fs" />
-    <Compile Include="FfmpegCommandsTests.fs" />
+    <Content Include="paket.references" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\SedBot\SedBot.fsproj" />
