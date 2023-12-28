@@ -2,13 +2,13 @@ module SedBot.Tests.FfmpegCommandsTests
 
 open System.IO
 open NUnit.Framework
-open SedBot.ProcessingChannels
+open SedBot.ContentProcessing
 
 let private getVideoStream () =
     let sr = new StreamReader("VID_20221007_163400_126.mp4")
     sr.BaseStream
 
-let private ffmpegOs : FFmpegObjectState = {
+let private ffmpegOs : FFmpeg.FFmpegObjectState = {
     VideoReverse = false
     AudioReverse = false
     RemoveAudio = false

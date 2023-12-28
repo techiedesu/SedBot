@@ -3,6 +3,7 @@ module SedBot.Commands.Handlers
 open System.IO
 open System.Threading.Tasks
 open SedBot.ProcessingChannels
+open SedBot.Common
 
 let sed data expression =
     Process.runTextProcess "sed" [| "-E"; expression |] data

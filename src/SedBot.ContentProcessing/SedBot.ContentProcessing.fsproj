@@ -6,6 +6,8 @@
     </PropertyGroup>
 
     <ItemGroup>
+        <Compile Include="FFmpeg.fs" />
+        <Compile Include="ImageMagick.fs" />
         <Compile Include="ProcessingChannels.fs" />
     </ItemGroup>
 

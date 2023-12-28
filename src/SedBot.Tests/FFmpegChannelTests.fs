@@ -2,11 +2,11 @@
 
 open System.IO
 open NUnit.Framework
-open SedBot.ProcessingChannels
+open SedBot.ContentProcessing
 
 let [<Test>] ``Reverse audio and video works properly`` () = task {
     let args = {
-        FFmpegObjectState.Create((new StreamReader("VID_20221007_163400_126.mp4")).BaseStream) with
+        FFmpeg.FFmpegObjectState.Create((new StreamReader("VID_20221007_163400_126.mp4")).BaseStream) with
             AudioReverse = true
             VideoReverse = true
     }
@@ -33,7 +33,7 @@ let [<Test>] ``Reverse audio and video works properly`` () = task {
 
 let [<Test>] ``Remove audio with reverse works properly`` () = task {
     let args =
-        { FFmpegObjectState.Create(
+        { FFmpeg.FFmpegObjectState.Create(
               (new StreamReader("VID_20221007_163400_126.mp4")).BaseStream
           ) with
             VideoReverse = true
@@ -58,7 +58,7 @@ let [<Test>] ``Remove audio with reverse works properly`` () = task {
 
 let [<Test>] ``Vflip and hflip works properly`` () =task {
     let args =
-        { FFmpegObjectState.Create(
+        { FFmpeg.FFmpegObjectState.Create(
               (new StreamReader("VID_20221007_163400_126.mp4"))
                   .BaseStream
           ) with
@@ -84,7 +84,7 @@ let [<Test>] ``Vflip and hflip works properly`` () =task {
 
 let [<Test>] ``No audio with reverse works properly`` () = task {
     let args =
-        { FFmpegObjectState.Create(
+        { FFmpeg.FFmpegObjectState.Create(
               (new StreamReader("cb3fce1ba6ad45309515cbaf323ba18b.mp4"))
                   .BaseStream
           ) with
@@ -110,7 +110,7 @@ let [<Test>] ``No audio with reverse works properly`` () = task {
 
 let [<Test>] ``Clock works properly`` () = task {
     let args =
-        { FFmpegObjectState.Create(
+        { FFmpeg.FFmpegObjectState.Create(
               (new StreamReader("cb3fce1ba6ad45309515cbaf323ba18b.mp4"))
                   .BaseStream
           ) with Clock = true }

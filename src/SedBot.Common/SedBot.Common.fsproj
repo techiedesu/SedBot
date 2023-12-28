@@ -8,6 +8,7 @@
     <Compile Include="MaybeBuilder.fs" />
     <Compile Include="Common.fs" />
     <Compile Include="Utilities.fs" />
+    <Compile Include="Process.fs" />
     <Content Include="paket.references" />
   </ItemGroup>
   <Import Project="..\.paket\Paket.Restore.targets" />

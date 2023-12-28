@@ -4,12 +4,12 @@ open System.IO
 open NUnit.Framework
 
 open SedBot.Common
-open SedBot.ProcessingChannels
+open SedBot.ContentProcessing
 
 let [<Test>] ``liquid rescale works properly`` () = task {
     let sr = new StreamReader("VID_20221007_163400_126.mp4")
 
-    let state =
+    let state : ImageMagick.ImageMagickObjectState =
         { Src = sr.BaseStream
           FileType = FileType.Video }
 
