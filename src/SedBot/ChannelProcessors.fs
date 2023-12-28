@@ -9,7 +9,8 @@ open SedBot.Common
 open SedBot.Common.Utilities
 open Microsoft.Extensions.Logging
 
-let private log = Logger.get "ChannelProcessors"
+type internal Marker = interface end
+let private log = Logger.get ^ typeof<Marker>.DeclaringType.Name
 
 let channelWriter = TgApi.channel.Writer
 let channelReader = TgApi.channel.Reader

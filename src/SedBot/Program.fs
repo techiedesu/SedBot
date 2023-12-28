@@ -35,28 +35,26 @@ let rec entryPoint args =
                     Token = token
                     OnError = fun ex -> logger.LogError("Got Funogram exception: {ex}", ex)
             }
+            logger.LogDebug(Json.serialize config)
+
             ChannelProcessors.channelWriter.TryWrite(TgApi.TelegramSendingMessage.SetConfig config) |> ignore
             ChannelProcessors.runChannel()
 
-            task {
+            let help = CommandParser.processInlineHelp ()
+            let botCommands : BotCommand list = help |> List.map (fun ici -> { Command = ici.Command; Description = ici.Description })
+            let _ = Api.sendNewCommands (Array.ofList botCommands) |> api config |> Async.RunSynchronously
 
-                let help = CommandParser.processInlineHelp ()
+            let _ = Api.deleteWebhookBase () |> api config |> Async.RunSynchronously
+            let botInfoResult = Api.getMe |> api config |> Async.RunSynchronously
 
-                let botCommands : BotCommand list = help |> List.map (fun ici -> { Command = ici.Command; Description = ici.Description })
-                let! _ = Api.sendNewCommands (Array.ofList botCommands) |> api config
+            let botUsername =
+                match botInfoResult with
+                | Error err ->
+                    raise ^ Exception($"Can't get username: {err}")
+                | Ok res ->
+                    Option.get res.Username
 
-                let! _ = Api.deleteWebhookBase () |> api config
-                let! botInfoResult = Api.getMe |> api config
-
-                let botUsername =
-                    match botInfoResult with
-                    | Error err ->
-                        raise ^ Exception($"Can't get username: {err}")
-                    | Ok res ->
-                        Option.get res.Username
-
-                return! startBot config (UpdatesHandler.updateArrived botUsername) None
-            } |> Task.runSynchronously
+            startBot config (UpdatesHandler.updateArrived botUsername) None |> Async.RunSynchronously
         with
         | ex when ex.Message.Contains("Unauthorized") ->
             logger.LogCritical("Wrong token? Error: {error}", ex)

@@ -10,7 +10,8 @@ open SedBot.ChatCommands.Types
 open SedBot.Common.TypeExtensions
 open SedBot.Common.Utilities
 
-let private log = Logger.get "UpdatesHandler"
+type internal Marker = interface end
+let log = Logger.get ^ typeof<Marker>.DeclaringType.Name
 
 let private replyAsFileType fileType omniMsgId inputFile =
     match fileType with
