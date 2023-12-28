@@ -15,24 +15,28 @@ let private log = Logger.get ^ typeof<Marker>.DeclaringType.Name
 let channelWriter = TgApi.channel.Writer
 let channelReader = TgApi.channel.Reader
 
-let private channelWorker() = task {
+let private channelWorker() =
     let mutable cfg = ValueNone
     let api request =
-        match cfg with
-        | ValueNone ->
-            log.LogError("Funogram configuration empty. Won't continue. Request: {request}", Json.serialize request)
+        request
+        |> Funogram.Api.api cfg.Value
+        |> Async.RunSynchronously
+        |> fun res ->
+            try
+                log.LogDebug("Result: {res}", Json.serialize res)
+            with ex ->
+                log.LogError("Got response: {ex}", ex)
 
-        | ValueSome botConfig ->
-            request
-            |> Funogram.Api.api botConfig
-            |> Async.RunSynchronously
-            |> fun res ->
-                try
-                    log.LogDebug("Result: {res}", Json.serialize res) with
-                | ex ->
-                    log.LogError("Got response: {ex}", ex)
+    let apiMapResponse a =
+        Funogram.Api.api cfg.Value >> Async.StartAsTask >> TaskOption.ofResult >> TaskOption.map a
 
-    while true do
+    let tryWriteToChannel v a =
+        match a with
+        | Some a ->
+            channelWriter.WriteAsync(v a)
+        | _ -> ValueTask.CompletedTask
+
+    let rec loop () = task {
         let! message = channelReader.ReadAsync()
         match message with
         | TgApi.SendMessage(chatId, text) ->
@@ -45,99 +49,61 @@ let private channelWorker() = task {
             Req.SendMessage.Make(chatId, text, replyToMessageId = replyToMessageId, parseMode = parseMode)
             |> api
         | TgApi.DeleteMessage(chatId, messageId) ->
-            Api.deleteMessage chatId messageId
-            |> api
+            Api.deleteMessage chatId messageId |> api
+
         | TgApi.SendMessageAndDeleteAfter(chatId, text, ms) ->
-            match cfg with
-            | ValueSome cfg ->
-                let messageId =
-                    Api.sendMessage chatId text
-                    |> Funogram.Api.api cfg
-                    |> Async.RunSynchronously
-                    |> Result.toOption
-                    |> Option.map (fun m -> m.MessageId)
-                do! Task.Delay(ms)
+            let! messageId = Api.sendMessage chatId text |> apiMapResponse _.MessageId
+            do! Task.Delay(ms)
+            do! tryWriteToChannel (fun msgId -> TgApi.TelegramSendingMessage.DeleteMessage(chatId, msgId)) messageId
 
-                match messageId with
-                | Some messageId ->
-                    do! channelWriter.WriteAsync(TgApi.TelegramSendingMessage.DeleteMessage(chatId, messageId))
-                | None ->
-                    ()
-            | _ -> ()
         | TgApi.SendMarkupMessageAndDeleteAfter(chatId, text, mode, ms) ->
-            match cfg with
-            | ValueSome cfg ->
-                let messageId =
-                    Api.sendTextMarkup chatId text mode
-                    |> Funogram.Api.api cfg
-                    |> Async.RunSynchronously
-                    |> Result.toOption
-                    |> Option.map (fun m -> m.MessageId)
-                do! Task.Delay(ms)
+            let! messageId = Api.sendTextMarkup chatId text mode |> apiMapResponse _.MessageId
+            do! Task.Delay(ms)
+            do! tryWriteToChannel (fun msgId -> TgApi.TelegramSendingMessage.DeleteMessage(chatId, msgId)) messageId
 
-                match messageId with
-                | Some messageId ->
-                    do! channelWriter.WriteAsync(TgApi.TelegramSendingMessage.DeleteMessage(chatId, messageId))
-                | _ -> ()
-            | _ -> ()
         | TgApi.SendMessageReplyAndDeleteAfter(chatId, text, ms) ->
-            match cfg with
-            | ValueSome cfg ->
-                let messageId =
-                    Api.sendMessage chatId text
-                    |> Funogram.Api.api cfg
-                    |> Async.RunSynchronously
-                    |> Result.toOption
-                    |> Option.map (fun m -> m.MessageId)
-                do! Task.Delay(ms)
-                match messageId with
-                | Some messageId ->
-                    do! channelWriter.WriteAsync(TgApi.TelegramSendingMessage.DeleteMessage(chatId, messageId))
-                | _ -> ()
-            | _ -> ()
+            let! messageId = Api.sendMessage chatId text |> apiMapResponse _.MessageId
+            do! Task.Delay(ms)
+            do! tryWriteToChannel (fun msgId -> TgApi.TelegramSendingMessage.DeleteMessage(chatId, msgId)) messageId
+
         | TgApi.SendMarkupMessageReplyAndDeleteAfter(chatId, text, mode, replyToMessageId, ms) ->
-            match cfg with
-            | ValueSome cfg ->
-                let messageId =
-                    Api.sendTextMarkupReply chatId text replyToMessageId mode
-                    |> Funogram.Api.api cfg
-                    |> Async.RunSynchronously
-                    |> Result.toOption
-                    |> Option.map (fun m -> m.MessageId)
-                do! Task.Delay(ms)
-                match messageId with
-                | Some messageId ->
-                    do! channelWriter.WriteAsync(TgApi.TelegramSendingMessage.DeleteMessage(chatId, messageId))
-                | _ -> ()
-            | _ -> ()
+            let! messageId = Api.sendTextMarkupReply chatId text replyToMessageId mode |> apiMapResponse _.MessageId
+            do! Task.Delay(ms)
+            do! tryWriteToChannel (fun msgId -> TgApi.TelegramSendingMessage.DeleteMessage(chatId, msgId)) messageId
+
         | TgApi.SetConfig botConfig ->
             &cfg <-? botConfig
+
         | TgApi.SendAnimationReply (chatId, animation, replyToMessageId) ->
             Api.sendAnimationReply chatId animation replyToMessageId
             |> api
+
         | TgApi.SendVideoReply (chatId, video, replyToMessageId) ->
             Api.sendVideoReply chatId video replyToMessageId
             |> api
+
         | TgApi.SendPhotoReply (chatId, animation, replyToMessageId) ->
             Api.sendPhotoReply chatId animation replyToMessageId
             |> api
+
         | TgApi.SendVoiceReply(chatId, inputFile, replyToMessageId) ->
             Api.sendVoiceReply chatId inputFile replyToMessageId
             |> api
+
         | TgApi.SendAudioReply(chatId, inputFile, replyToMessageId) ->
             Api.sendAudioReply chatId inputFile replyToMessageId
             |> api
-}
+
+        return! loop()
+    }
+
+    loop()
 
 let mutable thread : Thread = null
 
 let runChannel() =
-    match Option.ofObj thread with
-    | None ->
-        let worker = channelWorker().GetAwaiter().GetResult
+    let worker = channelWorker().GetAwaiter().GetResult
 
-        let thread' = Thread(worker)
-        thread'.Start()
-        thread <- thread'
-    | _ ->
-        ()
+    let thread' = Thread(worker)
+    thread'.Start()
+    thread <- thread'

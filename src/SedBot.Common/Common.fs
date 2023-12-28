@@ -134,6 +134,20 @@ module TaskVOption =
             return! binding v
     }
 
+module TaskOption =
+    let inline ofResult (v: Result<_, _> Task) = task {
+        match! v with
+        | Error _ ->
+            return None
+        | Ok v ->
+            return Some v
+    }
+
+    let inline map (a: 'a -> 'b) v : 'b option Task = task {
+        let! v = v
+        return v |> Option.map a
+    }
+
 [<RequireQualifiedAccess>]
 module Path =
     let getSynthName extension =
