@@ -7,7 +7,9 @@ open SedBot.Commands
 open SedBot.ChatCommands.Types
 open SedBot.Common.TypeExtensions
 open SedBot.Common.Utilities
+open SedBot.Telegram
 open SedBot.Telegram.Types
+open SedBot.Telegram.Types.CoreTypes
 
 type internal Marker = interface end
 let log = Logger.get ^ typeof<Marker>.DeclaringType.Name
@@ -36,9 +38,8 @@ let private sendFileAsReply data fileType omniMsgId =
     let inputFile = createInputFile fileType data
     replyAsFileType fileType omniMsgId inputFile
 
-let private updateArrivedInternal botUsername (ctx: SedBot.Telegram.Types.CoreTypes.UpdateContext) (message: Message) = task {
+let private updateArrivedInternal botUsername (ctx: UpdateContext) (message: Message) = task {
     let res = CommandParser.processMessage message botUsername
-
     let placeholder = sprintf "%s command failed. This message will be deleted after 35 s.\n\n You can send file to @tdesu for investigation."
 
     match res with
@@ -69,7 +70,7 @@ let private updateArrivedInternal botUsername (ctx: SedBot.Telegram.Types.CoreTy
             do! TgApi.sendMessageAndDeleteAfter (fst omniMsgId) (placeholder "Jq") 35000
 
     | Reverse { TelegramOmniMessageId = omniMsgId; File = fileId, fileType } ->
-        let! res = fileId |> ApiS.tryGetFileAsStream ctx |> TaskVOption.taskBind (Handlers.reverse fileType)
+        let! res = fileId |> Api.tryGetFileAsStream ctx |> TaskVOption.taskBind (Handlers.reverse fileType)
 
         match res with
         | ValueSome res ->
@@ -81,7 +82,7 @@ let private updateArrivedInternal botUsername (ctx: SedBot.Telegram.Types.CoreTy
         TelegramOmniMessageId = omniMsgId
         File = fileId, fileType
      } ->
-        let! res = fileId |> ApiS.tryGetFileAsStream ctx |> TaskVOption.taskBind (Handlers.vFlip fileType)
+        let! res = fileId |> Api.tryGetFileAsStream ctx |> TaskVOption.taskBind (Handlers.vFlip fileType)
 
         match res with
         | ValueSome res ->
@@ -93,7 +94,7 @@ let private updateArrivedInternal botUsername (ctx: SedBot.Telegram.Types.CoreTy
         TelegramOmniMessageId = omniMsgId
         File = fileId, fileType
      } ->
-        let! res = fileId |> ApiS.tryGetFileAsStream ctx |> TaskVOption.taskBind (Handlers.hFlip fileType)
+        let! res = fileId |> Api.tryGetFileAsStream ctx |> TaskVOption.taskBind (Handlers.hFlip fileType)
 
         match res with
         | ValueSome res ->
@@ -105,7 +106,7 @@ let private updateArrivedInternal botUsername (ctx: SedBot.Telegram.Types.CoreTy
         TelegramOmniMessageId = omniMsgId
         File = fileId, fileType
      } ->
-        let! res = fileId |> ApiS.tryGetFileAsStream ctx |> TaskVOption.taskBind (Handlers.distort fileType)
+        let! res = fileId |> Api.tryGetFileAsStream ctx |> TaskVOption.taskBind (Handlers.distort fileType)
 
         match res with
         | ValueSome res ->
@@ -115,7 +116,7 @@ let private updateArrivedInternal botUsername (ctx: SedBot.Telegram.Types.CoreTy
 
     | ClockwiseRotation {
         TelegramOmniMessageId = omniMsgId; File = fileId, fileType } ->
-        let! res = fileId |> ApiS.tryGetFileAsStream ctx |> TaskVOption.taskBind (Handlers.clock fileType)
+        let! res = fileId |> Api.tryGetFileAsStream ctx |> TaskVOption.taskBind (Handlers.clock fileType)
 
         match res with
         | ValueSome res ->
@@ -127,7 +128,7 @@ let private updateArrivedInternal botUsername (ctx: SedBot.Telegram.Types.CoreTy
         TelegramOmniMessageId = omniMsgId
         File = fileId, fileType
      } ->
-        let! res = fileId |> ApiS.tryGetFileAsStream ctx |> TaskVOption.taskBind (Handlers.cclock fileType)
+        let! res = fileId |> Api.tryGetFileAsStream ctx |> TaskVOption.taskBind (Handlers.cclock fileType)
 
         match res with
         | ValueSome res ->
@@ -150,5 +151,5 @@ let private updateArrivedInternal botUsername (ctx: SedBot.Telegram.Types.CoreTy
     | Nope -> ()
 }
 
-let updateArrived botUsername (ctx: SedBot.Telegram.Types.CoreTypes.UpdateContext) =
+let updateArrived botUsername (ctx: UpdateContext) =
     ctx.Update.Message |> Option.iterIgnore (updateArrivedInternal botUsername ctx)

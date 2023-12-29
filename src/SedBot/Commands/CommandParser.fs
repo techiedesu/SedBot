@@ -1,12 +1,10 @@
 ﻿module SedBot.Commands.CommandParser
 
-open Funogram.Telegram.Types
-
 open SedBot.ChatCommands.Types
 open SedBot.Commands.ActivePatterns
 open SedBot.Common
-open SedBot.ProcessingChannels
 open SedBot.Common.MaybeBuilder
+open SedBot.Telegram.Types
 
 let handleSed (item: CommandPipelineItem) : CommandPipelineItem =
     // Too many valid expressions. For example ":)", "q"...
@@ -58,7 +56,7 @@ let handleRawMessageInfo (item: CommandPipelineItem) =
         })
         item.SetCommand(res)
     | InlineHelp ->
-        let inlineHelp = {
+        let inlineHelp : InlineCommandInfo = {
             Command = "raw"
             Description = "Prints internal representation of message"
         }
@@ -78,7 +76,7 @@ let handleReverse (item: CommandPipelineItem) =
         })
         CommandPipelineItem.set item res
     | InlineHelp ->
-        let inlineHelp = {
+        let inlineHelp : InlineCommandInfo = {
             Command = "rev"
             Description = "Applies reverse to gifs, videos, pics, voices and music"
         }
@@ -98,7 +96,7 @@ let handleVerticalFlip (item: CommandPipelineItem) =
         })
         item.SetCommand(res)
     | InlineHelp ->
-        let inlineHelp = {
+        let inlineHelp : InlineCommandInfo = {
             Command = "vflip"
             Description = "Applies vertical flip to gifs, videos and pics"
         }
@@ -117,7 +115,7 @@ let handleHorizontalFlip (item: CommandPipelineItem) =
         })
         item.SetCommand(res)
     | InlineHelp ->
-        let inlineHelp = {
+        let inlineHelp : InlineCommandInfo = {
             Command = "hflip"
             Description = "Applies horizontal flip to gifs, videos and pics"
         }
@@ -136,7 +134,7 @@ let handleClockwiseRotation (item: CommandPipelineItem) =
         })
         item.SetCommand(res)
     | InlineHelp ->
-        let inlineHelp = {
+        let inlineHelp : InlineCommandInfo = {
             Command = "clock"
             Description = "Applies counterclockwise rotation to gifs, videos and pics"
         }
@@ -156,7 +154,7 @@ let handleCounterclockwiseRotation (item: CommandPipelineItem) =
         })
         item.SetCommand(res)
     | InlineHelp ->
-        let inlineHelp = {
+        let inlineHelp : InlineCommandInfo = {
             Command = "dist"
             Description = "Applies distortion to gifs, videos, pics, voices and music"
         }
@@ -180,7 +178,7 @@ let handleDistortion (item: CommandPipelineItem) =
         })
         item.SetCommand(res)
     | InlineHelp ->
-        let inlineHelp = {
+        let inlineHelp : InlineCommandInfo = {
             Command = "dist"
             Description = "Applies distortion to gif, video, voices and music"
         }
@@ -231,5 +229,5 @@ let processMessage message botUsername =
     processMessageInternal message botUsername false |> CommandPipelineItem.GetCommand
 
 let processInlineHelp () =
-    processMessageInternal Ext.emptyTelegramMessage "" true
+    processMessageInternal Message.Empty "" true
     |> _.CommandHelpInfo

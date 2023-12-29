@@ -5,54 +5,35 @@ open System.IO
 open System.Runtime.Serialization
 open System.Text.Json.Serialization
 
-type ApiResponse<'a> = {
-    [<JsonPropertyName("ok")>]
-    Ok: bool
-
-    [<JsonPropertyName("result")>]
-    Result: 'a option
-
-    [<JsonPropertyName("description")>]
-    Description: string option
-
-    [<JsonPropertyName("error-code")>]
-    ErrorCode: int option
-}
-
-type IBotRequest =
-    [<JsonIgnore>]
-    abstract MethodName: string
-
-    [<JsonIgnore>]
-    abstract Type: Type
-
-type IRequestBase<'a> =
-    inherit IBotRequest
-
 type InputFile =
     | Url of Uri
     | File of string * Stream
     | FileId of string
 
-/// This object represents a file ready to be downloaded. The file can be downloaded via the link https://api.telegram.org/file/bot<token>/<file_path>. It is guaranteed that the link will be valid for at least 1 hour. When the link expires, a new one can be requested by calling getFile.
+/// This object represents a file ready to be downloaded. The file can be downloaded via the link
+/// https://api.telegram.org/file/bot<token>/<file_path>. It is guaranteed that the link will be valid for at least
+/// 1 hour. When the link expires, a new one can be requested by calling getFile.
 and [<CLIMutable>] File = {
     /// Identifier for this file, which can be used to download or reuse the file
     [<JsonPropertyName("file_id")>]
     FileId: string
 
-    /// Unique identifier for this file, which is supposed to be the same over time and for different bots. Can't be used to download or reuse the file.
+    /// Unique identifier for this file, which is supposed to be the same over time and for different bots.
+    /// Can't be used to download or reuse the file.
     [<JsonPropertyName("file_unique_id")>]
     FileUniqueId: string
 
-    /// File size in bytes. It can be bigger than 2^31 and some programming languages may have difficulty/silent defects in interpreting it. But it has at most 52 significant bits, so a signed 64-bit integer or double-precision float type are safe for storing this value.
+    /// File size in bytes. It can be bigger than 2^31 and some programming languages may have difficulty/silent defects
+    /// in interpreting it. But it has at most 52 significant bits, so a signed 64-bit integer or
+    /// double-precision float type are safe for storing this value.
     [<JsonPropertyName("file_size")>]
     FileSize: int64 option
 
     /// File path. Use https://api.telegram.org/file/bot<token>/<file_path> to get the file.
     [<JsonPropertyName("file_path")>]
     FilePath: string option
-}
-    with static member Create(fileId: string, fileUniqueId: string, ?fileSize: int64, ?filePath: string) = {
+} with
+    static member Create(fileId: string, fileUniqueId: string, ?fileSize: int64, ?filePath: string) = {
           FileId = fileId
           FileUniqueId = fileUniqueId
           FileSize = fileSize
@@ -388,22 +369,29 @@ and [<CLIMutable>] KeyboardButton = {
     /// Text of the button. If none of the optional fields are used, it will be sent as a message when the button is pressed
     [<JsonPropertyName("text")>]
     Text: string
-    // /// If specified, pressing the button will open a list of suitable users. Tapping on any user will send their identifier to the bot in a “user_shared” service message. Available in private chats only.
+
+    // /// If specified, pressing the button will open a list of suitable users. Tapping on any user will send their
+    // identifier to the bot in a “user_shared” service message. Available in private chats only.
     // [<JsonPropertyName("request_user")>]
     // RequestUser: KeyboardButtonRequestUser option
-    // /// If specified, pressing the button will open a list of suitable chats. Tapping on a chat will send its identifier to the bot in a “chat_shared” service message. Available in private chats only.
+    // /// If specified, pressing the button will open a list of suitable chats. Tapping on a chat will send its
+    // identifier to the bot in a “chat_shared” service message. Available in private chats only.
     // [<JsonPropertyName("request_chat")>]
     // RequestChat: KeyboardButtonRequestChat option
+
     /// If True, the user's phone number will be sent as a contact when the button is pressed. Available in private chats only.
     [<JsonPropertyName("request_contact")>]
     RequestContact: bool option
+
     /// If True, the user's current location will be sent when the button is pressed. Available in private chats only.
     [<JsonPropertyName("request_location")>]
     RequestLocation: bool option
-    // /// If specified, the user will be asked to create a poll and send it to the bot when the button is pressed. Available in private chats only.
+    // /// If specified, the user will be asked to create a poll and send it to the bot when the button is pressed.
+    // Available in private chats only.
     // [<JsonPropertyName("request_poll")>]
     // RequestPoll: KeyboardButtonPollType option
-    /// If specified, the described Web App will be launched when the button is pressed. The Web App will be able to send a “web_app_data” service message. Available in private chats only.
+    /// If specified, the described Web App will be launched when the button is pressed. The Web App will be able to
+    /// send a “web_app_data” service message. Available in private chats only.
     [<JsonPropertyName("web_app")>]
     WebApp: WebAppInfo option
 }
@@ -413,16 +401,22 @@ and [<CLIMutable>] Voice = {
     /// Identifier for this file, which can be used to download or reuse the file
     [<JsonPropertyName("file_id")>]
     FileId: string
+
     /// Unique identifier for this file, which is supposed to be the same over time and for different bots. Can't be used to download or reuse the file.
     [<JsonPropertyName("file_unique_id")>]
     FileUniqueId: string
+
     /// Duration of the audio in seconds as defined by sender
     [<JsonPropertyName("duration")>]
     Duration: int64
+
     /// MIME type of the file as defined by sender
     [<JsonPropertyName("mime_type")>]
     MimeType: string option
-    /// File size in bytes. It can be bigger than 2^31 and some programming languages may have difficulty/silent defects in interpreting it. But it has at most 52 significant bits, so a signed 64-bit integer or double-precision float type are safe for storing this value.
+
+    /// File size in bytes. It can be bigger than 2^31 and some programming languages may have difficulty/silent
+    /// defects in interpreting it. But it has at most 52 significant bits, so a signed 64-bit integer
+    /// or double-precision float type are safe for storing this value.
     [<JsonPropertyName("file_size")>]
     FileSize: int64 option
 }
@@ -526,7 +520,7 @@ and [<CLIMutable>] Chat = {
     // [<JsonPropertyName("permissions")>]
     // Permissions: ChatPermissions option
 
-    /// For supergroups, the minimum allowed delay between consecutive messages sent by each unpriviledged user;
+    /// For supergroups, the minimum allowed delay between consecutive messages sent by each unprivileged user;
     /// in seconds. Returned only in getChat.
     [<JsonPropertyName("slow_mode_delay")>]
     SlowModeDelay: int64 option
@@ -600,7 +594,8 @@ and [<CLIMutable>] Animation = {
     [<JsonPropertyName("file_id")>]
     FileId: string
 
-    /// Unique identifier for this file, which is supposed to be the same over time and for different bots. Can't be used to download or reuse the file.
+    /// Unique identifier for this file, which is supposed to be the same over time and for different bots.
+    /// Can't be used to download or reuse the file.
     [<JsonPropertyName("file_unique_id")>]
     FileUniqueId: string
 
@@ -1063,6 +1058,113 @@ and [<CLIMutable>] Message = {
     [<JsonPropertyName("reply_markup")>]
     ReplyMarkup: InlineKeyboardMarkup option
 }
+
+with
+    static member Empty = {
+         MessageId = 0
+         MessageThreadId = None
+         From = None
+         SenderChat = None
+         Date = 0
+         Chat = {
+             Id = 0
+             Type = ChatType.Unknown
+             Title = None
+             Username = None
+             FirstName = None
+             LastName = None
+             IsForum = None
+             // Photo = None
+             ActiveUsernames = None
+             EmojiStatusCustomEmojiId = None
+             EmojiStatusExpirationDate = None
+             Bio = None
+             HasPrivateForwards = None
+             HasRestrictedVoiceAndVideoMessages = None
+             JoinToSendMessages = None
+             JoinByRequest = None
+             Description = None
+             InviteLink = None
+             PinnedMessage = None
+             // Permissions = None
+             SlowModeDelay = None
+             MessageAutoDeleteTime = None
+             HasAggressiveAntiSpamEnabled = None
+             HasHiddenMembers = None
+             HasProtectedContent = None
+             StickerSetName = None
+             CanSetStickerSet = None
+             LinkedChatId = None
+             // Location = None
+         }
+         ForwardFrom = None
+         ForwardFromChat = None
+         ForwardFromMessageId = None
+         ForwardSignature = None
+         ForwardSenderName = None
+         ForwardDate = None
+         IsTopicMessage = None
+         IsAutomaticForward = None
+         ReplyToMessage = None
+         ViaBot = None
+         EditDate = None
+         HasProtectedContent = None
+         MediaGroupId = None
+         AuthorSignature = None
+         Text = None
+         Entities = None
+         Animation = None
+         Audio = None
+         Document = None
+         Photo = None
+         Sticker = None
+         // Story = None
+         Video = None
+         // VideoNote = None
+         Voice = None
+         Caption = None
+         CaptionEntities = None
+         HasMediaSpoiler = None
+         // Contact = None
+         // Dice = None
+         // Game = None
+         // Poll = None
+         // Venue = None
+         // Location = None
+         NewChatMembers = None
+         LeftChatMember = None
+         NewChatTitle = None
+         // NewChatPhoto = None
+         DeleteChatPhoto = None
+         GroupChatCreated = None
+         SupergroupChatCreated = None
+         ChannelChatCreated = None
+         // MessageAutoDeleteTimerChanged = None
+         MigrateToChatId = None
+         MigrateFromChatId = None
+         PinnedMessage = None
+         // Invoice = None
+         // SuccessfulPayment = None
+         // UserShared = None
+         // ChatShared = None
+         ConnectedWebsite = None
+         // WriteAccessAllowed = None
+         // PassportData = None
+         // ProximityAlertTriggered = None
+         // ForumTopicCreated = None
+         // ForumTopicEdited = None
+         // ForumTopicClosed = None
+         // ForumTopicReopened = None
+         // GeneralForumTopicHidden = None
+         // GeneralForumTopicUnhidden = None
+         // VideoChatScheduled = None
+         // VideoChatStarted = None
+         // VideoChatEnded = None
+         // VideoChatParticipantsInvited = None
+         // WebAppData = None
+         ReplyMarkup = None
+    }
+
 
 /// This object represents an audio file to be treated as music by the Telegram clients.
 and [<CLIMutable>] Audio = {

@@ -9,7 +9,6 @@
         <Compile Include="Types.fs" />
         <Compile Include="CoreTypes.fs" />
         <Compile Include="Req.fs" />
-        <Compile Include="ApiS.fs" />
         <Compile Include="UnionConverter.fs" />
     </ItemGroup>
 

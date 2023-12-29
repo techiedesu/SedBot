@@ -1,4 +1,4 @@
-﻿module rec SedBot.Telegram.Bot
+﻿module rec SedBot.Telegram.Core
 
 open System
 open System.Net
@@ -73,9 +73,9 @@ let makeRequestAsync<'a> (config: BotConfig) (request: IRequestBase<'a>) = task 
                   ErrorCode = int result.StatusCode }
 }
 
-let api config (request: IRequestBase<'a>) = makeRequestAsync config request
+let api (config: BotConfig) (request: IRequestBase<'a>) = makeRequestAsync config request
 
-let private runBot config (me: User) (updateArrived: UpdateContext -> _) updatesArrived =
+let runBot config (me: User) (updateArrived: UpdateContext -> _) updatesArrived =
     let bot data = api config data
 
     let processUpdates updates =
@@ -89,7 +89,7 @@ let private runBot config (me: User) (updateArrived: UpdateContext -> _) updates
         do! Task.Delay(3000)
         try
             let! updatesResult =
-                ReqS.GetUpdates.Make(offset, ?limit = config.Limit, ?timeout = config.Timeout)
+                Req.GetUpdates.Make(offset, ?limit = config.Limit, ?timeout = config.Timeout)
                 |> bot
 
             match updatesResult with
@@ -132,13 +132,3 @@ let private runBot config (me: User) (updateArrived: UpdateContext -> _) updates
     }
 
     loop (config.Offset |> Option.defaultValue 0L)
-
-let startLoop (config: BotConfig) updateArrived updatesArrived = task {
-    let! me = ApiS.getMe |> api config
-
-    return!
-        me
-        |> function
-            | Error error -> failwith error.Description
-            | Ok me -> runBot config me updateArrived updatesArrived
-}

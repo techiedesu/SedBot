@@ -1,6 +1,8 @@
-﻿using System.Text.Json;
+﻿using System.Diagnostics.CodeAnalysis;
+using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
+using SedBot.Telegram.Types.CoreTypes;
 
 namespace SedBot.Telegram.Types.Generated;
 
@@ -8,10 +10,11 @@ namespace SedBot.Telegram.Types.Generated;
 [JsonSerializable(typeof(ApiResponse<WebhookInfo>))]
 [JsonSerializable(typeof(ApiResponse<User>))]
 [JsonSerializable(typeof(ApiResponse<Update[]>))]
-[JsonSerializable(typeof(ReqS.SendMessage))]
-[JsonSerializable(typeof(ReqS.SendVoice))]
-public partial class ReqJsonSerializerContext : JsonSerializerContext
+[JsonSerializable(typeof(Req.SendMessage))]
+[JsonSerializable(typeof(Req.SendVoice))]
+public sealed partial class ReqJsonSerializerContext : JsonSerializerContext
 {
+    [SuppressMessage("ReSharper", "BitwiseOperatorOnEnumWithoutFlags")]
     public static JsonSerializerOptions CreateDefaultOptions()
     {
         var res = new JsonSerializerOptions

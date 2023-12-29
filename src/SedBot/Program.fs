@@ -8,7 +8,9 @@ open SedBot.Common.TypeExtensions
 open SedBot.Common.Utilities
 open Microsoft.Extensions.Logging
 
+open SedBot.Telegram
 open SedBot.Telegram.Types
+open SedBot.Telegram.Types.CoreTypes
 
 [<EntryPoint>]
 let rec entryPoint args =
@@ -37,22 +39,10 @@ let rec entryPoint args =
             handler.ServerCertificateCustomValidationCallback <- aa
             let client = new HttpClient(handler)
 
-            let defaultConfig  : SedBot.Telegram.Types.CoreTypes.BotConfig = {
-                IsTest = false
-                Token = ""
-                Offset = Some 0L
-                Limit = Some 100
-                Timeout = Some 60000
-                AllowedUpdates = None
-                Client = client
-                ApiEndpointUrl = Uri("https://api.telegram.org/bot")
-                WebHook = None
-                OnError = (fun e -> printfn "%A" e)
-            }
-
-            let config : SedBot.Telegram.Types.CoreTypes.BotConfig = {
-                defaultConfig with
+            let config = {
+                BotConfig.Empty with
                     Token = token
+                    Client = client
                     OnError = fun ex -> logger.LogError("Got Funogram exception: {ex}", ex)
             }
             logger.LogDebug("Config: {config}", config)
@@ -62,10 +52,10 @@ let rec entryPoint args =
 
             let help = CommandParser.processInlineHelp ()
             let botCommands : BotCommand list = help |> List.map (fun ici -> { Command = ici.Command; Description = ici.Description })
-            let _ = ApiS.sendNewCommands (Array.ofList botCommands) |> SedBot.Telegram.Bot.api config |> Task.runSynchronously
+            let _ = Api.sendNewCommands (Array.ofList botCommands) |> Core.api config |> Task.runSynchronously
 
-            let _ = ApiS.deleteWebhookBase () |> SedBot.Telegram.Bot.api config |> Task.runSynchronously
-            let botInfoResult = ApiS.getMe |> SedBot.Telegram.Bot.api config |> Task.getResult
+            let _ = Api.deleteWebhookBase () |> Core.api config |> Task.runSynchronously
+            let botInfoResult = Api.getMe |> Core.api config |> Task.getResult
 
             let botUsername =
                 match botInfoResult with
@@ -74,7 +64,7 @@ let rec entryPoint args =
                 | Ok res ->
                     Option.get res.Username
 
-            SedBot.Telegram.Bot.startLoop config (UpdatesHandler.updateArrived botUsername) None |> Task.runSynchronously
+            Api.startLoop config (UpdatesHandler.updateArrived botUsername) None |> Task.runSynchronously
         with
         | ex when ex.Message.Contains("Unauthorized") ->
             logger.LogCritical("Wrong token? Error: {error}", ex)

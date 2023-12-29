@@ -1,8 +1,5 @@
 source https://api.nuget.org/v3/index.json
 
-git https://github.com/Dolfik1/Funogram.git master build: dotnet pack ./src/Funogram.Telegram/Funogram.Telegram.fsproj -c Release --nologo, Packages: /src/Funogram.Telegram/bin/Release/
-nuget Funogram.Telegram
-
 nuget Microsoft.Extensions.Logging
 nuget Serilog.Extensions.Logging
 nuget Serilog.Sinks.Console
@@ -10,6 +7,4 @@ nuget FSharp.SystemTextJson
 nuget NUnit
 nuget Microsoft.NET.Test.Sdk
 nuget FParsec
-nuget Akka.FSharp
 nuget Tdesu.CliWrap.Fsharp
-nuget FSharp.Control.TaskSeq

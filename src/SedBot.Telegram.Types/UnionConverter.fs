@@ -3,6 +3,7 @@
 open System.Text.Json
 open System.Text.Json.Serialization
 
+[<Sealed>]
 type UnionConverter() =
     inherit JsonConverter<ChatId>()
 
