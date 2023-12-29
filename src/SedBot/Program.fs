@@ -16,6 +16,8 @@ open SedBot.Telegram.Types.CoreTypes
 let rec entryPoint args =
     let logger = Logger.get (nameof entryPoint)
 
+    SedBot.Telegram.Types.Generated.ReqJsonSerializerContext.Apply(Json.serializerSettings)
+
     let token =
         match List.ofArray args with
         | [] ->
@@ -29,14 +31,14 @@ let rec entryPoint args =
 
     while true do
         try
-            let aa =
+            let _aa =
                 Func<HttpRequestMessage, Security.Cryptography.X509Certificates.X509Certificate2, Security.Cryptography.X509Certificates.X509Chain, Net.Security.SslPolicyErrors, bool>(
                     fun _ _ _ _ -> true
                 )
 
             let handler = new HttpClientHandler()
             handler.ClientCertificateOptions <- ClientCertificateOption.Manual
-            handler.ServerCertificateCustomValidationCallback <- aa
+            // handler.ServerCertificateCustomValidationCallback <- _aa // for debug
             let client = new HttpClient(handler)
 
             let config = {
@@ -45,7 +47,6 @@ let rec entryPoint args =
                     Client = client
                     OnError = fun ex -> logger.LogError("Got Funogram exception: {ex}", ex)
             }
-            logger.LogDebug("Config: {config}", config)
 
             ChannelProcessors.channelWriter.TryWrite(TgApi.TelegramSendingMessage.SetConfig config) |> ignore
             ChannelProcessors.runChannel()
@@ -63,6 +64,7 @@ let rec entryPoint args =
                     raise ^ Exception($"Can't get username: {err}")
                 | Ok res ->
                     Option.get res.Username
+            logger.LogDebug("Config: {config}", Json.serialize {config with Token = $"<redacted:{botUsername}>"})
 
             Api.startLoop config (UpdatesHandler.updateArrived botUsername) None |> Task.runSynchronously
         with

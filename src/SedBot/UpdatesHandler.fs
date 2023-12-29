@@ -146,7 +146,7 @@ let private updateArrivedInternal botUsername (ctx: UpdateContext) (message: Mes
         } |> Seq.take count |> String.concat "")
 
     | RawMessageInfo { ReplyTo = { MessageId = msgId; Chat = { Id = chatId } } as replyTo } ->
-        do! TgApi.sendMarkupMessageReplyAndDeleteAfter (chatId, msgId) $"`{replyTo}`" ParseMode.Markdown 30000
+        do! TgApi.sendMarkupMessageReplyAndDeleteAfter (chatId, msgId) $"`{Json.serialize replyTo}`" ParseMode.Markdown 30000
 
     | Nope -> ()
 }

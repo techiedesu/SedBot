@@ -5,6 +5,7 @@ open System.Net
 open System.Net.Http
 open System.Net.Sockets
 open System.Text
+open Microsoft.Extensions.Logging
 open System.Text.Json
 open System.Threading.Tasks
 open SedBot.Common
@@ -22,7 +23,7 @@ let private getUrl (config: BotConfig) methodName =
 
 let private log = Utilities.Logger.get ^ nameof makeRequestAsync
 
-let makeRequestAsync<'a> (config: BotConfig) (request: IRequestBase<'a>) = task {
+let makeRequestAsync<'a> (config: BotConfig) (request: IRequestBase<'a>) : Result<'a, ApiResponseError> Task = task {
     let client = config.Client
     let url = getUrl config request.MethodName
 
@@ -65,18 +66,20 @@ let makeRequestAsync<'a> (config: BotConfig) (request: IRequestBase<'a>) = task 
                 options = ReqJsonSerializerContext.CreateDefaultOptions()
             )
 
-        return  result.Result.Value |> Ok
+        return result.Result.Value |> Ok
     else
-        return
-            Error
-                { Description = "HTTP_ERROR"
-                  ErrorCode = int result.StatusCode }
+        return Error {
+                  Description = "HTTP_ERROR"
+                  ErrorCode = int result.StatusCode
+        }
 }
 
 let api (config: BotConfig) (request: IRequestBase<'a>) = makeRequestAsync config request
 
 let runBot config (me: User) (updateArrived: UpdateContext -> _) updatesArrived =
     let bot data = api config data
+
+    let log = Utilities.Logger.get ^ "runBot loop"
 
     let processUpdates updates =
         if updates |> Seq.isEmpty |> not then
@@ -86,7 +89,7 @@ let runBot config (me: User) (updateArrived: UpdateContext -> _) updatesArrived 
             updatesArrived |> Option.iter (fun x -> x updates)
 
     let rec loop offset = task {
-        do! Task.Delay(3000)
+        do! Task.Delay(50)
         try
             let! updatesResult =
                 Req.GetUpdates.Make(offset, ?limit = config.Limit, ?timeout = config.Timeout)
@@ -103,6 +106,7 @@ let runBot config (me: User) (updateArrived: UpdateContext -> _) updatesArrived 
                 // add delay in case of HTTP error
                 // for example: the server may be "busy"
                 if e.Description = "HTTP_ERROR" then
+                    log.LogWarning("Got HTTP_ERROR. Delaying...")
                     do! Task.Delay 1000
 
                 return! loop offset
@@ -111,7 +115,7 @@ let runBot config (me: User) (updateArrived: UpdateContext -> _) updatesArrived 
         | :? HttpRequestException as e ->
             // in case of HTTP error we should not increment offset
             config.OnError e
-            do! Async.Sleep 1000
+            do! Task.Delay 1000
             return! loop offset
 
         | :? AggregateException as e when
@@ -120,7 +124,7 @@ let runBot config (me: User) (updateArrived: UpdateContext -> _) updatesArrived 
                |> Seq.exists (fun x -> (x :? HttpRequestException) || (x :? SocketException))
             ->
             config.OnError e
-            do! Async.Sleep 1000
+            do! Task.Delay 1000
             return! loop offset
 
         | ex ->

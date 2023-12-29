@@ -19,13 +19,15 @@ let channelReader = TgApi.channel.Reader
 let private channelWorker() =
     let mutable cfg = ValueNone
     let api (request: IRequestBase<_>) = task {
-        log.LogDebug("Request: {request}", request)
+        log.LogDebug("Request: {request}", Json.serialize request)
         let! result = request |> Core.api cfg.Value
+        let result : Result<'b,ApiResponseError> = result
 
-        try
-            log.LogDebug("Result: {res}", result)
-        with ex ->
-            log.LogError("Got response: {ex}", ex)
+        match result with
+        | Error err ->
+            log.LogWarning("Error: {err}", Json.serialize err)
+        | Ok res ->
+            log.LogDebug("Result: {res}", Json.serialize res)
     }
 
     let apiMapResponse a =
@@ -42,10 +44,13 @@ let private channelWorker() =
         match message with
         | TgApi.SendMessage(chatId, text) ->
             do! Api.sendMessage chatId text |> api
+
         | TgApi.MessageReply (chatId, text, replyToMessageId) ->
             do! Api.sendMessageReply chatId text replyToMessageId |> api
+
         | TgApi.MarkupMessageReply(chatId, text, replyToMessageId, parseMode) ->
             do! Req.SendMessage.Make(chatId, text, replyToMessageId = replyToMessageId, parseMode = parseMode) |> api
+
         | TgApi.DeleteMessage(chatId, messageId) ->
             do! Api.deleteMessage chatId messageId |> api
 
