@@ -1,9 +1,6 @@
 ﻿open System
+open System.Net.Http
 open System.Threading
-open Funogram.Api
-open Funogram.Telegram
-open Funogram.Telegram.Bot
-open Funogram.Telegram.Types
 open SedBot
 open SedBot.ChatCommands.Types
 open SedBot.Commands
@@ -11,7 +8,7 @@ open SedBot.Common.TypeExtensions
 open SedBot.Common.Utilities
 open Microsoft.Extensions.Logging
 
-open Funogram.Types
+open SedBot.Telegram.Types
 
 [<EntryPoint>]
 let rec entryPoint args =
@@ -30,22 +27,45 @@ let rec entryPoint args =
 
     while true do
         try
-            let config = {
-                Config.defaultConfig with
+            let aa =
+                Func<HttpRequestMessage, Security.Cryptography.X509Certificates.X509Certificate2, Security.Cryptography.X509Certificates.X509Chain, Net.Security.SslPolicyErrors, bool>(
+                    fun _ _ _ _ -> true
+                )
+
+            let handler = new HttpClientHandler()
+            handler.ClientCertificateOptions <- ClientCertificateOption.Manual
+            handler.ServerCertificateCustomValidationCallback <- aa
+            let client = new HttpClient(handler)
+
+            let defaultConfig  : SedBot.Telegram.Types.CoreTypes.BotConfig = {
+                IsTest = false
+                Token = ""
+                Offset = Some 0L
+                Limit = Some 100
+                Timeout = Some 60000
+                AllowedUpdates = None
+                Client = client
+                ApiEndpointUrl = Uri("https://api.telegram.org/bot")
+                WebHook = None
+                OnError = (fun e -> printfn "%A" e)
+            }
+
+            let config : SedBot.Telegram.Types.CoreTypes.BotConfig = {
+                defaultConfig with
                     Token = token
                     OnError = fun ex -> logger.LogError("Got Funogram exception: {ex}", ex)
             }
-            logger.LogDebug(Json.serialize config)
+            logger.LogDebug("Config: {config}", config)
 
             ChannelProcessors.channelWriter.TryWrite(TgApi.TelegramSendingMessage.SetConfig config) |> ignore
             ChannelProcessors.runChannel()
 
             let help = CommandParser.processInlineHelp ()
             let botCommands : BotCommand list = help |> List.map (fun ici -> { Command = ici.Command; Description = ici.Description })
-            let _ = Api.sendNewCommands (Array.ofList botCommands) |> api config |> Async.RunSynchronously
+            let _ = ApiS.sendNewCommands (Array.ofList botCommands) |> SedBot.Telegram.Bot.api config |> Task.runSynchronously
 
-            let _ = Api.deleteWebhookBase () |> api config |> Async.RunSynchronously
-            let botInfoResult = Api.getMe |> api config |> Async.RunSynchronously
+            let _ = ApiS.deleteWebhookBase () |> SedBot.Telegram.Bot.api config |> Task.runSynchronously
+            let botInfoResult = ApiS.getMe |> SedBot.Telegram.Bot.api config |> Task.getResult
 
             let botUsername =
                 match botInfoResult with
@@ -54,13 +74,13 @@ let rec entryPoint args =
                 | Ok res ->
                     Option.get res.Username
 
-            startBot config (UpdatesHandler.updateArrived botUsername) None |> Async.RunSynchronously
+            SedBot.Telegram.Bot.startLoop config (UpdatesHandler.updateArrived botUsername) None |> Task.runSynchronously
         with
         | ex when ex.Message.Contains("Unauthorized") ->
             logger.LogCritical("Wrong token? Error: {error}", ex)
             Environment.Exit(-1)
         | ex ->
             logger.LogError("Something goes wrong: {error}", ex)
-            Thread.Sleep(5000)
+        Thread.Sleep(5000)
 
     0

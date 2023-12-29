@@ -124,6 +124,9 @@ module Task =
         if isNotNull t && not t.IsCompleted then
             t.ConfigureAwait(false).GetAwaiter().GetResult()
 
+    let getResult (t: Task<_>) =
+        t.ConfigureAwait(false).GetAwaiter().GetResult()
+
 [<RequireQualifiedAccess>]
 module TaskVOption =
     let inline taskBind ([<InlineIfLambda>] binding) (v: 'v voption Task) = task {

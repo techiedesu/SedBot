@@ -1,10 +1,10 @@
 ﻿module SedBot.Commands.ActivePatterns
 
 open System.Text.RegularExpressions
-open Funogram.Telegram.Types
 
 open SedBot.ChatCommands.Types
 open SedBot.Common
+open SedBot.Telegram.Types
 
 module [<RequireQualifiedAccess>] CommandPipelineItem =
     let set (item: CommandPipelineItem) command =

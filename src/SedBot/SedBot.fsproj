@@ -6,6 +6,7 @@
     <RootNamespace>SedBot</RootNamespace>
     <GenerateProgramFile>false</GenerateProgramFile>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+<!--    <PublishAot>true</PublishAot>-->
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Api.fs" />
@@ -22,6 +23,7 @@
   <ItemGroup>
     <ProjectReference Include="..\SedBot.Common\SedBot.Common.fsproj" />
     <ProjectReference Include="..\SedBot.ContentProcessing\SedBot.ContentProcessing.fsproj" />
+    <ProjectReference Include="..\SedBot.Telegram\SedBot.Telegram.fsproj" />
   </ItemGroup>
   <Import Project="..\.paket\Paket.Restore.targets" />
 </Project>

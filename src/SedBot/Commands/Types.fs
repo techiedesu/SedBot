@@ -1,11 +1,8 @@
 namespace SedBot.ChatCommands.Types
 
 open System
-open Funogram.Telegram
-open Funogram.Telegram.Types
 open SedBot.Common
-
-type FunogramMessage = Types.Message
+open SedBot.Telegram.Types
 
 type FileId = string
 type ChatId = int64
@@ -45,7 +42,7 @@ and ClownArgs = {
 }
 and RawMessageArgs = {
     TelegramOmniMessageId: TelegramSourceOmniMessageId
-    ReplyTo: FunogramMessage
+    ReplyTo: SedBot.Telegram.Types.Message
 }
 
 and SourceFile = FileId * FileType
@@ -59,7 +56,7 @@ type InlineCommandInfo = {
 }
 
 type CommandPipelineItem = {
-    Message: FunogramMessage
+    Message: SedBot.Telegram.Types.Message
     BotUsername: string
     Command: CommandType voption
     ProvideInlineHelp: bool
@@ -85,12 +82,12 @@ type CommandPipelineItem = {
             command
 
 module Ext =
-    let emptyTelegramMessage : Types.Message = {
+    let emptyTelegramMessage : SedBot.Telegram.Types.Message = {
          MessageId = 0
          MessageThreadId = None
          From = None
          SenderChat = None
-         Date = DateTime.MinValue
+         Date = 0
          Chat = {
              Id = 0
              Type = ChatType.Unknown
@@ -99,7 +96,7 @@ module Ext =
              FirstName = None
              LastName = None
              IsForum = None
-             Photo = None
+             // Photo = None
              ActiveUsernames = None
              EmojiStatusCustomEmojiId = None
              EmojiStatusExpirationDate = None
@@ -111,7 +108,7 @@ module Ext =
              Description = None
              InviteLink = None
              PinnedMessage = None
-             Permissions = None
+             // Permissions = None
              SlowModeDelay = None
              MessageAutoDeleteTime = None
              HasAggressiveAntiSpamEnabled = None
@@ -120,7 +117,7 @@ module Ext =
              StickerSetName = None
              CanSetStickerSet = None
              LinkedChatId = None
-             Location = None
+             // Location = None
          }
          ForwardFrom = None
          ForwardFromChat = None
@@ -143,49 +140,49 @@ module Ext =
          Document = None
          Photo = None
          Sticker = None
-         Story = None
+         // Story = None
          Video = None
-         VideoNote = None
+         // VideoNote = None
          Voice = None
          Caption = None
          CaptionEntities = None
          HasMediaSpoiler = None
-         Contact = None
-         Dice = None
-         Game = None
-         Poll = None
-         Venue = None
-         Location = None
+         // Contact = None
+         // Dice = None
+         // Game = None
+         // Poll = None
+         // Venue = None
+         // Location = None
          NewChatMembers = None
          LeftChatMember = None
          NewChatTitle = None
-         NewChatPhoto = None
+         // NewChatPhoto = None
          DeleteChatPhoto = None
          GroupChatCreated = None
          SupergroupChatCreated = None
          ChannelChatCreated = None
-         MessageAutoDeleteTimerChanged = None
+         // MessageAutoDeleteTimerChanged = None
          MigrateToChatId = None
          MigrateFromChatId = None
          PinnedMessage = None
-         Invoice = None
-         SuccessfulPayment = None
-         UserShared = None
-         ChatShared = None
+         // Invoice = None
+         // SuccessfulPayment = None
+         // UserShared = None
+         // ChatShared = None
          ConnectedWebsite = None
-         WriteAccessAllowed = None
-         PassportData = None
-         ProximityAlertTriggered = None
-         ForumTopicCreated = None
-         ForumTopicEdited = None
-         ForumTopicClosed = None
-         ForumTopicReopened = None
-         GeneralForumTopicHidden = None
-         GeneralForumTopicUnhidden = None
-         VideoChatScheduled = None
-         VideoChatStarted = None
-         VideoChatEnded = None
-         VideoChatParticipantsInvited = None
-         WebAppData = None
+         // WriteAccessAllowed = None
+         // PassportData = None
+         // ProximityAlertTriggered = None
+         // ForumTopicCreated = None
+         // ForumTopicEdited = None
+         // ForumTopicClosed = None
+         // ForumTopicReopened = None
+         // GeneralForumTopicHidden = None
+         // GeneralForumTopicUnhidden = None
+         // VideoChatScheduled = None
+         // VideoChatStarted = None
+         // VideoChatEnded = None
+         // VideoChatParticipantsInvited = None
+         // WebAppData = None
          ReplyMarkup = None
     }

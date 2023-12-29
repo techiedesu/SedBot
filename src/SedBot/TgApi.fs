@@ -1,9 +1,9 @@
 [<RequireQualifiedAccess>]
 module SedBot.TgApi
 
-open Funogram.Telegram.Types
-open Funogram.Types
 open System.Threading.Channels
+open SedBot.Telegram.Types
+open SedBot.Telegram.Types.CoreTypes
 
 type TelegramSendingMessage =
     | SendMessage of chatId: int64 * text: string
