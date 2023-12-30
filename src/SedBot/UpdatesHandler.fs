@@ -7,9 +7,9 @@ open SedBot.Commands
 open SedBot.ChatCommands.Types
 open SedBot.Common.TypeExtensions
 open SedBot.Common.Utilities
-open SedBot.Telegram
-open SedBot.Telegram.Types
-open SedBot.Telegram.Types.CoreTypes
+open SedBot.Telegram.BotApi
+open SedBot.Telegram.BotApi.Types
+open SedBot.Telegram.BotApi.Types.CoreTypes
 
 type internal Marker = interface end
 let log = Logger.get ^ typeof<Marker>.DeclaringType.Name
@@ -140,10 +140,7 @@ let private updateArrivedInternal botUsername (ctx: UpdateContext) (message: Mes
         ChatId = chatId
         Count = count
      } ->
-        do! TgApi.sendMessage chatId (seq {
-            while true do
-                "🤡"
-        } |> Seq.take count |> String.concat "")
+        do! TgApi.sendMessage chatId (seq { while true do "🤡" } |> Seq.take count |> String.concat "")
 
     | RawMessageInfo { ReplyTo = { MessageId = msgId; Chat = { Id = chatId } } as replyTo } ->
         do! TgApi.sendMarkupMessageReplyAndDeleteAfter (chatId, msgId) $"`{Json.serialize replyTo}`" ParseMode.Markdown 30000

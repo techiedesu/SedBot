@@ -22,7 +22,7 @@
   <ItemGroup>
     <ProjectReference Include="..\SedBot.Common\SedBot.Common.fsproj" />
     <ProjectReference Include="..\SedBot.ContentProcessing\SedBot.ContentProcessing.fsproj" />
-    <ProjectReference Include="..\SedBot.Telegram\SedBot.Telegram.fsproj" />
+    <ProjectReference Include="..\SedBot.Telegram.BotApi\SedBot.Telegram.BotApi.fsproj" />
   </ItemGroup>
   <Import Project="..\.paket\Paket.Restore.targets" />
 </Project>

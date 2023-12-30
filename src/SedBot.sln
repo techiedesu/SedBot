@@ -10,13 +10,13 @@ Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "SedBot.Common", "SedBot.Com
 EndProject
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "SedBot.ContentProcessing", "SedBot.ContentProcessing\SedBot.ContentProcessing.fsproj", "{8EDE0B38-D42B-4FE7-98A0-E8B4E16DD7EA}"
 EndProject
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "SedBot.Telegram", "SedBot.Telegram\SedBot.Telegram.fsproj", "{F57112BC-AD0F-4783-A91D-BABD596A2171}"
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "SedBot.Telegram.BotApi", "SedBot.Telegram.BotApi\SedBot.Telegram.BotApi.fsproj", "{F57112BC-AD0F-4783-A91D-BABD596A2171}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Telegram", "Telegram", "{C00E8C7D-B341-44A3-8C00-3B1E7103FB54}"
 EndProject
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "SedBot.Telegram.Types", "SedBot.Telegram.Types\SedBot.Telegram.Types.fsproj", "{E3CB73F9-B0D3-4BC1-8ED3-80B9224F5F5A}"
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "SedBot.Telegram.BotApi.Types", "SedBot.Telegram.BotApi.Types\SedBot.Telegram.BotApi.Types.fsproj", "{E3CB73F9-B0D3-4BC1-8ED3-80B9224F5F5A}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SedBot.Telegram.Types.Generated", "SedBot.Telegram.Types.Generated\SedBot.Telegram.Types.Generated.csproj", "{9A5C5CA5-809A-4550-967F-A17F76FA44D5}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SedBot.Telegram.BotApi.Types.Generated", "SedBot.Telegram.BotApi.Types.Generated\SedBot.Telegram.BotApi.Types.Generated.csproj", "{9A5C5CA5-809A-4550-967F-A17F76FA44D5}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

@@ -8,15 +8,15 @@ open SedBot.Common.TypeExtensions
 open SedBot.Common.Utilities
 open Microsoft.Extensions.Logging
 
-open SedBot.Telegram
-open SedBot.Telegram.Types
-open SedBot.Telegram.Types.CoreTypes
+open SedBot.Telegram.BotApi
+open SedBot.Telegram.BotApi.Types
+open SedBot.Telegram.BotApi.Types.CoreTypes
 
 [<EntryPoint>]
 let rec entryPoint args =
     let logger = Logger.get (nameof entryPoint)
 
-    SedBot.Telegram.Types.Generated.ReqJsonSerializerContext.Apply(Json.serializerSettings)
+    SedBot.Telegram.BotApi.Types.Generated.ReqJsonSerializerContext.Apply(Json.serializerSettings)
 
     let token =
         match List.ofArray args with

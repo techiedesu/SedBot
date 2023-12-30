@@ -1,7 +1,7 @@
 namespace SedBot.ChatCommands.Types
 
 open SedBot.Common
-open SedBot.Telegram.Types
+open SedBot.Telegram.BotApi.Types
 
 type FileId = string
 type ChatId = int64

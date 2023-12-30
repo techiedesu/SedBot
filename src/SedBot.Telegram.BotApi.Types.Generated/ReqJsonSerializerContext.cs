@@ -1,10 +1,9 @@
 ﻿using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using System.Text.Json.Serialization.Metadata;
-using SedBot.Telegram.Types.CoreTypes;
+using SedBot.Telegram.BotApi.Types.CoreTypes;
 
-namespace SedBot.Telegram.Types.Generated;
+namespace SedBot.Telegram.BotApi.Types.Generated;
 
 [JsonSerializable(typeof(ApiResponse<bool>))]
 [JsonSerializable(typeof(ApiResponse<WebhookInfo>))]
@@ -20,14 +19,10 @@ public sealed partial class ReqJsonSerializerContext : JsonSerializerContext
 {
     public static void Apply(JsonSerializerOptions s)
     {
-        s.TypeInfoResolver = JsonSerializer.IsReflectionEnabledByDefault
-            ? new DefaultJsonTypeInfoResolver()
-            : Default;
-        
-        s.Converters.Add(new UnionConverter());
-        
+        s.TypeInfoResolver = Default;
+        s.Converters.Add(new ChatIdUnionConverter());
     }
-    
+
     [SuppressMessage("ReSharper", "BitwiseOperatorOnEnumWithoutFlags")]
     public static JsonSerializerOptions CreateDefaultOptions()
     {

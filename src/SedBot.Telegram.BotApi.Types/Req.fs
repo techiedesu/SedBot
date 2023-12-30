@@ -1,7 +1,7 @@
 ﻿[<RequireQualifiedAccess>]
-module SedBot.Telegram.Types.Req
+module SedBot.Telegram.BotApi.Types.Req
 
-open SedBot.Telegram.Types.CoreTypes
+open SedBot.Telegram.BotApi.Types.CoreTypes
 
 type SendVideo = {
     ChatId: ChatId

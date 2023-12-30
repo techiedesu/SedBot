@@ -2,7 +2,7 @@
 
 open NUnit.Framework
 open SedBot.Commands
-open SedBot.Telegram.Types
+open SedBot.Telegram.BotApi.Types
 
 [<TestCase("sample_bot", "/send@sample_bot horny bonk", "supergroup", "send", "horny,bonk")>]
 [<TestCase("sample_bot", "/send@sample_bot horny bonk", "private", "send", "horny,bonk")>]

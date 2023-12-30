@@ -1,4 +1,4 @@
-﻿module rec SedBot.Telegram.Core
+﻿module rec SedBot.Telegram.BotApi.Core
 
 open System
 open System.Net
@@ -9,9 +9,9 @@ open Microsoft.Extensions.Logging
 open System.Text.Json
 open System.Threading.Tasks
 open SedBot.Common
-open SedBot.Telegram.Types
-open SedBot.Telegram.Types.CoreTypes
-open SedBot.Telegram.Types.Generated
+open SedBot.Telegram.BotApi.Types
+open SedBot.Telegram.BotApi.Types.CoreTypes
+open SedBot.Telegram.BotApi.Types.Generated
 
 let private getUrl (config: BotConfig) methodName =
     let botToken = $"{config.ApiEndpointUrl |> string}{config.Token}"

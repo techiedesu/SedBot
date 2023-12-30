@@ -1,10 +1,10 @@
-﻿namespace SedBot.Telegram.Types
+﻿namespace SedBot.Telegram.BotApi.Types
 
 open System.Text.Json
 open System.Text.Json.Serialization
 
 [<Sealed>]
-type UnionConverter() =
+type ChatIdUnionConverter() =
     inherit JsonConverter<ChatId>()
 
     override this.Read(reader, _, _) =

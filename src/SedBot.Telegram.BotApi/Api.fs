@@ -1,8 +1,8 @@
 ﻿[<RequireQualifiedAccess>]
-module rec SedBot.Telegram.Api
+module rec SedBot.Telegram.BotApi.Api
 
-open SedBot.Telegram.Types
-open SedBot.Telegram.Types.CoreTypes
+open SedBot.Telegram.BotApi.Types
+open SedBot.Telegram.BotApi.Types.CoreTypes
 
 
 let deleteWebhookBase () =

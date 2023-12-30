@@ -2,8 +2,8 @@
 module SedBot.TgApi
 
 open System.Threading.Channels
-open SedBot.Telegram.Types
-open SedBot.Telegram.Types.CoreTypes
+open SedBot.Telegram.BotApi.Types
+open SedBot.Telegram.BotApi.Types.CoreTypes
 
 type TelegramSendingMessage =
     | SendMessage of chatId: int64 * text: string

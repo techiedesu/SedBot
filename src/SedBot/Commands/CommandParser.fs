@@ -4,7 +4,7 @@ open SedBot.ChatCommands.Types
 open SedBot.Commands.ActivePatterns
 open SedBot.Common
 open SedBot.Common.MaybeBuilder
-open SedBot.Telegram.Types
+open SedBot.Telegram.BotApi.Types
 
 let handleSed (item: CommandPipelineItem) : CommandPipelineItem =
     // Too many valid expressions. For example ":)", "q"...

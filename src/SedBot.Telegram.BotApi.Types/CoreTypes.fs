@@ -1,10 +1,10 @@
-﻿namespace SedBot.Telegram.Types.CoreTypes
+﻿namespace SedBot.Telegram.BotApi.Types.CoreTypes
 
 open System
 open System.Net
 open System.Net.Http
 open System.Text.Json.Serialization
-open SedBot.Telegram.Types
+open SedBot.Telegram.BotApi.Types
 
 type ApiResponse<'a> = {
     [<JsonPropertyName("ok")>]

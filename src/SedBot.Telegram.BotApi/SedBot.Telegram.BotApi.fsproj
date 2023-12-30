@@ -3,6 +3,8 @@
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <PublishAot>true</PublishAot>
+    <RootNamespace>SedBot.Telegram</RootNamespace>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Library.fs" />
@@ -10,7 +12,7 @@
     <Content Include="paket.references" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\SedBot.Telegram.Types.Generated\SedBot.Telegram.Types.Generated.csproj" />
+    <ProjectReference Include="..\SedBot.Telegram.BotApi.Types.Generated\SedBot.Telegram.BotApi.Types.Generated.csproj" />
   </ItemGroup>
   <Import Project="..\.paket\Paket.Restore.targets" />
 </Project>
