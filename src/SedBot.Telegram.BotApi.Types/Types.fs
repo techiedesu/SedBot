@@ -2,7 +2,6 @@
 
 open System
 open System.IO
-open System.Text.Json.Serialization
 
 type InputFile =
     | Url of Uri
@@ -1627,7 +1626,6 @@ and Message = {
          WebAppData = None
          ReplyMarkup = None
     }
-
 
 /// This object represents an audio file to be treated as music by the Telegram clients.
 and Audio = {

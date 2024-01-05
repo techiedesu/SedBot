@@ -1,9 +1,11 @@
 ﻿open System
+open System.Net
 open System.Net.Http
 open System.Threading
 open SedBot
 open SedBot.ChatCommands.Types
 open SedBot.Commands
+open SedBot.Common.TypeExtensions
 open SedBot.Common.TypeExtensions
 open SedBot.Common.Utilities
 open Microsoft.Extensions.Logging
@@ -38,7 +40,8 @@ let rec entryPoint args =
 
             let handler = new HttpClientHandler()
             handler.ClientCertificateOptions <- ClientCertificateOption.Manual
-            // handler.ServerCertificateCustomValidationCallback <- _aa // for debug
+            handler.ServerCertificateCustomValidationCallback <- _aa // for debug
+            handler.Proxy <- WebProxy(Uri("http://127.0.0.1:8888"))
             let client = new HttpClient(handler)
 
             let config = {
@@ -48,7 +51,7 @@ let rec entryPoint args =
                     OnError = fun ex -> logger.LogError("Got Funogram exception: {ex}", ex)
             }
 
-            ChannelProcessors.channelWriter.TryWrite(TgApi.TelegramSendingMessage.SetConfig config) |> ignore
+            %ChannelProcessors.channelWriter.TryWrite(TgApi.TelegramSendingMessage.SetConfig config)
             ChannelProcessors.runChannel()
 
             let help = CommandParser.processInlineHelp ()

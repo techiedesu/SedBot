@@ -12,6 +12,7 @@
         <Compile Include="CoreTypes.fs" />
         <Compile Include="Req.fs" />
         <Compile Include="ChatIdUnionConverter.fs" />
+        <Compile Include="Extensions.fs" />
     </ItemGroup>
 
     <ItemGroup>

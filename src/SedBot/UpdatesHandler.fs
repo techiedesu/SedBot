@@ -10,6 +10,7 @@ open SedBot.Common.Utilities
 open SedBot.Telegram.BotApi
 open SedBot.Telegram.BotApi.Types
 open SedBot.Telegram.BotApi.Types.CoreTypes
+open SedBot.Telegram.Types.Extensions
 
 type internal Marker = interface end
 let log = Logger.get ^ typeof<Marker>.DeclaringType.Name

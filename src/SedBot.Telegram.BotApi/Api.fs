@@ -33,7 +33,7 @@ let sendMessage chatId text =
     Req.SendMessage.Make(ChatId.Int chatId, text)
 
 let private deleteMessageBase chatId messageId =
-  ({ ChatId = chatId; MessageId = messageId }: Req.DeleteMessage)
+  { ChatId = chatId; MessageId = messageId } : Req.DeleteMessage
 
 let deleteMessage chatId messageId =
     deleteMessageBase (ChatId.Int chatId) messageId

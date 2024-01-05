@@ -8,3 +8,4 @@ nuget NUnit
 nuget Microsoft.NET.Test.Sdk
 nuget FParsec
 nuget Tdesu.CliWrap.Fsharp
+nuget TypeShape

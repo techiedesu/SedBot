@@ -5,7 +5,7 @@
     <ImplicitUsings>false</ImplicitUsings>
     <Nullable>enable</Nullable>
     <PublishAot>true</PublishAot>
-    <RootNamespace>SedBot.Telegram.Types.Generated</RootNamespace>
+    <RootNamespace>SedBot.Telegram.BotApi.Types.Generated</RootNamespace>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\SedBot.Common\SedBot.Common.fsproj" />

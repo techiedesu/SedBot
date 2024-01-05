@@ -15,6 +15,7 @@ namespace SedBot.Telegram.BotApi.Types.Generated;
 [JsonSerializable(typeof(BotConfig))]
 [JsonSerializable(typeof(IRequestBase<Message>))]
 [JsonSerializable(typeof(IRequestBase<bool>))]
+[JsonSerializable(typeof(ApiResponseError))]
 public sealed partial class ReqJsonSerializerContext : JsonSerializerContext
 {
     public static void Apply(JsonSerializerOptions s)
@@ -27,6 +28,7 @@ public sealed partial class ReqJsonSerializerContext : JsonSerializerContext
     public static JsonSerializerOptions CreateDefaultOptions()
     {
         var res = new JsonSerializerOptions();
+        
         Apply(res);
         var fsharpOptions =
             JsonFSharpOptions.Default()

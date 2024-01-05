@@ -10,6 +10,7 @@ open SedBot.ContentProcessing
 open SedBot.Common.Utilities
 
 open Microsoft.Extensions.Logging
+open SedBot.Telegram.Types.Extensions
 
 let private cts = TaskCompletionSource()
 

@@ -6,8 +6,15 @@ open System.IO
 open System.Text.Json
 open System.Threading.Tasks
 open Microsoft.FSharp.Core
+open Microsoft.FSharp.Reflection
+
+#nowarn "0077"
+#nowarn "0042" // Allow fsharp core lib specific things
 
 let inline (^) f x = f x
+
+/// Ignores return value. Usable for chain APIs
+let inline (~%) x = ignore x
 
 let inline (<-?) (field: _ byref) a =
     if Object.ReferenceEquals(null, a) then
@@ -18,21 +25,77 @@ let inline (<-?) (field: _ byref) a =
 let inline isNotNull<'T when 'T: not struct> (v: 'T) =
     obj.ReferenceEquals (v, null) |> not
 
-type FileType =
-    | Gif
-    | Video
-    | Picture
-    | Sticker
-    | Voice
-    | Audio
+let inline delay ([<InlineIfLambda>] act: 'a -> unit) (v: 'a) =
+    act v
+    v
 
-let extension (ft: FileType) =
-    match ft with
-    | Gif | Video -> ".mp4"
-    | Picture -> ".png"
-    | Sticker -> ".webp"
-    | Voice -> ".ogg"
-    | Audio -> ".mp3"
+let inline delay2 ([<InlineIfLambda>] act: 'a -> unit) ([<InlineIfLambda>] act2: 'a -> unit) (v: 'a) =
+    act v
+    act2 v
+    v
+
+let inline swap ([<InlineIfLambda>] act: 'b -> 'a -> _) (a: 'a) (b: 'b) =
+    act b a
+
+let snackCaseToCamelCase (str: string) =
+    let mutable prev = '_'
+    [|
+        for c in str do
+            let c =
+                if prev = '_' then
+                    Char.ToUpper c
+                else if prev = '0' then
+                    Char.ToLower c
+                else
+                    c
+
+            if c <> '_' then c
+            prev <- c
+    |]
+    |> String
+
+let inline apply2 ([<InlineIfLambda>] f) (a, b) = f a b
+let inline apply3 ([<InlineIfLambda>] f) (a, b, c) = f a b c
+
+let isOptionType (t: Type) =
+    if FSharpType.IsUnion t then
+        let cases = FSharpType.GetUnionCases t
+        cases.Length = 2 && cases[0].Name = "None" && cases[1].Name = "Some"
+    else
+        false
+
+let isValueOptionType (t: Type) =
+    if FSharpType.IsUnion t then
+        let cases = FSharpType.GetUnionCases t
+        cases.Length = 2 && cases[0].Name = "ValueNone" && cases[1].Name = "ValueSome"
+    else
+        false
+
+let inline inc (a: 'a byref) = a <- a + LanguagePrimitives.GenericOne
+
+/// unsafe cast like in C#
+let inline ucast<'a, 'b> (a: 'a): 'b = (# "" a: 'b #)
+
+/// Implicit cast
+let inline icast< ^a, ^b when (^a or ^b): (static member op_Implicit: ^a -> ^b)> (value: ^a): ^b = ((^a or ^b): (static member op_Implicit: ^a -> ^b) value)
+
+/// Explicit cast
+let inline ecast< ^a, ^b when (^a or ^b): (static member op_Explicit: ^a -> ^b)> (value: ^a): ^b = ((^a or ^b): (static member op_Explicit: ^a -> ^b) value)
+
+/// Handle value and continue
+let inline tap<'a> ([<InlineIfLambda>] act: 'a -> unit) (obj: 'a) =
+    act obj
+    obj
+
+/// Handle value with any result and continue
+/// Not recommended for use
+let inline tapi<'a> (obj: 'a) ([<InlineIfLambda>] act: 'a -> _) =
+    act obj |> ignore
+    obj
+
+let inline tap2 ([<InlineIfLambda>] act: 'a -> unit) ([<InlineIfLambda>] act2: 'a -> unit) (obj: 'a) =
+    act obj
+    act2 obj
 
 [<RequireQualifiedAccess>]
 module String =
@@ -66,7 +129,7 @@ module Option =
     let inline iterIgnore (action: 'a -> 'b) (value: 'a option) =
         match value with
         | None -> ()
-        | Some v -> action v |> ignore
+        | Some v -> %action v
 
 [<RequireQualifiedAccess>]
 module Result =
@@ -74,6 +137,10 @@ module Result =
         match r with
         | Error err -> raise (Exception(string err))
         | Ok r -> r
+
+let inline fromFun f = Action<'a> f
+let inline fromFun2 f = Action<'a, 'b> f
+let inline fromFun3 f = Action<'a, 'b, 'c> f
 
 [<RequireQualifiedAccess>]
 module Json =
@@ -155,3 +222,7 @@ module TaskOption =
 module Path =
     let getSynthName extension =
         Guid.NewGuid().ToString().Replace("-", "") + extension
+
+
+module ActivePatterns =
+    let inline (|Null|_|) x = Object.ReferenceEquals(x, null) |> Option.ofBool

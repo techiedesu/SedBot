@@ -3,8 +3,8 @@
 open System
 open System.Net
 open System.Net.Http
+open System.Net.Http.Json
 open System.Net.Sockets
-open System.Text
 open Microsoft.Extensions.Logging
 open System.Text.Json
 open System.Threading.Tasks
@@ -30,21 +30,21 @@ let makeRequestAsync<'a> (config: BotConfig) (request: IRequestBase<'a>) : Resul
     let hasData = request.MethodName.StartsWith("get", StringComparison.InvariantCultureIgnoreCase) |> not
 
     let! result =
-        // if request.MethodName.StartsWith("send") then
-            // let form = new MultipartFormDataContent()
-            // let stream =
-            //     match request with
-            //     | :? IRequestBase<Message> as v when v.MethodName = "sendVoice" ->
-            //         let x = Unsafe.As<SendVoice> v
-            //         x.Voice
-            //     | _ -> ()
+        // if request.MethodName.StartsWith("send") && true then
+        //     let form = new MultipartFormDataContent()
+        //     let stream =
+        //         match request with
+        //         | :? IRequestBase<Message> as v when v.MethodName = "sendVoice" ->
+        //             let x = Unsafe.As<Req.SendVoice> v
+        //             x.Voice
+        //         | _ -> Unchecked.defaultof<_>
+        //
+        //     form.Add()
+        //
+        //     client.PostAsync(url, form)
 
-            // form.Add()
-
-            // client.PostAsync(url, form)
         if hasData then
-            let serialized = JsonSerializer.Serialize(request, request.Type, options = ReqJsonSerializerContext.CreateDefaultOptions())
-            let content = new StringContent(serialized, Encoding.UTF8, "application/json")
+            let content = JsonContent.Create(request, request.Type, options = ReqJsonSerializerContext.CreateDefaultOptions())
             client.PostAsync(url, content)
         else
             let url =

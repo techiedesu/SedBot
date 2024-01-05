@@ -1,22 +1,14 @@
 ﻿namespace SedBot.Telegram.BotApi.Types.CoreTypes
 
 open System
-open System.Net
 open System.Net.Http
 open System.Text.Json.Serialization
 open SedBot.Telegram.BotApi.Types
 
 type ApiResponse<'a> = {
-    [<JsonPropertyName("ok")>]
     Ok: bool
-
-    [<JsonPropertyName("result")>]
     Result: 'a option
-
-    [<JsonPropertyName("description")>]
     Description: string option
-
-    [<JsonPropertyName("error-code")>]
     ErrorCode: int option
 }
 
@@ -40,7 +32,6 @@ and BotConfig = {
     OnError: Exception -> unit
     ApiEndpointUrl: Uri
     Client: HttpClient
-    WebHook: BotWebHook option
 }
 with
     static member Empty = {
@@ -52,15 +43,8 @@ with
         AllowedUpdates = None
         Client = new HttpClient()
         ApiEndpointUrl = Uri("https://api.telegram.org/bot")
-        WebHook = None
         OnError = printfn "%A"
     }
-
-
-and BotWebHook = {
-    Listener: HttpListener
-    ValidateRequest: HttpListenerRequest -> bool
-}
 
 /// Bot Api Response Error
 and ApiResponseError ={

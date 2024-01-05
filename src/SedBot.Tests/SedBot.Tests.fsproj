@@ -18,6 +18,7 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <Content Include="paket.references" />
+    <Compile Include="CommonTests.fs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\SedBot\SedBot.fsproj" />
