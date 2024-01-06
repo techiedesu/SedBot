@@ -11,6 +11,8 @@
 
     <ItemGroup>
         <Compile Include="BotApiTestsAnchor.fs" />
+        <Compile Include="JsonDeserealizerTests.fs" />
+        <Compile Include="TypeSerializerTests.fs" />
     </ItemGroup>
 
     <ItemGroup>

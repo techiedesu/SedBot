@@ -1,10 +1,9 @@
 ﻿module SedBot.Json.SedJsonDeserializer
 
 open System
-open System.Runtime.CompilerServices
 open Microsoft.FSharp.Reflection
+open SedBot.Common
 open SedBot.Json.SedNetTreeTypeBuilder
-open SedBot.Common.TypeExtensions
 
 let wrapObjAux (t: Type) (o: obj) : obj =
     let isOption = isOptionType t
@@ -84,16 +83,23 @@ let jsonToTypeMapper (rootJsonNode: SedJsonTreeParser.JsonValue) (rootTypeNode: 
 
         match jsonNode with
         | SedJsonTreeParser.JsonValue.Null ->
-            null |> optWrap
+            null
+            |> optWrap
 
-        | SedJsonTreeParser.JsonValue.String s ->
-            s |> optWrap
+        | SedJsonTreeParser.JsonValue.String str ->
+            if FSharpType.IsUnion typeNode.Type then
+                let case = FSharpType.GetUnionCases typeNode.Type
+                           |> Array.find (fun uci -> String.Equals(uci.Name, str, StringComparison.InvariantCultureIgnoreCase))
+                FSharpValue.MakeUnion(case, [| |]) |> optWrap
+            else
+                str |> optWrap
 
         | SedJsonTreeParser.JsonValue.Number n ->
             mapNumberToObjectAux typeNode n
 
         | SedJsonTreeParser.JsonValue.Bool b ->
-            b |> optWrap
+            b
+            |> optWrap
 
         | SedJsonTreeParser.JsonValue.Object members ->
             let processField (fsharpPropInfo: Reflection.PropertyInfo) =
@@ -142,18 +148,17 @@ let jsonToTypeMapper (rootJsonNode: SedJsonTreeParser.JsonValue) (rootTypeNode: 
 
     loop rootJsonNode rootTypeNode
 
-let deserialize<'T> toCamelCase (json: string) : 'T =
+let deserializeStatic<'T> (json: string) : 'T =
     let rootNode = buildTypeTree typeof<'T> |> snd
-    match SedJsonTreeParser.parse json toCamelCase with
+    match SedJsonTreeParser.parse json true with
     | Some json ->
-         let res = jsonToTypeMapper json rootNode
-         res :?> 'T
+        jsonToTypeMapper json rootNode |> ucast<_, 'T>
     | None ->
         failwith "JSON PARSE FAIL"
 
-let dynDeserialize t toCamelCase (json: string) =
+let deserialize t (json: string) =
     let rootNode = buildTypeTree t |> snd
-    match SedJsonTreeParser.parse json toCamelCase with
+    match SedJsonTreeParser.parse json true with
     | Some json ->
         jsonToTypeMapper json rootNode
     | None ->

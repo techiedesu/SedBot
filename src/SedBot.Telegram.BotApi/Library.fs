@@ -6,9 +6,9 @@ open System.Net.Http
 open System.Net.Http.Json
 open System.Net.Sockets
 open Microsoft.Extensions.Logging
-open System.Text.Json
 open System.Threading.Tasks
 open SedBot.Common
+open SedBot.Json
 open SedBot.Telegram.BotApi.Types
 open SedBot.Telegram.BotApi.Types.CoreTypes
 open SedBot.Telegram.BotApi.Types.Generated
@@ -58,14 +58,14 @@ let makeRequestAsync<'a> (config: BotConfig) (request: IRequestBase<'a>) : Resul
             client.GetAsync(url)
 
     if result.StatusCode = HttpStatusCode.OK then
-        let! stream = result.Content.ReadAsStreamAsync()
+        let! str = result.Content.ReadAsStringAsync()
 
-        let result =
-            JsonSerializer.Deserialize<ApiResponse<'a>>(
-                stream,
-                options = ReqJsonSerializerContext.CreateDefaultOptions()
-            )
-
+        // let result =
+        //     JsonSerializer.Deserialize<ApiResponse<'a>>(
+        //         stream,
+        //         options = ReqJsonSerializerContext.CreateDefaultOptions()
+        //     )
+        let result = SedJsonDeserializer.deserializeStatic<ApiResponse<'a>> str
         return result.Result.Value |> Ok
     else
         return Error {
@@ -89,7 +89,6 @@ let runBot config (me: User) (updateArrived: UpdateContext -> _) updatesArrived 
             updatesArrived |> Option.iter (fun x -> x updates)
 
     let rec loop offset = task {
-        do! Task.Delay(50)
         try
             let! updatesResult =
                 Req.GetUpdates.Make(offset, ?limit = config.Limit, ?timeout = config.Timeout)

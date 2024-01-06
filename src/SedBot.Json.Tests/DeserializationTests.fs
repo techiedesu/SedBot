@@ -8,7 +8,7 @@ open SedBot.Json
 [<TestCase("true", typeof<bool>, true)>]
 [<TestCase("999", typeof<uint>, 999u)>]
 let ``Primitive type deserialization`` (json: string, t: System.Type, expected) =
-    let actual = SedJsonDeserializer.dynDeserialize t true json
+    let actual = SedJsonDeserializer.deserialize t json
     if (actual <> expected) then Assert.Fail($"Expected: {expected} but got {actual}")
 
 type SmolUpdate = {
@@ -83,23 +83,23 @@ let ``Smol object deserialization`` () =
         NewChatMember = ValueNone
     }
 
-    let deserialized = SedJsonDeserializer.dynDeserialize typeof<MyChatMember> true JsonSamples.SmolJson
+    let deserialized = SedJsonDeserializer.deserialize typeof<MyChatMember> JsonSamples.SmolJson
     Assert.AreEqual (expected, deserialized)
 
-    let deserialized = SedJsonDeserializer.deserialize<MyChatMember> true JsonSamples.SmolJson
+    let deserialized = SedJsonDeserializer.deserializeStatic<MyChatMember> JsonSamples.SmolJson
     Assert.AreEqual (expected, deserialized)
 
 [<Test>]
 let ``option deserialization`` () =
-    let deserialized = SedJsonDeserializer.deserialize<Option<int>> true "null"
+    let deserialized = SedJsonDeserializer.deserializeStatic<Option<int>> "null"
     Assert.AreEqual (None, deserialized)
-    let deserialized = SedJsonDeserializer.deserialize<Option<int>> true "5"
+    let deserialized = SedJsonDeserializer.deserializeStatic<Option<int>> "5"
     Assert.AreEqual (Some 5, deserialized)
 
 let ``Nested option deserialization`` () =
-    let deserialized = SedJsonDeserializer.deserialize<Option<Option<int>>> true "null"
+    let deserialized = SedJsonDeserializer.deserializeStatic<Option<Option<int>>> "null"
     Assert.AreEqual (None, deserialized)
-    let deserialized = SedJsonDeserializer.deserialize<Option<Option<Option<int>>>> true "5"
+    let deserialized = SedJsonDeserializer.deserializeStatic<Option<Option<Option<int>>>> "5"
     Assert.AreEqual (Some 5, deserialized)
 
 [<Test>]
@@ -107,7 +107,7 @@ let ``Deserialize simple array`` () =
     let expected = [| 1; 2; 3 |]
     let json = "[1, 2, 3]"
 
-    let deserialized = SedJsonDeserializer.dynDeserialize (expected.GetType()) true json
+    let deserialized = SedJsonDeserializer.deserialize (expected.GetType()) json
     Assert.AreEqual (expected, deserialized)
 
 
@@ -115,7 +115,7 @@ let ``Deserialize simple array`` () =
 let ``Complex object deserialization`` () =
     let tUpdate = typeof<TestApiResponse<Update[]>>
     let res =
-        SedJsonDeserializer.dynDeserialize tUpdate true JsonSamples.SampleUpdatesResponse
+        SedJsonDeserializer.deserialize tUpdate JsonSamples.SampleUpdatesResponse
     let res = res :?> TestApiResponse<Update[]>
 
     Assert.AreEqual(true, res.Ok)

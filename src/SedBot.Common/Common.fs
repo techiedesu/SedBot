@@ -9,7 +9,7 @@ open Microsoft.FSharp.Core
 open Microsoft.FSharp.Reflection
 
 #nowarn "0077"
-#nowarn "0042" // Allow fsharp core lib specific things
+#nowarn "0042"
 
 let inline (^) f x = f x
 
@@ -85,12 +85,6 @@ let inline ecast< ^a, ^b when (^a or ^b): (static member op_Explicit: ^a -> ^b)>
 /// Handle value and continue
 let inline tap<'a> ([<InlineIfLambda>] act: 'a -> unit) (obj: 'a) =
     act obj
-    obj
-
-/// Handle value with any result and continue
-/// Not recommended for use
-let inline tapi<'a> (obj: 'a) ([<InlineIfLambda>] act: 'a -> _) =
-    act obj |> ignore
     obj
 
 let inline tap2 ([<InlineIfLambda>] act: 'a -> unit) ([<InlineIfLambda>] act2: 'a -> unit) (obj: 'a) =
@@ -223,6 +217,13 @@ module Path =
     let getSynthName extension =
         Guid.NewGuid().ToString().Replace("-", "") + extension
 
-
 module ActivePatterns =
     let inline (|Null|_|) x = Object.ReferenceEquals(x, null) |> Option.ofBool
+
+module Array =
+    let utmap t (mapping: obj -> obj) (array: _ array) =
+        let res = Array.CreateInstance(t, array.Length)
+
+        for i = 0 to res.Length - 1 do
+            res.SetValue(mapping array[i], index = i)
+        res

@@ -6,7 +6,6 @@ open SedBot
 open SedBot.ChatCommands.Types
 open SedBot.Commands
 open SedBot.Common.TypeExtensions
-open SedBot.Common.TypeExtensions
 open SedBot.Common.Utilities
 open Microsoft.Extensions.Logging
 
@@ -43,6 +42,7 @@ let rec entryPoint args =
             handler.ServerCertificateCustomValidationCallback <- _aa // for debug
             handler.Proxy <- WebProxy(Uri("http://127.0.0.1:8888"))
             let client = new HttpClient(handler)
+            client.Timeout <- TimeSpan.FromMinutes 1
 
             let config = {
                 BotConfig.Empty with

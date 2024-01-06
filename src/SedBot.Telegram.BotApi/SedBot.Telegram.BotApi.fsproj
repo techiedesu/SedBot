@@ -10,8 +10,10 @@
     <Compile Include="Library.fs" />
     <Compile Include="Api.fs" />
     <Content Include="paket.references" />
+    <Compile Include="RequestBuilder.fs" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\SedBot.Json\SedBot.Json.fsproj" />
     <ProjectReference Include="..\SedBot.Telegram.BotApi.Types.Generated\SedBot.Telegram.BotApi.Types.Generated.csproj" />
   </ItemGroup>
   <Import Project="..\.paket\Paket.Restore.targets" />

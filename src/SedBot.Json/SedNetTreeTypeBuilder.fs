@@ -8,9 +8,6 @@ open SedBot.Common.TypeExtensions
 
 let [<Literal>] ArrayInternalType = "__$type"
 
-/// Ignores return value. Usable for chain APIs
-let inline (~%) x = ignore x
-
 [<StructuredFormatDisplay("{DisplayString}")>]
 type Node = {
     Parents: HashSet<Node>
