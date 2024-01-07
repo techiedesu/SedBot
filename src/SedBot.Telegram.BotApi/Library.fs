@@ -3,15 +3,14 @@
 open System
 open System.Net
 open System.Net.Http
-open System.Net.Http.Json
 open System.Net.Sockets
 open Microsoft.Extensions.Logging
 open System.Threading.Tasks
 open SedBot.Common
 open SedBot.Json
+open SedBot.Telegram
 open SedBot.Telegram.BotApi.Types
 open SedBot.Telegram.BotApi.Types.CoreTypes
-open SedBot.Telegram.BotApi.Types.Generated
 
 let private getUrl (config: BotConfig) methodName =
     let botToken = $"{config.ApiEndpointUrl |> string}{config.Token}"
@@ -44,8 +43,9 @@ let makeRequestAsync<'a> (config: BotConfig) (request: IRequestBase<'a>) : Resul
         //     client.PostAsync(url, form)
 
         if hasData then
-            let content = JsonContent.Create(request, request.Type, options = ReqJsonSerializerContext.CreateDefaultOptions())
-            client.PostAsync(url, content)
+            let dataContent = new MultipartFormDataContent()
+            let _ = RequestBuilder.builderDynamic (request.GetType()) dataContent request
+            client.PostAsync(url, dataContent)
         else
             let url =
                 let ts = request.ToString()

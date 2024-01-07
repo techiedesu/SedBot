@@ -268,10 +268,6 @@ with
         member _.MethodName = "getUpdates"
         member this.Type = typeof<GetUpdates>
 
-// |
-// |
-// |
-
 type SendAnimation = {
     ChatId: ChatId
     MessageThreadId: int64 option

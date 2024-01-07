@@ -54,6 +54,23 @@ let snackCaseToCamelCase (str: string) =
     |]
     |> String
 
+let camelCaseToSnakeCase (str: string) =
+    [|
+        if str |> Seq.isEmpty |> not then
+            if Char.IsUpper str[0] then
+                yield Char.ToLower str[0]
+            else
+                yield str[0]
+
+            for c in str |> Seq.skip 1 do
+                if Char.IsUpper c then
+                    yield '_'
+                    yield Char.ToLower c
+                else
+                    yield c
+    |]
+    |> String
+
 let inline apply2 ([<InlineIfLambda>] f) (a, b) = f a b
 let inline apply3 ([<InlineIfLambda>] f) (a, b, c) = f a b c
 
