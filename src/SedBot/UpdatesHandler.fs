@@ -7,7 +7,7 @@ open SedBot.Commands
 open SedBot.ChatCommands.Types
 open SedBot.Common.TypeExtensions
 open SedBot.Common.Utilities
-open SedBot.Telegram
+open SedBot.Json
 open SedBot.Telegram.BotApi
 open SedBot.Telegram.BotApi.Types
 open SedBot.Telegram.BotApi.Types.CoreTypes
@@ -145,7 +145,7 @@ let private updateArrivedInternal botUsername (ctx: UpdateContext) (message: Mes
         do! TgApi.sendMessage chatId (seq { while true do "🤡" } |> Seq.take count |> String.concat "")
 
     | RawMessageInfo { ReplyTo = { MessageId = msgId; Chat = { Id = chatId } } as replyTo } ->
-        let replyJson = RequestBuilder.serialize(replyTo).ReplaceLineEndings("")
+        let replyJson = SedJsonSerializer.serialize(replyTo).ReplaceLineEndings("")
         do! TgApi.sendMarkupMessageReplyAndDeleteAfter (chatId, msgId) $"`{replyJson}`" ParseMode.Markdown 30000
 
     | Nope -> ()

@@ -73,41 +73,37 @@ and mkPrinterAux<'T> (ctx: TypeGenerationContext) (form: MultipartFormDataConten
         field.Accept {
             new IReadOnlyMemberVisitor<'DeclaringType, string * ('DeclaringType -> (string * StreamField list))> with
                 member _.Visit(field : ReadOnlyMember<'DeclaringType, 'Field>) =
-                    let fp = mkPrinterCached<'Field> ctx form
-                    field.Label, field.Get >> fp
+                    let fieldPrinter = mkPrinterCached<'Field> ctx form
+                    field.Label, field.Get >> fieldPrinter
         }
 
     let inline scf key (value: string) =
         let key = camelCaseToSnakeCase key
         match value with
-        | null ->
-            null
+        | null -> null
         | _ ->
             form |> Option.iter _.Add(new StringContent(value), key)
-            $"\"{camelCaseToSnakeCase key}\": \"{value}\""
+            $"\"{camelCaseToSnakeCase key}\": {value}"
 
     match shapeof<'T> with
     | Shape.FSharpFunc _
-    | Shape.Exception _
-    | Shape.HttpClient _ ->
-        fun _ -> null, []
+    | Shape.Exception
+    | Shape.HttpClient -> fun _ -> null, []
 
-    | Shape.Bool -> fun x -> x.ToString().ToLowerInvariant(), []
+    | Shape.Bool -> fun bool -> (if ucast<'T, bool> bool then "true" else "false"), []
     | Shape.Int32
     | Shape.Int64
-    | Shape.Double
-    | Shape.String -> fun x -> string x, []
+    | Shape.Double -> fun number -> string number, []
+    | Shape.String -> fun str -> $"\"{str}\"", []
 
-    | Shape.Uri ->
-        fun x -> string x, []
+    | Shape.Uri -> fun uri -> string uri, []
 
-    | Shape.Stream ->
-        fun x -> null, [null, ucast<'T, Stream> x]
+    | Shape.Stream -> fun stream -> null, [null, ucast<'T, Stream> stream]
 
     | Shape.FSharpOption s ->
         s.Element.Accept {
             new ITypeVisitor<'T -> (string * StreamField list)> with
-                member _.Visit<'a> () = // 'T = 'a option
+                member _.Visit<'a> () =
                     let tp = mkPrinterCached<'a> ctx form
                     wrap(function Some t -> tp t | None -> (null, []))
         }
@@ -115,10 +111,10 @@ and mkPrinterAux<'T> (ctx: TypeGenerationContext) (form: MultipartFormDataConten
     | Shape.FSharpList s ->
         s.Element.Accept {
             new ITypeVisitor<'T -> (string * StreamField list)> with
-                member _.Visit<'a> () = // 'T = 'a list
+                member _.Visit<'a> () =
                     let tp = mkPrinterCached<'a> ctx form
                     wrap(
-                        fun (ts : 'a list) ->
+                        fun (ts: 'a list) ->
                                         ts
                                         |> Seq.fold (fun (storedString: StringBuilder, storedStreams: StreamField list) v ->
                                             let string, streams = tp v
@@ -130,45 +126,45 @@ and mkPrinterAux<'T> (ctx: TypeGenerationContext) (form: MultipartFormDataConten
     | Shape.Array s when s.Rank = 1 ->
         s.Element.Accept {
             new ITypeVisitor<'T -> (string * StreamField list)> with
-                member _.Visit<'a> () = // 'T = 'a []
+                member _.Visit<'a> () =
                     let tp = mkPrinterCached<'a> ctx form
                     wrap(
                         fun (ts: 'a []) ->
                             ts
-                            |> Seq.fold (fun (storedString: string list, storedStreams: StreamField list) v ->
-                                let string, streams = tp v
-                                (storedString @ [string], storedStreams @ streams)
+                            |> Seq.fold (fun (storedString: string list, streamFieldsAcc: StreamField list) v ->
+                                let printedStr, streamFields = tp v
+                                (storedString @ [printedStr], streamFieldsAcc @ streamFields)
                             ) (([], []))
-                            |> fun (x, y) -> let x = String.Join(",\n", x) in $"[\n{x}\n]", y
+                            |> fun (printedStr, streamFields) -> let printedStr = String.Join(",\n", printedStr) in $"[\n{printedStr}\n]", streamFields
                     )
         }
 
     | Shape.FSharpUnion (:? ShapeFSharpUnion<'T> as shape) ->
-        let mkUnionCasePrinter (s: ShapeFSharpUnionCase<'T>) =
-            let fieldPrinters = s.Fields |> Array.map mkFieldPrinter
-            fun (u:'T) ->
+        let mkUnionCasePrinter (unionCaseShape: ShapeFSharpUnionCase<'T>) =
+            let fieldPrinters = unionCaseShape.Fields |> Array.map mkFieldPrinter
+            fun (u: 'T) ->
                 match fieldPrinters with
-                | [||] -> s.CaseInfo.Name |> fun x -> x, []
-                | [| _, fieldPrinter |] -> (fieldPrinter u)
+                | [||] -> unionCaseShape.CaseInfo.Name, []
+                | [| _, fieldPrinter |] -> fieldPrinter u
                 | fps ->
                     fps
-                    |> Seq.fold (fun (storedString: StringBuilder, storedStreams: StreamField list) (_, fp) ->
-                        let (string, streams) = fp u
+                    |> Seq.fold (fun (printedStrAcc: StringBuilder, streamFieldsAcc: StreamField list) (_, fp) ->
+                        let printedStr, streamFields = fp u
+                        let streamFields = streamFieldsAcc @ streamFields
 
-                        if string = null then
-                            (storedString, storedStreams @ streams)
-                        elif storedString.Length = 0 then
-                            (storedString.Append(string), storedStreams @ streams)
+                        if printedStr = null then
+                            printedStrAcc, streamFields
+                        elif printedStrAcc.Length = 0 then
+                            printedStrAcc.Append(printedStr), streamFields
                         else
-                            (storedString.Append(string).Append(","), storedStreams @ streams)
-                    ) ((StringBuilder(), []))
-                    |> fun (x, streamField) ->
+                            printedStrAcc.Append(printedStr).Append(","), streamFields) ((StringBuilder(), []))
+                    |> fun (printedStr, streamField) ->
                         if List.isEmpty streamField then
-                            x, streamField
+                            printedStr, streamField
                         else
                             let stream = List.head streamField |> snd
-                            x, [ (x.ToString(), stream) ]
-                    |> fun (x, y) -> $"[ {x} ]", y
+                            printedStr, [ (printedStr.ToString(), stream) ]
+                    |> fun (printedStr, streamFields) -> $"[ {printedStr} ]", streamFields
 
         let casePrinters = shape.UnionCases |> Array.map mkUnionCasePrinter
         fun (u: 'T) ->
@@ -181,24 +177,28 @@ and mkPrinterAux<'T> (ctx: TypeGenerationContext) (form: MultipartFormDataConten
             fieldPrinters
             |> Seq.fold (fun (storedString: string list, storedStreams: StreamField list) (label, fieldPrinter) ->
                 let value, streams = fieldPrinter r
-                if streams.IsEmpty |> not then
+                if streams.IsEmpty then
+                    let printedField = scf label value
+                    if printedField = null then
+                        storedString, storedStreams @ streams
+                    else
+                        storedString @ [ printedField ], storedStreams @ streams
+                else
                     let fileName, stream = List.head streams
                     form |> Option.iter _.Add(new StreamContent(stream), camelCaseToSnakeCase label, fileName)
-                    (storedString, storedStreams)
-                else
-                    (storedString @ [ (scf label value) ], storedStreams @ streams)
+                    storedString, storedStreams
             ) (([], []))
-            |> fun (x, y) -> let x = String.Join(", ", Seq.filter ((<>) null) x) in $"{{ {x} }}", y
+            |> fun (printedFields, streamFields) -> let printedFields = String.Join(", ", printedFields) in $"{{ {printedFields} }}", streamFields
 
     | Shape.Poco (:? ShapePoco<'T> as shape) ->
         let propPrinters = shape.Properties |> Array.map mkFieldPrinter
-        fun (r: 'T) ->
+        fun (fieldType: 'T) ->
             propPrinters
             |> Seq.fold (fun (storedString: StringBuilder, storedStreams: StreamField list) (label, fieldPrinter) ->
-                let value, streams = fieldPrinter r
+                let value, streams = fieldPrinter fieldType
                 (storedString.Append(scf label value).Append("\n "), storedStreams @ streams)
             ) ((StringBuilder(), []))
-            |> fun (x, y) ->
-                $"{{ {x} }}", y
+            |> fun (printedStr, streamFields) ->
+                $"{{ {printedStr} }}", streamFields
 
     | _ -> failwithf "unsupported type '%O'" typeof<'T>

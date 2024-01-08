@@ -10,6 +10,7 @@
         <Compile Include="SedJsonTreeParser.fs" />
         <Compile Include="SedNetTreeTypeBuilder.fs" />
         <Compile Include="SedJsonDeserializer.fs" />
+        <Compile Include="SedJsonSerializer.fs" />
     </ItemGroup>
 
     <ItemGroup>

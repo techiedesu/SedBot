@@ -8,7 +8,7 @@ open SedBot.Common.TypeExtensions
 open SedBot.Common.Utilities
 open Microsoft.Extensions.Logging
 
-open SedBot.Telegram
+open SedBot.Json
 open SedBot.Telegram.BotApi
 open SedBot.Telegram.BotApi.Types
 open SedBot.Telegram.BotApi.Types.CoreTypes
@@ -64,15 +64,15 @@ let rec entryPoint args =
                     raise ^ Exception($"Can't get username: {err}")
                 | Ok res ->
                     Option.get res.Username
-            logger.LogDebug("Config {config}", RequestBuilder.serialize {config with Token = $"<redacted:{botUsername}>"})
+            logger.LogDebug("Config {config}", SedJsonSerializer.serialize {config with Token = $"<redacted:{botUsername}>"})
 
             Api.startLoop config (UpdatesHandler.updateArrived botUsername) None |> Task.runSynchronously
         with
         | ex when ex.Message.Contains("Unauthorized") ->
             logger.LogCritical("Wrong token? Error: {error}", ex)
             Environment.Exit(-1)
-        | ex when true = false ->
+        | ex ->
             logger.LogError("Something goes wrong: {error}", ex)
-        Thread.Sleep(5000)
+            Thread.Sleep(5000)
 
     0
