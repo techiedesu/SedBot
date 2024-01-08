@@ -14,7 +14,7 @@ let private log = Logger.get ^ typeof<Marker>.DeclaringType.Name
 let channelWriter = TgApi.channel.Writer
 let channelReader = TgApi.channel.Reader
 
-let private channelWorker() =
+let private channelWorker () =
     let mutable cfg = ValueNone
     let api request = request |> Core.api cfg.Value :> Task
 
@@ -44,23 +44,19 @@ let private channelWorker() =
 
         | TgApi.SendMessageAndDeleteAfter(chatId, text, ms) ->
             let! messageId = Api.sendMessage chatId text |> apiMapResponse _.MessageId
-            do! Task.Delay(ms)
-            do! tryWriteToChannel (fun msgId -> TgApi.TelegramSendingMessage.DeleteMessage(chatId, msgId)) messageId
+            %Task.Delay(ms).ContinueWith(fun _ -> tryWriteToChannel (fun msgId -> TgApi.TelegramSendingMessage.DeleteMessage(chatId, msgId)) messageId)
 
         | TgApi.SendMarkupMessageAndDeleteAfter(chatId, text, mode, ms) ->
             let! messageId = Api.sendTextMarkup chatId text mode |> apiMapResponse _.MessageId
-            do! Task.Delay(ms)
-            do! tryWriteToChannel (fun msgId -> TgApi.TelegramSendingMessage.DeleteMessage(chatId, msgId)) messageId
+            %Task.Delay(ms).ContinueWith(fun _ -> tryWriteToChannel (fun msgId -> TgApi.TelegramSendingMessage.DeleteMessage(chatId, msgId)) messageId)
 
         | TgApi.SendMessageReplyAndDeleteAfter(chatId, text, ms) ->
             let! messageId = Api.sendMessage chatId text |> apiMapResponse _.MessageId
-            do! Task.Delay(ms)
-            do! tryWriteToChannel (fun msgId -> TgApi.TelegramSendingMessage.DeleteMessage(chatId, msgId)) messageId
+            %Task.Delay(ms).ContinueWith(fun _ -> tryWriteToChannel (fun msgId -> TgApi.TelegramSendingMessage.DeleteMessage(chatId, msgId)) messageId)
 
         | TgApi.SendMarkupMessageReplyAndDeleteAfter(chatId, text, mode, replyToMessageId, ms) ->
             let! messageId = Api.sendTextMarkupReply chatId text replyToMessageId mode |> apiMapResponse _.MessageId
-            do! Task.Delay(ms)
-            do! tryWriteToChannel (fun msgId -> TgApi.TelegramSendingMessage.DeleteMessage(chatId, msgId)) messageId
+            %Task.Delay(ms).ContinueWith(fun _ -> tryWriteToChannel (fun msgId -> TgApi.TelegramSendingMessage.DeleteMessage(chatId, msgId)) messageId)
 
         | TgApi.SetConfig botConfig ->
             &cfg <-? botConfig

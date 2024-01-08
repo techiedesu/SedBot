@@ -9,11 +9,54 @@ open SedBot.Common.TypeExtensions
 open TypeShape.Core
 open TypeShape.Core.Utils
 
-#nowarn "64"
+let toHex (v: int) =
+    if v <= 9 then
+        v + 48 |> char
+    else
+        v + 87 |> char
 
-type internal Marker = interface end
+let escapeUnicode (c: char) =
+    [|
+        let c = int c
 
-type FieldName = string
+        yield '\\'
+        yield 'u'
+        yield (c >>> 12) &&& 15 |> toHex |> char
+        yield (c >>> 08) &&& 15 |> toHex |> char
+        yield (c >>> 04) &&& 15 |> toHex |> char
+        yield c          &&& 15 |> toHex |> char
+    |] |> String
+
+let escapeJsonString (str: string) =
+    if str = null || str.Length = 0 then
+        str
+    else
+        let sb = StringBuilder()
+        let sbWrite (v: string) = %sb.Append(v)
+        let sbWriteC (v: char) =  %sb.Append(v)
+
+        let rec loop (position: int) =
+            if position = str.Length then
+                sb.ToString()
+            else
+                let c = str[position]
+                match c with
+                | '\t' -> sbWrite @"\t"
+                | '\n' -> sbWrite @"\n"
+                | '\r' -> sbWrite @"\r"
+                | '\f' -> sbWrite @"\f"
+                | '\b' -> sbWrite @"\b"
+                | '\\' -> sbWrite @"\\"
+                | '\u0085' -> sbWrite @"\u0085"
+                | '\u2028' -> sbWrite @"\u2028"
+                | '\u2029' -> sbWrite @"\u2029"
+                | '\'' -> sbWrite @"\'"
+                | '"' -> sbWrite "\\\""
+                | _ when c <= '\u001f' -> escapeUnicode c |> sbWrite
+                | c -> sbWriteC c
+
+                loop (position + 1)
+        loop 0
 
 module Shape =
     let private SomeU = Some()
@@ -76,7 +119,7 @@ and mkPrinterAux<'T> (ctx: TypeGenerationContext) : 'T -> (string) =
     | Shape.Int32
     | Shape.Int64
     | Shape.Double -> string
-    | Shape.String -> fun str -> $"\"{str}\""
+    | Shape.String -> fun str -> $"\"{ucast<'T, string> str |> escapeJsonString}\""
 
     | Shape.Uri -> string
 
@@ -98,9 +141,7 @@ and mkPrinterAux<'T> (ctx: TypeGenerationContext) : 'T -> (string) =
                     wrap(
                         fun (ts: 'a list) ->
                                         ts
-                                        |> Seq.fold (fun (storedString: StringBuilder) v ->
-                                            let string = tp v
-                                            storedString.Append(string)) (StringBuilder())
+                                        |> Seq.fold (fun (storedString: StringBuilder) v -> storedString.Append(tp v)) (StringBuilder())
                                         |> fun (x) -> $"[{x}]"
                     )
         }
@@ -126,20 +167,14 @@ and mkPrinterAux<'T> (ctx: TypeGenerationContext) : 'T -> (string) =
             let fieldPrinters = unionCaseShape.Fields |> Array.map mkFieldPrinter
             fun (u: 'T) ->
                 match fieldPrinters with
-                | [||] -> unionCaseShape.CaseInfo.Name
+                | [||] -> unionCaseShape.CaseInfo.Name |> sprintf "\"%s\""
                 | [| _, fieldPrinter |] -> fieldPrinter u
                 | fps ->
                     fps
-                    |> Seq.fold (fun (printedStrAcc: StringBuilder) (_, fp) ->
-                        let printedStr = fp u
-
-                        if printedStr = null then
-                            printedStrAcc
-                        elif printedStrAcc.Length = 0 then
-                            printedStrAcc.Append(printedStr)
-                        else
-                            printedStrAcc.Append(printedStr).Append(",")) ((StringBuilder()))
-                    |> fun (printedStr) -> $"[ {printedStr} ]"
+                    |> Seq.map (fun (_, fp) -> fp u)
+                    |> Seq.filter ((<>) null)
+                    |> String.concat ", "
+                    |> sprintf "[ %s ]"
 
         let casePrinters = shape.UnionCases |> Array.map mkUnionCasePrinter
         fun (u: 'T) ->
@@ -158,7 +193,7 @@ and mkPrinterAux<'T> (ctx: TypeGenerationContext) : 'T -> (string) =
                 else
                     storedString @ [ printedField ]
 
-            ) (([]))
+            ) []
             |> fun (printedFields) -> let printedFields = String.Join(", ", printedFields) in $"{{ {printedFields} }}"
 
     | Shape.Poco (:? ShapePoco<'T> as shape) ->

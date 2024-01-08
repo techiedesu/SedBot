@@ -94,7 +94,7 @@ and mkPrinterAux<'T> (ctx: TypeGenerationContext) (form: MultipartFormDataConten
     | Shape.Int32
     | Shape.Int64
     | Shape.Double -> fun number -> string number, []
-    | Shape.String -> fun str -> $"\"{str}\"", []
+    | Shape.String -> fun str -> ucast<'T, string> str, []
 
     | Shape.Uri -> fun uri -> string uri, []
 
