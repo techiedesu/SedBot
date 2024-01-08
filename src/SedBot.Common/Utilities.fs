@@ -17,10 +17,10 @@ module Logger =
 
         LoggerFactory.Create(
             fun builder ->
-                builder
+                %builder
                     .ClearProviders()
                     .AddProvider(new SerilogLoggerProvider())
-                    .SetMinimumLevel(LogLevel.Debug) |> ignore
+                    .SetMinimumLevel(LogLevel.Debug)
         )
 
     let get name =

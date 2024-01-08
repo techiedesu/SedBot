@@ -3,10 +3,10 @@
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
-    <PublishAot>true</PublishAot>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="MaybeBuilder.fs" />
+    <Compile Include="Unsafe.fs" />
     <Compile Include="Common.fs" />
     <Compile Include="Utilities.fs" />
     <Compile Include="Process.fs" />

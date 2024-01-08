@@ -7,14 +7,13 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <Compile Include="FFmpeg.fs" />
-        <Compile Include="ImageMagick.fs" />
-        <Compile Include="ProcessingChannels.fs" />
+        <Compile Include="SedJsonTreeParser.fs" />
+        <Compile Include="SedNetTreeTypeBuilder.fs" />
+        <Compile Include="SedJsonDeserializer.fs" />
     </ItemGroup>
 
     <ItemGroup>
       <ProjectReference Include="..\SedBot.Common\SedBot.Common.fsproj" />
-      <ProjectReference Include="..\SedBot.Telegram.BotApi.Types\SedBot.Telegram.BotApi.Types.fsproj" />
     </ItemGroup>
 
 </Project>

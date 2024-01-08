@@ -6,7 +6,7 @@
     <RootNamespace>SedBot</RootNamespace>
     <GenerateProgramFile>false</GenerateProgramFile>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-    <PublishAot>true</PublishAot>
+    <PublishAot>false</PublishAot>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="TgApi.fs" />

@@ -3,11 +3,17 @@ module [<AutoOpen>] SedBot.Common.TypeExtensions
 open System
 open System.Collections.Generic
 open System.IO
-open System.Text.Json
 open System.Threading.Tasks
 open Microsoft.FSharp.Core
+open Microsoft.FSharp.Reflection
+
+#nowarn "0077"
+#nowarn "0042"
 
 let inline (^) f x = f x
+
+/// Ignores return value. Usable for chain APIs
+let inline (~%) x = ignore x
 
 let inline (<-?) (field: _ byref) a =
     if Object.ReferenceEquals(null, a) then
@@ -18,25 +24,84 @@ let inline (<-?) (field: _ byref) a =
 let inline isNotNull<'T when 'T: not struct> (v: 'T) =
     obj.ReferenceEquals (v, null) |> not
 
-type FileType =
-    | Gif
-    | Video
-    | Picture
-    | Sticker
-    | Voice
-    | Audio
+let inline delay ([<InlineIfLambda>] act: 'a -> unit) (v: 'a) =
+    act v
+    v
 
-let extension (ft: FileType) =
-    match ft with
-    | Gif | Video -> ".mp4"
-    | Picture -> ".png"
-    | Sticker -> ".webp"
-    | Voice -> ".ogg"
-    | Audio -> ".mp3"
+let inline delay2 ([<InlineIfLambda>] act: 'a -> unit) ([<InlineIfLambda>] act2: 'a -> unit) (v: 'a) =
+    act v
+    act2 v
+    v
+
+let inline swap ([<InlineIfLambda>] act: 'b -> 'a -> _) (a: 'a) (b: 'b) =
+    act b a
+
+let snackCaseToCamelCase (str: string) =
+    let mutable prev = '_'
+    [|
+        for c in str do
+            let c =
+                if prev = '_' then
+                    Char.ToUpper c
+                else if prev = '0' then
+                    Char.ToLower c
+                else
+                    c
+
+            if c <> '_' then c
+            prev <- c
+    |]
+    |> String
+
+let camelCaseToSnakeCase (str: string) =
+    [|
+        if str |> Seq.isEmpty |> not then
+            if Char.IsUpper str[0] then
+                yield Char.ToLower str[0]
+            else
+                yield str[0]
+
+            for c in str |> Seq.skip 1 do
+                if Char.IsUpper c then
+                    yield '_'
+                    yield Char.ToLower c
+                else
+                    yield c
+    |]
+    |> String
+
+let inline apply2 ([<InlineIfLambda>] f) (a, b) = f a b
+let inline apply3 ([<InlineIfLambda>] f) (a, b, c) = f a b c
+
+let isOptionType (t: Type) =
+    if FSharpType.IsUnion t then
+        let cases = FSharpType.GetUnionCases t
+        cases.Length = 2 && cases[0].Name = "None" && cases[1].Name = "Some"
+    else
+        false
+
+let isValueOptionType (t: Type) =
+    if FSharpType.IsUnion t then
+        let cases = FSharpType.GetUnionCases t
+        cases.Length = 2 && cases[0].Name = "ValueNone" && cases[1].Name = "ValueSome"
+    else
+        false
+
+let inline inc (a: 'a byref) = a <- a + LanguagePrimitives.GenericOne
+
+/// unsafe cast like in C#
+let inline ucast<'a, 'b> (a: 'a): 'b = (# "" a: 'b #)
+
+/// Implicit cast
+let inline icast< ^a, ^b when (^a or ^b): (static member op_Implicit: ^a -> ^b)> (value: ^a): ^b = ((^a or ^b): (static member op_Implicit: ^a -> ^b) value)
+
+/// Explicit cast
+let inline ecast< ^a, ^b when (^a or ^b): (static member op_Explicit: ^a -> ^b)> (value: ^a): ^b = ((^a or ^b): (static member op_Explicit: ^a -> ^b) value)
+
 
 [<RequireQualifiedAccess>]
 module String =
-    let startsWith (text: string) (input: string) =
+    let inline startsWith (text: string) (input: string) =
         text.StartsWith(input)
 
     let isNullOfWhiteSpace = String.IsNullOrWhiteSpace
@@ -52,12 +117,13 @@ module String =
 
 [<RequireQualifiedAccess>]
 module Option =
+    let sUnit = Some ()
+
     let inline ofBool (v: bool) =
         match v with
         | false ->
             None
-        | true ->
-            Some ()
+        | true -> sUnit
 
     let inline ofCSharpTryPattern (status, value) =
         if status then Some value
@@ -66,7 +132,7 @@ module Option =
     let inline iterIgnore (action: 'a -> 'b) (value: 'a option) =
         match value with
         | None -> ()
-        | Some v -> action v |> ignore
+        | Some v -> %action v
 
 [<RequireQualifiedAccess>]
 module Result =
@@ -75,25 +141,9 @@ module Result =
         | Error err -> raise (Exception(string err))
         | Ok r -> r
 
-[<RequireQualifiedAccess>]
-module Json =
-    open System.Text.Json.Serialization
-
-    let applySettings (options: JsonSerializerOptions) =
-        options.Converters.Add(JsonFSharpConverter())
-        options.WriteIndented <- true
-        options.DefaultIgnoreCondition <- JsonIgnoreCondition.WhenWritingNull
-        options.Encoder <- System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping
-        options
-
-    let private settings() =
-        let options = JsonSerializerOptions()
-        applySettings options
-
-    let serializerSettings = settings()
-
-    let serialize t =
-        JsonSerializer.Serialize(t, serializerSettings)
+let inline fromFun f = Action<'a> f
+let inline fromFun2 f = Action<'a, 'b> f
+let inline fromFun3 f = Action<'a, 'b, 'c> f
 
 [<RequireQualifiedAccess>]
 module Dictionary =
@@ -105,10 +155,11 @@ module Dictionary =
 
 [<RequireQualifiedAccess>]
 module File =
+    let rUnit = Ok ()
     let delete filePath =
         try
             File.Delete(filePath)
-            Ok ()
+            rUnit
         with
         | e ->
             Error e
@@ -120,11 +171,11 @@ module Int32 =
     let inline tryParse (str: string) = str |> Int32.TryParse |> Option.ofCSharpTryPattern
 
 module Task =
-    let runSynchronously (t: Task) =
+    let runSynchronously (t: #Task) =
         if isNotNull t && not t.IsCompleted then
             t.ConfigureAwait(false).GetAwaiter().GetResult()
 
-    let getResult (t: Task<_>) =
+    let inline getResult (t: Task<_>) =
         t.ConfigureAwait(false).GetAwaiter().GetResult()
 
 [<RequireQualifiedAccess>]
@@ -155,3 +206,13 @@ module TaskOption =
 module Path =
     let getSynthName extension =
         Guid.NewGuid().ToString().Replace("-", "") + extension
+
+module ActivePatterns =
+    let (|Null|_|) obj = Object.ReferenceEquals(obj, null) |> Option.ofBool
+
+/// Null-tolerant Seq functions
+module NTSeq =
+   let exists (predicate: 'T -> bool) (source: 'T seq) =
+       match source with
+       | null -> false
+       | _ -> Seq.exists predicate source

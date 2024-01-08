@@ -1,6 +1,0 @@
-FSharp.SystemTextJson
-Microsoft.Extensions.Logging
-Serilog.Extensions.Logging
-Serilog.Sinks.Console
-FParsec
-System.Text.Json

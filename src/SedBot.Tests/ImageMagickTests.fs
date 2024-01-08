@@ -4,6 +4,7 @@ open System.IO
 open NUnit.Framework
 
 open SedBot.Common
+open SedBot.Telegram.Types.Extensions
 open SedBot.ContentProcessing
 
 let [<Test>] ``liquid rescale works properly`` () = task {

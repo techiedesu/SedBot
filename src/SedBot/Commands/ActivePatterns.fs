@@ -5,6 +5,7 @@ open System.Text.RegularExpressions
 open SedBot.ChatCommands.Types
 open SedBot.Common
 open SedBot.Telegram.BotApi.Types
+open SedBot.Telegram.Types.Extensions
 
 module [<RequireQualifiedAccess>] CommandPipelineItem =
     let set (item: CommandPipelineItem) command =

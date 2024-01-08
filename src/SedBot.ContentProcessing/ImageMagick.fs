@@ -7,6 +7,7 @@ open System
 open System.Text
 
 open SedBot.Common.TypeExtensions
+open SedBot.Telegram.Types.Extensions
 open Tdesu.CliWrap.Fsharp
 
 type ImageMagickObjectState = { Src: Stream

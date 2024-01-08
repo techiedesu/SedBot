@@ -7,12 +7,14 @@
     <RootNamespace>SedBot.Telegram</RootNamespace>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="Library.fs" />
+    <Compile Include="RequestBuilder.fs" />
+    <Compile Include="Core.fs" />
     <Compile Include="Api.fs" />
     <Content Include="paket.references" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\SedBot.Telegram.BotApi.Types.Generated\SedBot.Telegram.BotApi.Types.Generated.csproj" />
+    <ProjectReference Include="..\SedBot.Json\SedBot.Json.fsproj" />
+    <ProjectReference Include="..\SedBot.Telegram.BotApi.Types\SedBot.Telegram.BotApi.Types.fsproj" />
   </ItemGroup>
   <Import Project="..\.paket\Paket.Restore.targets" />
 </Project>

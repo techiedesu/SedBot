@@ -5,10 +5,8 @@ open System.Threading.Tasks
 open Microsoft.FSharp.Core
 open SedBot.Common
 open SedBot.Common.Utilities
-open Microsoft.Extensions.Logging
 open SedBot.Telegram.BotApi
 open SedBot.Telegram.BotApi.Types
-open SedBot.Telegram.BotApi.Types.CoreTypes
 
 type internal Marker = interface end
 let private log = Logger.get ^ typeof<Marker>.DeclaringType.Name
@@ -18,17 +16,7 @@ let channelReader = TgApi.channel.Reader
 
 let private channelWorker() =
     let mutable cfg = ValueNone
-    let api request = task {
-        log.LogDebug("Request: {type} : {request}", request.GetType().Name, Json.serialize request)
-        let! result = request |> Core.api cfg.Value
-        let result : Result<'b,ApiResponseError> = result
-
-        match result with
-        | Error err ->
-            log.LogWarning("Error: {err}", Json.serialize err)
-        | Ok res ->
-            log.LogDebug("Result: {res}", Json.serialize res)
-    }
+    let api request = request |> Core.api cfg.Value :> Task
 
     let apiMapResponse a =
         Core.api cfg.Value >> TaskOption.ofResult >> TaskOption.map a
