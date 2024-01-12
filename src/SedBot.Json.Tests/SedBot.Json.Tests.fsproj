@@ -13,6 +13,7 @@
         <Compile Include="ParseTreeTests.fs" />
         <Compile Include="DeserializationTests.fs" />
         <Compile Include="ParseTreeWalkerTests.fs" />
+        <Compile Include="SerializerTests.fs" />
     </ItemGroup>
 
     <ItemGroup>

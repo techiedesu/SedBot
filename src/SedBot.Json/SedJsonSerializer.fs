@@ -21,10 +21,10 @@ let escapeUnicode (c: char) =
 
         yield '\\'
         yield 'u'
-        yield (c >>> 12) &&& 15 |> toHex |> char
-        yield (c >>> 08) &&& 15 |> toHex |> char
-        yield (c >>> 04) &&& 15 |> toHex |> char
-        yield c          &&& 15 |> toHex |> char
+        yield (c >>> 12) &&& 15 |> toHex
+        yield (c >>> 08) &&& 15 |> toHex
+        yield (c >>> 04) &&& 15 |> toHex
+        yield c          &&& 15 |> toHex
     |] |> String
 
 let escapeJsonString (str: string) =
@@ -32,12 +32,12 @@ let escapeJsonString (str: string) =
         str
     else
         let sb = StringBuilder()
-        let sbWrite (v: string) = %sb.Append(v)
-        let sbWriteC (v: char) =  %sb.Append(v)
+        let sbWrite : string -> unit = sb.Append >> ignore
+        let sbWriteC : char -> unit =  sb.Append >> ignore
 
         let rec loop (position: int) =
-            if position = str.Length then
-                sb.ToString()
+            if String.length str = position then
+                string sb
             else
                 let c = str[position]
                 match c with
@@ -77,30 +77,49 @@ let mkMemberPrinter (shape : IShapeMember<'DeclaringType>) =
                fieldPrinter << shape.Get
    }
 
-let rec serialize<'T> (msg: 'T) =
+type JsonSettings ={
+    Minimized: bool
+} with
+    static member Empty = {
+        Minimized = true
+    }
+
+/// Converts .NET type to string JSON representation (aka serialize)
+/// Trying to create human-readable representation
+let serialize<'T> (msg: 'T) =
     let ctx = new TypeGenerationContext()
-    mkPrinterCached<'T> ctx msg
+    let settings = { Minimized = false }
+    mkPrinterCached<'T> ctx settings msg
+
+/// Converts .NET type to string JSON representation (aka serialize)
+/// Minimized representation
+let serializeMinimized<'T> (msg: 'T) =
+    let ctx = new TypeGenerationContext()
+    let settings = JsonSettings.Empty
+    mkPrinterCached<'T> ctx settings msg
 
 let rec build<'T> (msg: 'T) : string =
     let ctx = new TypeGenerationContext()
-    mkPrinterCached<'T> ctx msg
+    let settings = JsonSettings.Empty
+    mkPrinterCached<'T> ctx settings msg
 
-and mkPrinterCached<'T> (ctx: TypeGenerationContext) : 'T -> (string) =
+and mkPrinterCached<'T> (ctx: TypeGenerationContext) (settings: JsonSettings) : 'T -> (string) =
     match ctx.InitOrGetCachedValue<'T -> string> (fun c t -> c.Value t) with
     | Cached(value = p) -> p
     | NotCached t ->
-        let p = mkPrinterAux<'T> ctx
+        let p = mkPrinterAux<'T> ctx settings
         ctx.Commit t p
 
-and mkPrinterAux<'T> (ctx: TypeGenerationContext) : 'T -> (string) =
+and mkPrinterAux<'T> (ctx: TypeGenerationContext) (settings: JsonSettings) : 'T -> (string) =
     let wrap(p : 'a -> (string)) = unbox<'T -> (string)> p
+    let nl = if settings.Minimized then "" else "\n"
 
     let mkFieldPrinter (field: IShapeReadOnlyMember<'DeclaringType>) =
         field.Accept {
             new IReadOnlyMemberVisitor<'DeclaringType, string * ('DeclaringType -> (string))> with
                 member _.Visit(field : ReadOnlyMember<'DeclaringType, 'Field>) =
                     let fieldPrinter = mkPrinterCached<'Field> ctx
-                    field.Label, field.Get >> fieldPrinter
+                    field.Label, field.Get >> fieldPrinter settings
         }
 
     let inline scf key (value: string) =
@@ -113,6 +132,7 @@ and mkPrinterAux<'T> (ctx: TypeGenerationContext) : 'T -> (string) =
     match shapeof<'T> with
     | Shape.FSharpFunc _
     | Shape.Exception
+    | Shape.Stream
     | Shape.HttpClient -> fun _ -> null
 
     | Shape.Bool -> fun bool -> (if ucast<'T, bool> bool then "true" else "false")
@@ -123,13 +143,11 @@ and mkPrinterAux<'T> (ctx: TypeGenerationContext) : 'T -> (string) =
 
     | Shape.Uri -> string
 
-    | Shape.Stream -> fun _ -> null
-
     | Shape.FSharpOption s ->
         s.Element.Accept {
             new ITypeVisitor<'T -> (string)> with
                 member _.Visit<'a> () =
-                    let tp = mkPrinterCached<'a> ctx
+                    let tp = mkPrinterCached<'a> ctx settings
                     wrap(function Some t -> tp t | None -> (null))
         }
 
@@ -137,7 +155,7 @@ and mkPrinterAux<'T> (ctx: TypeGenerationContext) : 'T -> (string) =
         s.Element.Accept {
             new ITypeVisitor<'T -> (string)> with
                 member _.Visit<'a> () =
-                    let tp = mkPrinterCached<'a> ctx
+                    let tp = mkPrinterCached<'a> ctx settings
                     wrap(
                         fun (ts: 'a list) ->
                                         ts
@@ -150,7 +168,7 @@ and mkPrinterAux<'T> (ctx: TypeGenerationContext) : 'T -> (string) =
         s.Element.Accept {
             new ITypeVisitor<'T -> (string)> with
                 member _.Visit<'a> () =
-                    let tp = mkPrinterCached<'a> ctx
+                    let tp = mkPrinterCached<'a> ctx settings
                     wrap(
                         fun (ts: 'a []) ->
                             ts
@@ -158,7 +176,7 @@ and mkPrinterAux<'T> (ctx: TypeGenerationContext) : 'T -> (string) =
                                 let printedStr = tp v
                                 (storedString @ [printedStr])
                             ) ([])
-                            |> fun (printedStr) -> let printedStr = String.Join(",\n", printedStr) in $"[\n{printedStr}\n]"
+                            |> fun (printedStr) -> let printedStr = String.Join($",{nl}", printedStr) in $"[{nl}{printedStr}{nl}]"
                     )
         }
 
@@ -202,7 +220,7 @@ and mkPrinterAux<'T> (ctx: TypeGenerationContext) : 'T -> (string) =
             propPrinters
             |> Seq.fold (fun (storedString: StringBuilder) (label, fieldPrinter) ->
                 let value = fieldPrinter fieldType
-                storedString.Append(scf label value).Append("\n ")
+                storedString.Append(scf label value).Append($"{nl} ")
             ) (StringBuilder())
             |> fun (printedStr) ->
                 $"{{ {printedStr} }}"

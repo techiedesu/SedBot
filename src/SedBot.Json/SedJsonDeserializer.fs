@@ -129,17 +129,16 @@ let jsonToTypeMapper (rootJsonNode: SedJsonTreeParser.JsonValue) (rootTypeNode: 
                 |> Option.map execLoop
                 |> Option.defaultValue null
 
-            let recordFields =
-                typeNode.Type
-                |> FSharpType.GetRecordFields
-                |> Array.map processField
+            let recordFields = typeNode.Type
+                                |> FSharpType.GetRecordFields
+                                |> Array.map processField
+
             FSharpValue.MakeRecord(typeNode.Type, recordFields)
 
         | SedJsonTreeParser.JsonValue.Array items ->
             let firstChild = Seq.head typeNode.Children
             let els = items
-                        |> List.map (fun item ->
-                            loop item firstChild)
+                        |> List.map (fun item -> loop item firstChild)
                         |> Array.ofList
 
             let res = Array.CreateInstance(firstChild.Type, els.Length)

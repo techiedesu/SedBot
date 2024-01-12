@@ -212,8 +212,9 @@ let handleJq (item: CommandPipelineItem) =
     | _ ->
         item
 
-let private processMessageInternal message botUsername inlineHelp =
-    CommandPipelineItem.Create(message, botUsername, inlineHelp)
+let private processMessageAux message botUsername inlineHelp =
+    (message, botUsername, inlineHelp)
+    |> CommandPipelineItem.Create
     |%> handleSed
     |%> handleJq
     |%> handleClown
@@ -226,8 +227,9 @@ let private processMessageInternal message botUsername inlineHelp =
     |%> handleCounterclockwiseRotation
 
 let processMessage message botUsername =
-    processMessageInternal message botUsername false |> CommandPipelineItem.GetCommand
+    processMessageAux message botUsername false |> CommandPipelineItem.GetCommand
 
 let processInlineHelp () =
-    processMessageInternal Message.Empty "" true
+    processMessageAux Message.Empty "" true
     |> _.CommandHelpInfo
+    |> Array.ofSeq

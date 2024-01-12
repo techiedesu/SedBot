@@ -9,7 +9,7 @@ let sed data expression =
     Process.runTextProcess "sed" [| "-E"; expression |] data
 
 let jq data expression =
-    Process.runTextProcess "jq" [| "-M"; expression |] data
+    Process.runTextProcessResult "jq" [| "-M"; expression |] data
 
 let reverse fileType (stream: Stream) = task {
     use ms = new MemoryStream()

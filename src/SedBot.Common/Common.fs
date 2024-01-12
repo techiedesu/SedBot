@@ -141,6 +141,11 @@ module Result =
         | Error err -> raise (Exception(string err))
         | Ok r -> r
 
+    let inline ofOption v =
+        match v with
+        | Ok r -> Some r
+        | _ -> None
+
 let inline fromFun f = Action<'a> f
 let inline fromFun2 f = Action<'a, 'b> f
 let inline fromFun3 f = Action<'a, 'b, 'c> f

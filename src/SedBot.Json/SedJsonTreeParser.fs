@@ -2,7 +2,6 @@
 module SedBot.Json.SedJsonTreeParser
 
 open System.Runtime.CompilerServices
-open System.Text.RegularExpressions
 open FParsec
 open SedBot.Common.TypeExtensions
 
@@ -16,8 +15,6 @@ type JsonValue =
     | Bool of bool
     | Object of Map<string, JsonValue>
     | Array of JsonValue list
-
-let internal unescapeStr (str: string) = Regex.Unescape(str)
 
 let internal createParseTree handleName : Parser<JsonValue, unit> =
     let skipSpacesAndNewLines = optional (many (anyOf [ ' '; '\n'; '\r'; '\t' ]))
@@ -46,6 +43,7 @@ let internal createParseTree handleName : Parser<JsonValue, unit> =
                 |> char |> string
             )
 
+        // satisfy (escape <|> unicodeEscape) and return original string.
         let escapedCharSnippet = pstring "\\" >>. (escape <|> unicodeEscape)
         let normalCharSnippet  = manySatisfy (fun c -> c <> '"' && c <> '\\')
 
@@ -53,7 +51,7 @@ let internal createParseTree handleName : Parser<JsonValue, unit> =
                 (stringsSepBy normalCharSnippet escapedCharSnippet)
 
     let key = str |>> handleName
-    let tStr = str |>> (unescapeStr >> JsonValue.String)
+    let tStr = str |>> JsonValue.String
 
     let tNumber =
         let sign = opt (pchar '-' <|> pchar '+') .>>. many1Chars digit

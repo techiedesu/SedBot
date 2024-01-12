@@ -53,7 +53,7 @@ let private updateArrivedInternal botUsername (ctx: UpdateContext) (message: Mes
         let! res = Handlers.sed text exp
 
         match res with
-        | ValueSome res ->
+        | Some res ->
             do! TgApi.sendMessageReply omniMsgId res
         | _ ->
             do! TgApi.sendMessageAndDeleteAfter (fst omniMsgId) (placeholder "Sed") 35000
@@ -66,10 +66,10 @@ let private updateArrivedInternal botUsername (ctx: UpdateContext) (message: Mes
         let! res = expression |> Handlers.jq data
 
         match res with
-        | ValueSome res ->
+        | Ok res ->
             do! TgApi.sendMarkupMessageReply omniMsgId $"```json\n{res}\n```" ParseMode.Markdown
-        | _ ->
-            do! TgApi.sendMessageAndDeleteAfter (fst omniMsgId) (placeholder "Jq") 35000
+        | Error err ->
+            do! TgApi.sendMessageAndDeleteAfter (fst omniMsgId) err 35000
 
     | Reverse { TelegramOmniMessageId = omniMsgId; File = fileId, fileType } ->
         let! res = fileId |> Api.tryGetFileAsStream ctx |> TaskVOption.taskBind (Handlers.reverse fileType)

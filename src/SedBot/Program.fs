@@ -27,10 +27,14 @@ let rec entryPoint args =
 
     ProcessingChannels.start ()
 
+    // TODO: Make recursive?
     while true do
         try
             let _aa =
-                Func<HttpRequestMessage, Security.Cryptography.X509Certificates.X509Certificate2, Security.Cryptography.X509Certificates.X509Chain, Net.Security.SslPolicyErrors, bool>(
+                Func<HttpRequestMessage,
+                Security.Cryptography.X509Certificates.X509Certificate2,
+                Security.Cryptography.X509Certificates.X509Chain,
+                Net.Security.SslPolicyErrors, bool>(
                     fun _ _ _ _ -> true
                 )
 
@@ -47,16 +51,21 @@ let rec entryPoint args =
                     Client = client
                     OnError = fun ex -> logger.LogError("Got Funogram exception: {ex}", ex)
             }
+            let api (req: _ IRequestBase) = Core.api config req
 
             %ChannelProcessors.channelWriter.TryWrite(TgApi.TelegramSendingMessage.SetConfig config)
-            ChannelProcessors.runChannel()
+            ChannelProcessors.runChannel ()
 
-            let help = CommandParser.processInlineHelp ()
-            let botCommands : BotCommand list = help |> List.map (fun ici -> { Command = ici.Command; Description = ici.Description })
-            Api.sendNewCommands (Array.ofList botCommands) |> Core.api config |> Task.runSynchronously
+            CommandParser.processInlineHelp ()
+            |> Seq.map (fun ici -> { Command = ici.Command; Description = ici.Description })
+            |> Array.ofSeq
+            |> Api.sendNewCommands
+            |> Core.api config
+            |> Task.runSynchronously
 
-            Api.deleteWebhookBase () |> Core.api config |> Task.runSynchronously
-            let botInfoResult = Api.getMe |> Core.api config |> Task.getResult
+            Api.deleteWebhookBase () |> api |> Task.runSynchronously
+
+            let botInfoResult = Api.getMe |> api |> Task.getResult
 
             let botUsername =
                 match botInfoResult with
@@ -64,7 +73,10 @@ let rec entryPoint args =
                     raise ^ Exception($"Can't get username: {err}")
                 | Ok res ->
                     Option.get res.Username
-            logger.LogDebug("Config {config}", SedJsonSerializer.serialize {config with Token = $"<redacted:{botUsername}>"})
+            logger.LogDebug("Config {config}", SedJsonSerializer.serialize {
+                config with
+                    Token = $"<redacted:{botUsername}>"
+            })
 
             Api.startLoop config (UpdatesHandler.updateArrived botUsername) None |> Task.runSynchronously
         with

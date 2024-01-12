@@ -114,12 +114,12 @@ and mkPrinterAux<'T> (ctx: TypeGenerationContext) (form: MultipartFormDataConten
                 member _.Visit<'a> () =
                     let tp = mkPrinterCached<'a> ctx form
                     wrap(
-                        fun (ts: 'a list) ->
-                                        ts
-                                        |> Seq.fold (fun (storedString: StringBuilder, storedStreams: StreamField list) v ->
-                                            let string, streams = tp v
-                                            (storedString.Append(string), storedStreams @ streams)) ((StringBuilder(), []))
-                                        |> fun (x, y) -> $"[{x}]", y
+                        fun ts ->
+                            ts
+                            |> List.fold (fun (storedString: StringBuilder, storedStreams: StreamField list) v ->
+                                let string, streams = tp v
+                                (storedString.Append(string), storedStreams @ streams)) ((StringBuilder(), []))
+                            |> fun (x, y) -> $"[{x}]", y
                     )
         }
 
@@ -129,9 +129,9 @@ and mkPrinterAux<'T> (ctx: TypeGenerationContext) (form: MultipartFormDataConten
                 member _.Visit<'a> () =
                     let tp = mkPrinterCached<'a> ctx form
                     wrap(
-                        fun (ts: 'a []) ->
+                        fun ts ->
                             ts
-                            |> Seq.fold (fun (storedString: string list, streamFieldsAcc: StreamField list) v ->
+                            |> Array.fold (fun (storedString: string list, streamFieldsAcc: StreamField list) v ->
                                 let printedStr, streamFields = tp v
                                 (storedString @ [printedStr], streamFieldsAcc @ streamFields)
                             ) (([], []))

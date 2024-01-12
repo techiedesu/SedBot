@@ -127,3 +127,7 @@ let [<Literal>] SmolJson = """
         }
 }
 """
+
+let [<Literal>] BrokenJsonAsString = """
+{ "message_id": 758, "from": { "id": 6675788706, "is_bot": true, "first_name": \"Debug Sed\", "username": \"debug_sed_bot\" }, "date": 1705041462, "chat": { "id": 1731422365, "type": "Private", "username": \"tdesu\", "first_name": \"Vlad\" }, "text": \"{ \"message_id\": 756, \"from\": { \"id\": 6675788706, \"is_bot\": true, \"first_name\": \"Debug Sed\", \"username\": \"debug_sed_bot\" }, \"date\": 1705041451, \"chat\": { \"id\": 1731422365, \"type\": \"Private\", \"username\": \"tdesu\", \"first_name\": \"Vlad\" }, \"text\": \"{ \"message_id\": 753, \"from\": { \"id\": 1731422365, \"is_bot\": false, \"first_name\": \"Vlad\", \"username\": \"tdesu\", \"language_code\": \"ru\", \"is_premium\": true }, \"date\": 1705041441, \"chat\": { \"id\": 1731422365, \"type\": \"Private\", \"username\": \"tdesu\", \"first_name\": \"Vlad\" }, \"text\": \"123\" }\", \"entities\": [{ \"type\": \"code\", \"offset\": 0, \"length\": 281 }] }\", "entities": [{ "type": \"code\", "offset": 0, "length": 634 }] }
+"""

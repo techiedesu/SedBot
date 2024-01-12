@@ -12,9 +12,9 @@ open Microsoft.Extensions.Logging
 type internal Marker = interface end
 let private log = Logger.get ^ typeof<Marker>.DeclaringType.Name
 
-let rec runTextProcess procName args data = task {
+let rec runTextProcessResult procName args data = task {
     log.LogDebug(
-        $"{nameof runTextProcess}: process name: {{procName}};; args: {{args}};; data: {{data}}",
+        $"{nameof runTextProcessResult}: process name: {{procName}};; args: {{args}};; data: {{data}}",
         procName, args, data
     )
 
@@ -33,11 +33,15 @@ let rec runTextProcess procName args data = task {
 
     let exitCode = executionResult.ExitCode
     if exitCode = 0 then
-        return string stdout |> ValueSome
+        return string stdout |> Ok
     else
-        log.LogError($"{nameof runTextProcess}: wrong exit code: {{exitCode}}, stderr: {{stdErr}}", exitCode, stderr)
-        return ValueNone
+        log.LogError($"{nameof runTextProcessResult}: wrong exit code: {{exitCode}}, stderr: {{stdErr}}", exitCode, stderr)
+        return string stderr |> Error
 }
+
+let runTextProcess procName args data =
+    let res = runTextProcessResult procName args data
+    TaskOption.ofResult res
 
 let getStatusCode procName args data =
     let executionResult =
