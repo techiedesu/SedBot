@@ -5,6 +5,7 @@
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <OutputType>Library</OutputType>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <RootNamespace>SedBot.Tests</RootNamespace>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="FFmpegChannelTests.fs" />

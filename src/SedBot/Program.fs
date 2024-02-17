@@ -39,9 +39,9 @@ let rec entryPoint args =
                 )
 
             let handler = new HttpClientHandler()
-            handler.ClientCertificateOptions <- ClientCertificateOption.Manual
-            handler.ServerCertificateCustomValidationCallback <- _aa // for debug
-            handler.Proxy <- WebProxy(Uri("http://127.0.0.1:8888"))
+            // handler.ClientCertificateOptions <- ClientCertificateOption.Manual
+            // handler.ServerCertificateCustomValidationCallback <- _aa // for debug
+            // handler.Proxy <- WebProxy(Uri("http://127.0.0.1:8888"))
             let client = new HttpClient(handler)
             client.Timeout <- TimeSpan.FromMinutes 1
 

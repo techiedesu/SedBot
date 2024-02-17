@@ -7,6 +7,7 @@
         <GenerateProgramFile>true</GenerateProgramFile>
         <IsTestProject>true</IsTestProject>
         <PublishAot>false</PublishAot>
+        <RootNamespace>SedBot.Telegram.BotApi.Tests</RootNamespace>
     </PropertyGroup>
 
     <ItemGroup>
@@ -25,7 +26,7 @@
 
     <ItemGroup>
       <ProjectReference Include="..\SedBot.Json\SedBot.Json.fsproj" />
-      <ProjectReference Include="..\SedBot.Telegram.BotApi\SedBot.Telegram.BotApi.fsproj" />
+      <ProjectReference Include="..\BotApi\BotApi.fsproj" />
     </ItemGroup>
 
 </Project>

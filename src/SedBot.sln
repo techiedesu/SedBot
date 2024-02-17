@@ -4,19 +4,19 @@ VisualStudioVersion = 17.3.32825.248
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "SedBot", "SedBot\SedBot.fsproj", "{27ABDDCC-42B0-4D49-B26C-72217FBB41C6}"
 EndProject
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "SedBot.Tests", "SedBot.Tests\SedBot.Tests.fsproj", "{FFEB5E81-9A91-4647-A6CC-63980C287C61}"
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Tests", "Tests\Tests.fsproj", "{FFEB5E81-9A91-4647-A6CC-63980C287C61}"
 EndProject
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "SedBot.Common", "SedBot.Common\SedBot.Common.fsproj", "{69226BDE-C61F-445F-BDB3-01426B117CFA}"
 EndProject
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "SedBot.ContentProcessing", "SedBot.ContentProcessing\SedBot.ContentProcessing.fsproj", "{8EDE0B38-D42B-4FE7-98A0-E8B4E16DD7EA}"
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "ContentProcessing", "ContentProcessing\ContentProcessing.fsproj", "{8EDE0B38-D42B-4FE7-98A0-E8B4E16DD7EA}"
 EndProject
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "SedBot.Telegram.BotApi", "SedBot.Telegram.BotApi\SedBot.Telegram.BotApi.fsproj", "{F57112BC-AD0F-4783-A91D-BABD596A2171}"
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "BotApi", "BotApi\BotApi.fsproj", "{F57112BC-AD0F-4783-A91D-BABD596A2171}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Telegram", "Telegram", "{C00E8C7D-B341-44A3-8C00-3B1E7103FB54}"
 EndProject
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "SedBot.Telegram.BotApi.Types", "SedBot.Telegram.BotApi.Types\SedBot.Telegram.BotApi.Types.fsproj", "{E3CB73F9-B0D3-4BC1-8ED3-80B9224F5F5A}"
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "BotApi.Types", "BotApi.Types\BotApi.Types.fsproj", "{E3CB73F9-B0D3-4BC1-8ED3-80B9224F5F5A}"
 EndProject
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "SedBot.Telegram.BotApi.Tests", "SedBot.Telegram.BotApi.Tests\SedBot.Telegram.BotApi.Tests.fsproj", "{C6C52454-1357-41F7-9D5F-ADE5703251C8}"
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "BotApi.Tests", "BotApi.Tests\BotApi.Tests.fsproj", "{C6C52454-1357-41F7-9D5F-ADE5703251C8}"
 EndProject
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "SedBot.Json", "SedBot.Json\SedBot.Json.fsproj", "{192EE46E-F814-4367-AE1E-13E04583A0BF}"
 EndProject

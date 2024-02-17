@@ -14,7 +14,7 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\SedBot.Json\SedBot.Json.fsproj" />
-    <ProjectReference Include="..\SedBot.Telegram.BotApi.Types\SedBot.Telegram.BotApi.Types.fsproj" />
+    <ProjectReference Include="..\BotApi.Types\BotApi.Types.fsproj" />
   </ItemGroup>
   <Import Project="..\.paket\Paket.Restore.targets" />
 </Project>
