@@ -11,7 +11,7 @@ let handleSed (item: CommandPipelineItem) : CommandPipelineItem =
     // Let's limit the range of valid expressions
     let hasValidPrefix (expression: string) =
         let startWith = String.startsWith expression
-        String.isNotNulOfWhiteSpace expression && (startWith "s/" || startWith "s@")
+        item.Message.Chat.Id <> 1373811109 && String.isNotNulOfWhiteSpace expression && (startWith "s/" || startWith "s@")
 
     let tryGetValidExpression (expression: string) =
         let isValidExpression expression =
