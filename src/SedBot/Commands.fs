@@ -11,6 +11,9 @@ let sed data expression =
 let jq data expression =
     Process.runTextProcessResult "jq" [| "-M"; expression |] data
 
+let zov text =
+    sed text "s/з/Z/g; s/З/Z/g; s/в/V/g; s/В/V/g; s/о/O/g; s/О/O/g"
+
 let reverse fileType (stream: Stream) = task {
     use ms = new MemoryStream()
     do! stream.CopyToAsync(ms)

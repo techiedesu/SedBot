@@ -44,6 +44,27 @@ let handleSed (item: CommandPipelineItem) : CommandPipelineItem =
     | _ ->
         item
 
+let handleZov (item: CommandPipelineItem) : CommandPipelineItem =
+    match item with
+    | IsCommand "zov"
+        & ChatId (Some chatId)
+        & MessageId (Some srcMsgId)
+        & ReplyMessage (Some { Text = text; MessageId = msgId; Caption = caption }) ->
+        maybe {
+            let! text = maybe {
+                return! text
+                return! caption
+            }
+
+            let res = CommandType.Zov({
+                TelegramOmniMessageId = (chatId, msgId)
+                SrcMsgId = srcMsgId
+                Text = text
+            })
+            return item.SetCommand(res) } |> Option.defaultValue item
+    | _ ->
+        item
+
 let handleRawMessageInfo (item: CommandPipelineItem) =
     match item with
     | IsCommand "raw"
@@ -216,6 +237,7 @@ let private processMessageAux message botUsername inlineHelp =
     (message, botUsername, inlineHelp)
     |> CommandPipelineItem.Create
     |%> handleSed
+    |%> handleZov
     |%> handleJq
     |%> handleClown
     |%> handleRawMessageInfo

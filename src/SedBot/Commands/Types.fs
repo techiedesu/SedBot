@@ -9,6 +9,7 @@ type MessageId = int64
 
 type CommandType =
     | Sed of args: SedArgs
+    | Zov of args: ZovArgs
     | VerticalFlip of args: FileManipulationArgs
     | HorizontalFlip of args: FileManipulationArgs
     | ClockwiseRotation of args: FileManipulationArgs
@@ -28,6 +29,11 @@ and SedArgs = {
     TelegramOmniMessageId: TelegramSourceOmniMessageId
     SrcMsgId: int64
     Expression: string
+    Text: string
+}
+and ZovArgs = {
+    TelegramOmniMessageId: TelegramSourceOmniMessageId
+    SrcMsgId: int64
     Text: string
 }
 and JqArgs = {

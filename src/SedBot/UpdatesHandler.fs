@@ -58,6 +58,15 @@ let private updateArrivedInternal botUsername (ctx: UpdateContext) (message: Mes
         | _ ->
             do! TgApi.sendMessageAndDeleteAfter (fst omniMsgId) (placeholder "Sed") 35000
 
+    | Zov { TelegramOmniMessageId = omniMsgId; Text = text } ->
+        let! res = Handlers.zov text
+
+        match res with
+        | Some res ->
+            do! TgApi.sendMessageReply omniMsgId res
+        | _ ->
+            do! TgApi.sendMessageAndDeleteAfter (fst omniMsgId) (placeholder "ZOV") 35000
+
     | Jq {
         TelegramOmniMessageId = omniMsgId
         Expression = expression
@@ -145,7 +154,7 @@ let private updateArrivedInternal botUsername (ctx: UpdateContext) (message: Mes
         do! TgApi.sendMessage chatId (seq { while true do "🤡" } |> Seq.take count |> String.concat "")
 
     | RawMessageInfo { ReplyTo = { MessageId = msgId; Chat = { Id = chatId } } as replyTo } ->
-        let replyJson = SedJsonSerializer.serialize(replyTo).ReplaceLineEndings("")
+        let replyJson = serialize(replyTo).ReplaceLineEndings("")
         do! TgApi.sendMarkupMessageReplyAndDeleteAfter (chatId, msgId) $"`{replyJson}`" ParseMode.Markdown 30000
 
     | Nope -> ()
