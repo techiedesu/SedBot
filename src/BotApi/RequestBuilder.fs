@@ -31,7 +31,7 @@ module Shape =
 
 let mkMemberPrinter (shape : IShapeMember<'DeclaringType>) (form: MultipartFormDataContent) =
    shape.Accept {
-       new IMemberVisitor<'DeclaringType, 'DeclaringType -> (string * StreamField list)> with
+       new IMemberVisitor<'DeclaringType, 'DeclaringType -> string * StreamField list> with
            member _.Visit (shape : ShapeMember<'DeclaringType, 'Field>) =
                let fieldPrinter = build<'Field> form
                fieldPrinter << shape.Get
@@ -41,7 +41,7 @@ let builderDynamic (t: Type) msg form =
     let reflectedFunc = typeof<Marker>.DeclaringType.GetMethod("buildExec").MakeGenericMethod(t)
     let build =
         Expression
-            .Lambda<Func<MultipartFormDataContent -> IBotRequest -> (string * StreamField list)>>(Expression.Call(reflectedFunc))
+            .Lambda<Func<MultipartFormDataContent -> IBotRequest -> string * StreamField list>>(Expression.Call(reflectedFunc))
             .Compile()
             .Invoke()
     build msg form
@@ -53,27 +53,27 @@ let buildExec<'T when 'T :> IBotRequest> () =
 
 let rec serialize<'T> (msg: 'T) =
     let ctx = new TypeGenerationContext()
-    mkPrinterCached<'T> ctx None msg |> fst
+    mkPrinterCached<'T> ctx None 0 msg |> fst
 
 let rec build<'T> (form: MultipartFormDataContent) (msg: 'T) : string * StreamField list =
     let ctx = new TypeGenerationContext()
-    mkPrinterCached<'T> ctx (Some form) msg
+    mkPrinterCached<'T> ctx (Some form) 0 msg
 
-and mkPrinterCached<'T> (ctx: TypeGenerationContext) (form: MultipartFormDataContent option) : 'T -> (string * StreamField list) =
-    match ctx.InitOrGetCachedValue<'T -> (string * StreamField list)> (fun c t -> c.Value t) with
+and mkPrinterCached<'T> (ctx: TypeGenerationContext) (form: MultipartFormDataContent option) (depth: int) : 'T -> string * StreamField list =
+    match ctx.InitOrGetCachedValue<'T -> string * StreamField list> (fun c t -> c.Value t) with
     | Cached(value = p) -> p
     | NotCached t ->
-        let p = mkPrinterAux<'T> ctx form
+        let p = mkPrinterAux<'T> ctx form depth
         ctx.Commit t p
 
-and mkPrinterAux<'T> (ctx: TypeGenerationContext) (form: MultipartFormDataContent option) : 'T -> (string * StreamField list) =
-    let wrap(p : 'a -> (string * StreamField list)) = unbox<'T -> (string * StreamField list)> p
+and mkPrinterAux<'T> (ctx: TypeGenerationContext) (form: MultipartFormDataContent option) (depth: int) : 'T -> string * StreamField list =
+    let wrap(p : 'a -> string * StreamField list) = unbox<'T -> string * StreamField list> p
 
-    let mkFieldPrinter (field: IShapeReadOnlyMember<'DeclaringType>) =
+    let mkFieldPrinter depth (field: IShapeReadOnlyMember<'DeclaringType>) =
         field.Accept {
-            new IReadOnlyMemberVisitor<'DeclaringType, string * ('DeclaringType -> (string * StreamField list))> with
+            new IReadOnlyMemberVisitor<'DeclaringType, string * ('DeclaringType -> string * StreamField list)> with
                 member _.Visit(field : ReadOnlyMember<'DeclaringType, 'Field>) =
-                    let fieldPrinter = mkPrinterCached<'Field> ctx form
+                    let fieldPrinter = mkPrinterCached<'Field> ctx form depth
                     field.Label, field.Get >> fieldPrinter
         }
 
@@ -94,7 +94,13 @@ and mkPrinterAux<'T> (ctx: TypeGenerationContext) (form: MultipartFormDataConten
     | Shape.Int32
     | Shape.Int64
     | Shape.Double -> fun number -> string number, []
-    | Shape.String -> fun str -> ucast<'T, string> str, []
+    | Shape.String ->
+        fun str ->
+            let res = ucast<'T, string> str
+            if depth < 1 then
+                res, []
+            else
+                $"\"{res}\"", []
 
     | Shape.Uri -> fun uri -> string uri, []
 
@@ -102,17 +108,17 @@ and mkPrinterAux<'T> (ctx: TypeGenerationContext) (form: MultipartFormDataConten
 
     | Shape.FSharpOption s ->
         s.Element.Accept {
-            new ITypeVisitor<'T -> (string * StreamField list)> with
+            new ITypeVisitor<'T -> string * StreamField list> with
                 member _.Visit<'a> () =
-                    let tp = mkPrinterCached<'a> ctx form
+                    let tp = mkPrinterCached<'a> ctx form depth
                     wrap(function Some t -> tp t | None -> (null, []))
         }
 
     | Shape.FSharpList s ->
         s.Element.Accept {
-            new ITypeVisitor<'T -> (string * StreamField list)> with
+            new ITypeVisitor<'T -> string * StreamField list> with
                 member _.Visit<'a> () =
-                    let tp = mkPrinterCached<'a> ctx form
+                    let tp = mkPrinterCached<'a> ctx form (depth + 1)
                     wrap(
                         fun ts ->
                             ts
@@ -125,9 +131,9 @@ and mkPrinterAux<'T> (ctx: TypeGenerationContext) (form: MultipartFormDataConten
 
     | Shape.Array s when s.Rank = 1 ->
         s.Element.Accept {
-            new ITypeVisitor<'T -> (string * StreamField list)> with
+            new ITypeVisitor<'T -> string * StreamField list> with
                 member _.Visit<'a> () =
-                    let tp = mkPrinterCached<'a> ctx form
+                    let tp = mkPrinterCached<'a> ctx form (depth + 1)
                     wrap(
                         fun ts ->
                             ts
@@ -141,7 +147,7 @@ and mkPrinterAux<'T> (ctx: TypeGenerationContext) (form: MultipartFormDataConten
 
     | Shape.FSharpUnion (:? ShapeFSharpUnion<'T> as shape) ->
         let mkUnionCasePrinter (unionCaseShape: ShapeFSharpUnionCase<'T>) =
-            let fieldPrinters = unionCaseShape.Fields |> Array.map mkFieldPrinter
+            let fieldPrinters = unionCaseShape.Fields |> Array.map (mkFieldPrinter depth)
             fun (u: 'T) ->
                 match fieldPrinters with
                 | [||] -> unionCaseShape.CaseInfo.Name, []
@@ -172,10 +178,10 @@ and mkPrinterAux<'T> (ctx: TypeGenerationContext) (form: MultipartFormDataConten
             printer u
 
     | Shape.FSharpRecord (:? ShapeFSharpRecord<'T> as shape) ->
-        let fieldPrinters = shape.Fields |> Array.map mkFieldPrinter
+        let fieldPrinters = shape.Fields |> Array.map (mkFieldPrinter depth)
         fun (r: 'T) ->
             fieldPrinters
-            |> Seq.fold (fun (storedString: string list, storedStreams: StreamField list) (label, fieldPrinter) ->
+            |> Seq.fold (fun (storedString, storedStreams: StreamField list) (label, fieldPrinter) ->
                 let value, streams = fieldPrinter r
                 if streams.IsEmpty then
                     let printedField = scf label value
@@ -191,7 +197,7 @@ and mkPrinterAux<'T> (ctx: TypeGenerationContext) (form: MultipartFormDataConten
             |> fun (printedFields, streamFields) -> let printedFields = String.Join(", ", printedFields) in $"{{ {printedFields} }}", streamFields
 
     | Shape.Poco (:? ShapePoco<'T> as shape) ->
-        let propPrinters = shape.Properties |> Array.map mkFieldPrinter
+        let propPrinters = shape.Properties |> Array.map (mkFieldPrinter depth)
         fun (fieldType: 'T) ->
             propPrinters
             |> Seq.fold (fun (storedString: StringBuilder, storedStreams: StreamField list) (label, fieldPrinter) ->
