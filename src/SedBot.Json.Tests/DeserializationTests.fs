@@ -128,4 +128,3 @@ let ``Complex object deserialization`` () =
     Assert.AreEqual(-9999999999999L, res.Result[0].MyChatMember.Value.Chat.Id)
 
     Assert.NotNull(res)
-

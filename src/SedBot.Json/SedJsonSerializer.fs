@@ -71,7 +71,7 @@ module Shape =
 
 let mkMemberPrinter (shape : IShapeMember<'DeclaringType>) =
    shape.Accept {
-       new IMemberVisitor<'DeclaringType, 'DeclaringType -> (string)> with
+       new IMemberVisitor<'DeclaringType, 'DeclaringType -> string> with
            member _.Visit (shape : ShapeMember<'DeclaringType, 'Field>) =
                let fieldPrinter = build<'Field>
                fieldPrinter << shape.Get
@@ -103,20 +103,20 @@ let rec build<'T> (msg: 'T) : string =
     let settings = JsonSettings.Empty
     mkPrinterCached<'T> ctx settings msg
 
-and mkPrinterCached<'T> (ctx: TypeGenerationContext) (settings: JsonSettings) : 'T -> (string) =
+and mkPrinterCached<'T> (ctx: TypeGenerationContext) (settings: JsonSettings) : 'T -> string =
     match ctx.InitOrGetCachedValue<'T -> string> (fun c t -> c.Value t) with
     | Cached(value = p) -> p
     | NotCached t ->
         let p = mkPrinterAux<'T> ctx settings
         ctx.Commit t p
 
-and mkPrinterAux<'T> (ctx: TypeGenerationContext) (settings: JsonSettings) : 'T -> (string) =
-    let wrap(p : 'a -> (string)) = unbox<'T -> (string)> p
+and mkPrinterAux<'T> (ctx: TypeGenerationContext) (settings: JsonSettings) : 'T -> string =
+    let wrap(p : 'a -> string) = unbox<'T -> string> p
     let nl = if settings.Minimized then "" else "\n"
 
     let mkFieldPrinter (field: IShapeReadOnlyMember<'DeclaringType>) =
         field.Accept {
-            new IReadOnlyMemberVisitor<'DeclaringType, string * ('DeclaringType -> (string))> with
+            new IReadOnlyMemberVisitor<'DeclaringType, string * ('DeclaringType -> string)> with
                 member _.Visit(field : ReadOnlyMember<'DeclaringType, 'Field>) =
                     let fieldPrinter = mkPrinterCached<'Field> ctx
                     field.Label, field.Get >> fieldPrinter settings
@@ -145,28 +145,28 @@ and mkPrinterAux<'T> (ctx: TypeGenerationContext) (settings: JsonSettings) : 'T 
 
     | Shape.FSharpOption s ->
         s.Element.Accept {
-            new ITypeVisitor<'T -> (string)> with
+            new ITypeVisitor<'T -> string> with
                 member _.Visit<'a> () =
                     let tp = mkPrinterCached<'a> ctx settings
-                    wrap(function Some t -> tp t | None -> (null))
+                    wrap(function Some t -> tp t | None -> null)
         }
 
     | Shape.FSharpList s ->
         s.Element.Accept {
-            new ITypeVisitor<'T -> (string)> with
+            new ITypeVisitor<'T -> string> with
                 member _.Visit<'a> () =
                     let tp = mkPrinterCached<'a> ctx settings
                     wrap(
                         fun (ts: 'a list) ->
                                         ts
                                         |> Seq.fold (fun (storedString: StringBuilder) v -> storedString.Append(tp v)) (StringBuilder())
-                                        |> fun (x) -> $"[{x}]"
+                                        |> sprintf "[{%O}]"
                     )
         }
 
     | Shape.Array s when s.Rank = 1 ->
         s.Element.Accept {
-            new ITypeVisitor<'T -> (string)> with
+            new ITypeVisitor<'T -> string> with
                 member _.Visit<'a> () =
                     let tp = mkPrinterCached<'a> ctx settings
                     wrap(
@@ -175,8 +175,8 @@ and mkPrinterAux<'T> (ctx: TypeGenerationContext) (settings: JsonSettings) : 'T 
                             |> Seq.fold (fun (storedString: string list) v ->
                                 let printedStr = tp v
                                 (storedString @ [printedStr])
-                            ) ([])
-                            |> fun (printedStr) -> let printedStr = String.Join($",{nl}", printedStr) in $"[{nl}{printedStr}{nl}]"
+                            ) []
+                            |> fun printedStr -> let printedStr = String.Join($",{nl}", printedStr) in $"[{nl}{printedStr}{nl}]"
                     )
         }
 
@@ -212,7 +212,7 @@ and mkPrinterAux<'T> (ctx: TypeGenerationContext) (settings: JsonSettings) : 'T 
                     storedString @ [ printedField ]
 
             ) []
-            |> fun (printedFields) -> let printedFields = String.Join(", ", printedFields) in $"{{ {printedFields} }}"
+            |> fun printedFields -> let printedFields = String.Join(", ", printedFields) in $"{{ {printedFields} }}"
 
     | Shape.Poco (:? ShapePoco<'T> as shape) ->
         let propPrinters = shape.Properties |> Array.map mkFieldPrinter
@@ -222,7 +222,6 @@ and mkPrinterAux<'T> (ctx: TypeGenerationContext) (settings: JsonSettings) : 'T 
                 let value = fieldPrinter fieldType
                 storedString.Append(scf label value).Append($"{nl} ")
             ) (StringBuilder())
-            |> fun (printedStr) ->
-                $"{{ {printedStr} }}"
+            |> sprintf "{{ {%O} }}"
 
     | _ -> failwithf "unsupported type '%O'" typeof<'T>
