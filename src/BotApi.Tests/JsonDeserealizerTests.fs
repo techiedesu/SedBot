@@ -5,7 +5,8 @@ open SedBot.Json
 open SedBot.Telegram.BotApi.Types
 open SedBot.Telegram.BotApi.Types.CoreTypes
 
-let UpdateResponseJson = """
+let UpdateResponseJson =
+    """
 {
   "ok": true,
   "result": [
@@ -38,5 +39,7 @@ let UpdateResponseJson = """
 
 [<Test>]
 let ``getUpdates response`` () =
-    let result = SedJsonDeserializer.deserializeStatic<ApiResponse<Update[]>> UpdateResponseJson
+    let result =
+        SedJsonDeserializer.deserializeStatic<ApiResponse<Update[]>> UpdateResponseJson
+
     Assert.NotNull(result)

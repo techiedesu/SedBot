@@ -1,6 +1,8 @@
 ﻿module SedBot.Json.Tests.JsonSamples
 
-let [<Literal>] SampleQuotedJson = """
+[<Literal>]
+let SampleQuotedJson =
+    """
 {
    "ok": true,
    "result": {
@@ -9,7 +11,9 @@ let [<Literal>] SampleQuotedJson = """
 }
 """
 
-let [<Literal>] SampleUpdatesResponse = """
+[<Literal>]
+let SampleUpdatesResponse =
+    """
 {
   "ok": true,
   "result": [
@@ -69,7 +73,9 @@ let [<Literal>] SampleUpdatesResponse = """
 }
 """
 
-let [<Literal>] TestJson = """
+[<Literal>]
+let TestJson =
+    """
 {
   "where": null,
   "number": 14,
@@ -94,7 +100,9 @@ let [<Literal>] TestJson = """
 }
 """
 
-let [<Literal>] GptJson = """
+[<Literal>]
+let GptJson =
+    """
 {
   "addresses": [
     {
@@ -118,7 +126,9 @@ let [<Literal>] GptJson = """
 
     """
 
-let [<Literal>] SmolJson = """
+[<Literal>]
+let SmolJson =
+    """
 {
  "chat": {
           "id": -9999999999999,
@@ -128,6 +138,8 @@ let [<Literal>] SmolJson = """
 }
 """
 
-let [<Literal>] BrokenJsonAsString = """
+[<Literal>]
+let BrokenJsonAsString =
+    """
 { "message_id": 758, "from": { "id": 6675788706, "is_bot": true, "first_name": \"Debug Sed\", "username": \"debug_sed_bot\" }, "date": 1705041462, "chat": { "id": 1731422365, "type": "Private", "username": \"tdesu\", "first_name": \"Vlad\" }, "text": \"{ \"message_id\": 756, \"from\": { \"id\": 6675788706, \"is_bot\": true, \"first_name\": \"Debug Sed\", \"username\": \"debug_sed_bot\" }, \"date\": 1705041451, \"chat\": { \"id\": 1731422365, \"type\": \"Private\", \"username\": \"tdesu\", \"first_name\": \"Vlad\" }, \"text\": \"{ \"message_id\": 753, \"from\": { \"id\": 1731422365, \"is_bot\": false, \"first_name\": \"Vlad\", \"username\": \"tdesu\", \"language_code\": \"ru\", \"is_premium\": true }, \"date\": 1705041441, \"chat\": { \"id\": 1731422365, \"type\": \"Private\", \"username\": \"tdesu\", \"first_name\": \"Vlad\" }, \"text\": \"123\" }\", \"entities\": [{ \"type\": \"code\", \"offset\": 0, \"length\": 281 }] }\", "entities": [{ "type": \"code\", "offset": 0, "length": 634 }] }
 """

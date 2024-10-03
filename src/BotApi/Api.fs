@@ -5,26 +5,20 @@ open SedBot.Telegram.BotApi.Types
 open SedBot.Telegram.BotApi.Types.CoreTypes
 
 
-let deleteWebhookBase () =
-    Req.GetWebhookInfo()
+let deleteWebhookBase () = Req.GetWebhookInfo()
 
 let getMe = Req.GetMe()
 
-type GetFile = {
-    FileId: string
-}
-with
-    static member Make(fileId: string) = {
-        FileId = fileId
-    }
+type GetFile =
+    { FileId: string }
+
+    static member Make(fileId: string) = { FileId = fileId }
 
     interface IRequestBase<File> with
         member _.MethodName = "getFile"
         member this.Type = typeof<GetFile>
 
-let getFile fileId = {
-    Req.GetFile.FileId = fileId
-}
+let getFile fileId = { Req.GetFile.FileId = fileId }
 
 let sendMessageReply chatId text replyToMessageId =
     Req.SendMessage.Make(ChatId.Int chatId, text, replyToMessageId = replyToMessageId)
@@ -33,7 +27,9 @@ let sendMessage chatId text =
     Req.SendMessage.Make(ChatId.Int chatId, text)
 
 let private deleteMessageBase chatId messageId =
-  { ChatId = chatId; MessageId = messageId } : Req.DeleteMessage
+    { ChatId = chatId
+      MessageId = messageId }
+    : Req.DeleteMessage
 
 let deleteMessage chatId messageId =
     deleteMessageBase (ChatId.Int chatId) messageId
@@ -60,28 +56,31 @@ let sendAudioReply chatId audio replyToMessageId =
     Req.SendAudio.Make(ChatId.Int chatId, audio, replyToMessageId = replyToMessageId)
 
 /// Try to get file stream by telegram FileId
-let tryGetFileAsStream (ctx: UpdateContext) fileId = task {
-    let! file = Api.getFile fileId |> Core.api ctx.Config
-    match file with
-    | Ok { FilePath = Some path } ->
-        try
-            let! res = ctx.Config.Client.GetStreamAsync($"https://api.telegram.org/file/bot{ctx.Config.Token}/{path}")
-            return res |> ValueSome
-        with
+let tryGetFileAsStream (ctx: UpdateContext) fileId =
+    task {
+        let! file = Api.getFile fileId |> Core.api ctx.Config
+
+        match file with
+        | Ok { FilePath = Some path } ->
+            try
+                let! res =
+                    ctx.Config.Client.GetStreamAsync($"https://api.telegram.org/file/bot{ctx.Config.Token}/{path}")
+
+                return res |> ValueSome
+            with _ ->
+                return ValueNone
         | _ -> return ValueNone
-    | _ -> return ValueNone
-}
+    }
 
-let sendNewCommands commands =
-    Req.SetMyCommands.Make(commands)
+let sendNewCommands commands = Req.SetMyCommands.Make(commands)
 
-let startLoop (config: BotConfig) updateArrived updatesArrived = task {
-    let! me = Api.getMe |> Core.api config
+let startLoop (config: BotConfig) updateArrived updatesArrived =
+    task {
+        let! me = Api.getMe |> Core.api config
 
-    return!
-        me
-        |> function
-            | Error error -> failwith error.Description
-            | Ok me -> Core.runBot config me updateArrived updatesArrived
-}
-
+        return!
+            me
+            |> function
+                | Error error -> failwith error.Description
+                | Ok me -> Core.runBot config me updateArrived updatesArrived
+    }

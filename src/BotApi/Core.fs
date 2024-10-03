@@ -23,31 +23,40 @@ let private getUrlAux (config: BotConfig) methodName =
         $"{botToken}/{methodName}"
 
 /// Code functionality for Telegram Bot api. Makes requests
-let makeRequest<'a> (config: BotConfig) (request: IRequestBase<'a>) = task {
-    let client = config.Client
-    let url = getUrlAux config request.MethodName
+let makeRequest<'a> (config: BotConfig) (request: IRequestBase<'a>) =
+    task {
+        let client = config.Client
+        let url = getUrlAux config request.MethodName
 
-    let! result =
-        let dataContent = new MultipartFormDataContent()
-        let kindOfJson, _streams = RequestBuilder.builderDynamic (request.GetType()) dataContent request
-        log.LogDebug("Sent command {method} -> {request}", request.MethodName, kindOfJson)
+        let! result =
+            let dataContent = new MultipartFormDataContent()
 
-        if Seq.isEmpty dataContent then
-            client.GetAsync(url)
+            let kindOfJson, _streams =
+                RequestBuilder.builderDynamic (request.GetType()) dataContent request
+
+            log.LogDebug("Sent command {method} -> {request}", request.MethodName, kindOfJson)
+
+            if Seq.isEmpty dataContent then
+                client.GetAsync(url)
+            else
+                client.PostAsync(url, dataContent)
+
+        if result.StatusCode = HttpStatusCode.OK then
+            let! str = result.Content.ReadAsStringAsync()
+            let result = SedJsonDeserializer.deserializeStatic<ApiResponse<'a>> str
+            return result.Result.Value |> Ok
         else
-            client.PostAsync(url, dataContent)
+            log.LogDebug(
+                "Request fail {method} -> {response}",
+                request.MethodName,
+                result.Content.ReadAsStringAsync() |> Task.getResult
+            )
 
-    if result.StatusCode = HttpStatusCode.OK then
-        let! str = result.Content.ReadAsStringAsync()
-        let result = SedJsonDeserializer.deserializeStatic<ApiResponse<'a>> str
-        return result.Result.Value |> Ok
-    else
-        log.LogDebug("Request fail {method} -> {response}", request.MethodName, result.Content.ReadAsStringAsync() |> Task.getResult)
-        return Error {
-            Description = "HTTP_ERROR"
-            ErrorCode = int result.StatusCode
-        }
-}
+            return
+                Error
+                    { Description = "HTTP_ERROR"
+                      ErrorCode = int result.StatusCode }
+    }
 
 let api (config: BotConfig) (request: IRequestBase<'a>) = makeRequest config request
 
@@ -60,48 +69,53 @@ let runBot config (me: User) (updateArrived: UpdateContext -> unit) updatesArriv
 
     let processUpdates updates =
         if updates |> Seq.isEmpty |> not then
-            updates |> Seq.iter (fun f -> updateArrived { Update = f; Config = config; Me = me })
+            updates
+            |> Seq.iter (fun f -> updateArrived { Update = f; Config = config; Me = me })
 
             updatesArrived |> Option.iter (fun x -> x updates)
 
-    let rec loop offset = task {
-        try
-            let! updatesResult = bot <| Req.GetUpdates.Make(offset, ?limit = config.Limit, ?timeout = config.Timeout)
+    let rec loop offset =
+        task {
+            try
+                let! updatesResult =
+                    bot
+                    <| Req.GetUpdates.Make(offset, ?limit = config.Limit, ?timeout = config.Timeout)
 
-            match updatesResult with
-            | Ok [||] ->
+                match updatesResult with
+                | Ok [||] -> return! loop offset
+                | Ok updates ->
+                    let offset = updates |> Seq.map _.UpdateId |> Seq.max |> (fun x -> x + 1L) // TODO: Save to persist storage?
+                    processUpdates updates
+
+                    return! loop offset
+                | Error e ->
+                    config.OnError(e.AsException())
+
+                    if e.Description = "HTTP_ERROR" then
+                        log.LogWarning("Got HTTP_ERROR. Delaying...")
+                        do! Task.Delay 1000
+
+                    return! loop offset
+            with
+            | :? HttpRequestException as e ->
+                config.OnError e
+                do! Task.Delay 1000
                 return! loop offset
-            | Ok updates ->
-                let offset = updates |> Seq.map _.UpdateId |> Seq.max |> (fun x -> x + 1L) // TODO: Save to persist storage?
-                processUpdates updates
 
+            | :? AggregateException as e when
+                e.InnerExceptions
+                |> NTSeq.exists (fun x -> (x :? HttpRequestException) || (x :? SocketException))
+                ->
+                config.OnError e
+                do! Task.Delay 1000
                 return! loop offset
-            | Error e ->
-                config.OnError(e.AsException())
 
-                if e.Description = "HTTP_ERROR" then
-                    log.LogWarning("Got HTTP_ERROR. Delaying...")
-                    do! Task.Delay 1000
+            | ex ->
+                config.OnError ex
+                // in case of "general" error we should increment offset to skip problematic update
+                return! loop (offset + 1L)
 
-                return! loop offset
-        with
-        | :? HttpRequestException as e ->
-            config.OnError e
-            do! Task.Delay 1000
             return! loop offset
-
-        | :? AggregateException as e
-            when e.InnerExceptions |> NTSeq.exists (fun x -> (x :? HttpRequestException) || (x :? SocketException)) ->
-            config.OnError e
-            do! Task.Delay 1000
-            return! loop offset
-
-        | ex ->
-            config.OnError ex
-            // in case of "general" error we should increment offset to skip problematic update
-            return! loop (offset + 1L)
-
-        return! loop offset
-    }
+        }
 
     loop (config.Offset)

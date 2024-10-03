@@ -9,19 +9,20 @@ module Logger =
     let private factory =
         let logger =
             LoggerConfiguration()
-                  .Enrich.FromLogContext()
-                  .MinimumLevel.Debug()
-                  .WriteTo.Console(outputTemplate = "[{Timestamp:HH:mm:ss} {Level:u3} {SourceContext}] {Message:lj}{NewLine}{Exception}")
-                  .CreateLogger()
+                .Enrich.FromLogContext()
+                .MinimumLevel.Debug()
+                .WriteTo.Console(
+                    outputTemplate =
+                        "[{Timestamp:HH:mm:ss} {Level:u3} {SourceContext}] {Message:lj}{NewLine}{Exception}"
+                )
+                .CreateLogger()
+
         Log.Logger <- logger
 
-        LoggerFactory.Create(
-            fun builder ->
-                %builder
-                    .ClearProviders()
-                    .AddProvider(new SerilogLoggerProvider())
-                    .SetMinimumLevel(LogLevel.Debug)
-        )
+        LoggerFactory.Create(fun builder ->
+            %builder
+                .ClearProviders()
+                .AddProvider(new SerilogLoggerProvider())
+                .SetMinimumLevel(LogLevel.Debug))
 
-    let get name =
-        factory.CreateLogger(name)
+    let get name = factory.CreateLogger(name)

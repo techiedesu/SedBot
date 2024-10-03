@@ -16,14 +16,14 @@ open SedBot.Telegram.BotApi.Types.CoreTypes
 [<EntryPoint>]
 let rec entryPoint args =
     let logger = Logger.get (nameof entryPoint)
+
     let token =
         match List.ofArray args with
         | [] ->
             logger.LogCritical("Usage: {execName} yourtelegramtoken", AppDomain.CurrentDomain.FriendlyName)
             Environment.Exit(-1)
             null
-        | token :: _ ->
-            token
+        | token :: _ -> token
 
     ProcessingChannels.start ()
 
@@ -31,12 +31,14 @@ let rec entryPoint args =
     while true do
         try
             let _aa =
-                Func<HttpRequestMessage,
-                Security.Cryptography.X509Certificates.X509Certificate2,
-                Security.Cryptography.X509Certificates.X509Chain,
-                Net.Security.SslPolicyErrors, bool>(
-                    fun _ _ _ _ -> true
-                )
+                Func<
+                    HttpRequestMessage,
+                    Security.Cryptography.X509Certificates.X509Certificate2,
+                    Security.Cryptography.X509Certificates.X509Chain,
+                    Net.Security.SslPolicyErrors,
+                    bool
+                 >
+                    (fun _ _ _ _ -> true)
 
             let handler = new HttpClientHandler()
             // handler.ClientCertificateOptions <- ClientCertificateOption.Manual
@@ -45,19 +47,21 @@ let rec entryPoint args =
             let client = new HttpClient(handler)
             client.Timeout <- TimeSpan.FromMinutes 1
 
-            let config = {
-                BotConfig.Empty with
+            let config =
+                { BotConfig.Empty with
                     Token = token
                     Client = client
-                    OnError = fun ex -> logger.LogError("Got Funogram exception: {ex}", ex)
-            }
+                    OnError = fun ex -> logger.LogError("Got Funogram exception: {ex}", ex) }
+
             let api (req: _ IRequestBase) = Core.api config req
 
-            %ChannelProcessors.channelWriter.TryWrite(TgApi.TelegramSendingMessage.SetConfig config)
+            % ChannelProcessors.channelWriter.TryWrite(TgApi.TelegramSendingMessage.SetConfig config)
             ChannelProcessors.runChannel ()
 
             CommandParser.processInlineHelp ()
-            |> Seq.map (fun ici -> { Command = ici.Command; Description = ici.Description })
+            |> Seq.map (fun ici ->
+                { Command = ici.Command
+                  Description = ici.Description })
             |> Array.ofSeq
             |> Api.sendNewCommands
             |> Core.api config
@@ -69,16 +73,18 @@ let rec entryPoint args =
 
             let botUsername =
                 match botInfoResult with
-                | Error err ->
-                    raise ^ Exception($"Can't get username: {err}")
-                | Ok res ->
-                    Option.get res.Username
-            logger.LogDebug("Config {config}", SedJsonSerializer.serialize {
-                config with
-                    Token = $"<redacted:{botUsername}>"
-            })
+                | Error err -> raise ^ Exception($"Can't get username: {err}")
+                | Ok res -> Option.get res.Username
 
-            Api.startLoop config (UpdatesHandler.updateArrived botUsername) None |> Task.runSynchronously
+            logger.LogDebug(
+                "Config {config}",
+                SedJsonSerializer.serialize
+                    { config with
+                        Token = $"<redacted:{botUsername}>" }
+            )
+
+            Api.startLoop config (UpdatesHandler.updateArrived botUsername) None
+            |> Task.runSynchronously
         with
         | ex when ex.Message.Contains("Unauthorized") ->
             logger.LogCritical("Wrong token? Error: {error}", ex)

@@ -9,7 +9,5 @@ open SedBot.Json
 [<TestCase(JsonSamples.SampleQuotedJson)>]
 let ``Get parse tree from raw json`` (json: string) =
     match SedJsonTreeParser.parse json true with
-    | Some json ->
-        printfn $"%A{json}"
-    | None ->
-        Assert.Fail "JSON PARSE FAIL"
+    | Some json -> printfn $"%A{json}"
+    | None -> Assert.Fail "JSON PARSE FAIL"

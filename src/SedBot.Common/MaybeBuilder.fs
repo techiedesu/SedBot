@@ -10,34 +10,34 @@ type MaybeBuilder() =
         | Some value -> f value
 
     member inline _.Return maybeNull =
-       if Object.ReferenceEquals(maybeNull, null) then
-           None
-       else
-           Some maybeNull
+        if Object.ReferenceEquals(maybeNull, null) then
+            None
+        else
+            Some maybeNull
 
-    member inline _.ReturnFrom (optionValue: 'a option) = optionValue
+    member inline _.ReturnFrom(optionValue: 'a option) = optionValue
 
     member inline _.Combine(optionValue, f) =
         match optionValue with
-        | None -> f()
+        | None -> f ()
         | Some _ -> optionValue
 
     member inline _.Delay f = f
 
-    member inline _.Run f = f()
+    member inline _.Run f = f ()
 
     member inline _.Zero() = None
 
     member inline _.TryWith(expr, handler) =
         try
-            expr()
-        with
-        | ex -> handler ex
+            expr ()
+        with ex ->
+            handler ex
 
 let maybe = MaybeBuilder()
 
 module MaybeBuilderAnyReferenceTypeEx =
-     type MaybeBuilder with
+    type MaybeBuilder with
         member inline _.Bind(maybeNull, f) =
             if Object.ReferenceEquals(maybeNull, null) then
                 None

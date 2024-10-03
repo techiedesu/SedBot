@@ -12,7 +12,8 @@ open SedBot.Telegram.BotApi.Types
 [<TestCase("sample_bot", "/send@sample_bot", "private", "send", "")>]
 [<TestCase("sample_bot", "/send", "private", "send", "")>]
 [<TestCase("sample_bot", "/send ", "private", "send", "")>]
-let [<Test>] ``Command handler works properly`` (botName, command, chatType, expectedCommand, expectedArgs) =
+[<Test>]
+let ``Command handler works properly`` (botName, command, chatType, expectedCommand, expectedArgs) =
     let chatType =
         match chatType with
         | "supergroup" -> ChatType.SuperGroup
@@ -30,5 +31,4 @@ let [<Test>] ``Command handler works properly`` (botName, command, chatType, exp
     | Some command, None ->
         Assert.That(command, Is.EqualTo expectedCommand)
         Assert.That("", Is.EqualTo expectedArgs)
-    | _ ->
-        Assert.Fail("Broken")
+    | _ -> Assert.Fail("Broken")

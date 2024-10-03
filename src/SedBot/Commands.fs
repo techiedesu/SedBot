@@ -14,56 +14,104 @@ let jq data expression =
 let zov text =
     sed text "s/з/Z/g; s/З/Z/g; s/в/V/g; s/В/V/g; s/о/O/g; s/О/O/g"
 
-let reverse fileType (stream: Stream) = task {
-    use ms = new MemoryStream()
-    do! stream.CopyToAsync(ms)
-    let tcs = TaskCompletionSource<byte[] voption>()
-    do! ffmpegChannel.Writer.WriteAsync({ Stream = ms; Tcs = tcs; FileType = fileType })
-    do! stream.DisposeAsync()
-    return! tcs.Task
-}
+let reverse fileType (stream: Stream) =
+    task {
+        use ms = new MemoryStream()
+        do! stream.CopyToAsync(ms)
+        let tcs = TaskCompletionSource<byte[] voption>()
 
-let hFlip fileType (stream: Stream) = task {
-    use ms = new MemoryStream()
-    do! stream.CopyToAsync(ms)
-    let tcs = TaskCompletionSource<byte[] voption>()
-    do! ffmpegHflipChannel.Writer.WriteAsync({ Stream = ms; Tcs = tcs; FileType = fileType })
-    do! stream.DisposeAsync()
-    return! tcs.Task
-}
+        do!
+            ffmpegChannel.Writer.WriteAsync(
+                { Stream = ms
+                  Tcs = tcs
+                  FileType = fileType }
+            )
 
-let vFlip fileType (stream: Stream) = task {
-    use ms = new MemoryStream()
-    do! stream.CopyToAsync(ms)
-    let tcs = TaskCompletionSource<byte[] voption>()
-    do! ffmpegVflipChannel.Writer.WriteAsync({ Stream = ms; Tcs = tcs; FileType = fileType })
-    do! stream.DisposeAsync()
-    return! tcs.Task
-}
+        do! stream.DisposeAsync()
+        return! tcs.Task
+    }
 
-let distort fileType (stream: Stream) = task {
-    use ms = new MemoryStream()
-    do! stream.CopyToAsync(ms)
-    let tcs = TaskCompletionSource<byte[] voption>()
-    do! magicChannel.Writer.WriteAsync({ Stream = ms; Tcs = tcs; FileType = fileType })
-    do! stream.DisposeAsync()
-    return! tcs.Task
-}
+let hFlip fileType (stream: Stream) =
+    task {
+        use ms = new MemoryStream()
+        do! stream.CopyToAsync(ms)
+        let tcs = TaskCompletionSource<byte[] voption>()
 
-let clock fileType (stream: Stream) = task {
-    use ms = new MemoryStream()
-    do! stream.CopyToAsync(ms)
-    let tcs = TaskCompletionSource<byte[] voption>()
-    do! clockChannel.Writer.WriteAsync({ Stream = ms; Tcs = tcs; FileType = fileType })
-    do! stream.DisposeAsync()
-    return! tcs.Task
-}
+        do!
+            ffmpegHflipChannel.Writer.WriteAsync(
+                { Stream = ms
+                  Tcs = tcs
+                  FileType = fileType }
+            )
 
-let cclock fileType (stream: Stream) = task {
-    use ms = new MemoryStream()
-    do! stream.CopyToAsync(ms)
-    let tcs = TaskCompletionSource<byte[] voption>()
-    do! cclockChannel.Writer.WriteAsync({ Stream = ms; Tcs = tcs; FileType = fileType })
-    do! stream.DisposeAsync()
-    return! tcs.Task
-}
+        do! stream.DisposeAsync()
+        return! tcs.Task
+    }
+
+let vFlip fileType (stream: Stream) =
+    task {
+        use ms = new MemoryStream()
+        do! stream.CopyToAsync(ms)
+        let tcs = TaskCompletionSource<byte[] voption>()
+
+        do!
+            ffmpegVflipChannel.Writer.WriteAsync(
+                { Stream = ms
+                  Tcs = tcs
+                  FileType = fileType }
+            )
+
+        do! stream.DisposeAsync()
+        return! tcs.Task
+    }
+
+let distort fileType (stream: Stream) =
+    task {
+        use ms = new MemoryStream()
+        do! stream.CopyToAsync(ms)
+        let tcs = TaskCompletionSource<byte[] voption>()
+
+        do!
+            magicChannel.Writer.WriteAsync(
+                { Stream = ms
+                  Tcs = tcs
+                  FileType = fileType }
+            )
+
+        do! stream.DisposeAsync()
+        return! tcs.Task
+    }
+
+let clock fileType (stream: Stream) =
+    task {
+        use ms = new MemoryStream()
+        do! stream.CopyToAsync(ms)
+        let tcs = TaskCompletionSource<byte[] voption>()
+
+        do!
+            clockChannel.Writer.WriteAsync(
+                { Stream = ms
+                  Tcs = tcs
+                  FileType = fileType }
+            )
+
+        do! stream.DisposeAsync()
+        return! tcs.Task
+    }
+
+let cclock fileType (stream: Stream) =
+    task {
+        use ms = new MemoryStream()
+        do! stream.CopyToAsync(ms)
+        let tcs = TaskCompletionSource<byte[] voption>()
+
+        do!
+            cclockChannel.Writer.WriteAsync(
+                { Stream = ms
+                  Tcs = tcs
+                  FileType = fileType }
+            )
+
+        do! stream.DisposeAsync()
+        return! tcs.Task
+    }

@@ -23,67 +23,93 @@ let private channelWorker () =
 
     let tryWriteToChannel v a =
         match a with
-        | Some a ->
-            channelWriter.WriteAsync(v a)
+        | Some a -> channelWriter.WriteAsync(v a)
         | _ -> ValueTask.CompletedTask
 
-    let rec loop () = task {
-        let! message = channelReader.ReadAsync()
-        match message with
-        | TgApi.SendMessage(chatId, text) ->
-            do! Api.sendMessage chatId text |> api
+    let rec loop () =
+        task {
+            let! message = channelReader.ReadAsync()
 
-        | TgApi.MessageReply (chatId, text, replyToMessageId) ->
-            do! Api.sendMessageReply chatId text replyToMessageId |> api
+            match message with
+            | TgApi.SendMessage(chatId, text) -> do! Api.sendMessage chatId text |> api
 
-        | TgApi.MarkupMessageReply(chatId, text, replyToMessageId, parseMode) ->
-            do! Req.SendMessage.Make(chatId, text, replyToMessageId = replyToMessageId, parseMode = parseMode) |> api
+            | TgApi.MessageReply(chatId, text, replyToMessageId) ->
+                do! Api.sendMessageReply chatId text replyToMessageId |> api
 
-        | TgApi.DeleteMessage(chatId, messageId) ->
-            do! Api.deleteMessage chatId messageId |> api
+            | TgApi.MarkupMessageReply(chatId, text, replyToMessageId, parseMode) ->
+                do!
+                    Req.SendMessage.Make(chatId, text, replyToMessageId = replyToMessageId, parseMode = parseMode)
+                    |> api
 
-        | TgApi.SendMessageAndDeleteAfter(chatId, text, ms) ->
-            let! messageId = Api.sendMessage chatId text |> apiMapResponse _.MessageId
-            %Task.Delay(ms).ContinueWith(fun _ -> tryWriteToChannel (fun msgId -> TgApi.TelegramSendingMessage.DeleteMessage(chatId, msgId)) messageId)
+            | TgApi.DeleteMessage(chatId, messageId) -> do! Api.deleteMessage chatId messageId |> api
 
-        | TgApi.SendMarkupMessageAndDeleteAfter(chatId, text, mode, ms) ->
-            let! messageId = Api.sendTextMarkup chatId text mode |> apiMapResponse _.MessageId
-            %Task.Delay(ms).ContinueWith(fun _ -> tryWriteToChannel (fun msgId -> TgApi.TelegramSendingMessage.DeleteMessage(chatId, msgId)) messageId)
+            | TgApi.SendMessageAndDeleteAfter(chatId, text, ms) ->
+                let! messageId = Api.sendMessage chatId text |> apiMapResponse _.MessageId
 
-        | TgApi.SendMessageReplyAndDeleteAfter(chatId, text, ms) ->
-            let! messageId = Api.sendMessage chatId text |> apiMapResponse _.MessageId
-            %Task.Delay(ms).ContinueWith(fun _ -> tryWriteToChannel (fun msgId -> TgApi.TelegramSendingMessage.DeleteMessage(chatId, msgId)) messageId)
+                %Task
+                    .Delay(ms)
+                    .ContinueWith(fun _ ->
+                        tryWriteToChannel
+                            (fun msgId -> TgApi.TelegramSendingMessage.DeleteMessage(chatId, msgId))
+                            messageId)
 
-        | TgApi.SendMarkupMessageReplyAndDeleteAfter(chatId, text, mode, replyToMessageId, ms) ->
-            let! messageId = Api.sendTextMarkupReply chatId text replyToMessageId mode |> apiMapResponse _.MessageId
-            %Task.Delay(ms).ContinueWith(fun _ -> tryWriteToChannel (fun msgId -> TgApi.TelegramSendingMessage.DeleteMessage(chatId, msgId)) messageId)
+            | TgApi.SendMarkupMessageAndDeleteAfter(chatId, text, mode, ms) ->
+                let! messageId = Api.sendTextMarkup chatId text mode |> apiMapResponse _.MessageId
 
-        | TgApi.SetConfig botConfig ->
-            &cfg <-? botConfig
+                %Task
+                    .Delay(ms)
+                    .ContinueWith(fun _ ->
+                        tryWriteToChannel
+                            (fun msgId -> TgApi.TelegramSendingMessage.DeleteMessage(chatId, msgId))
+                            messageId)
 
-        | TgApi.SendAnimationReply (chatId, animation, replyToMessageId) ->
-            do! Api.sendAnimationReply chatId animation replyToMessageId |> api
+            | TgApi.SendMessageReplyAndDeleteAfter(chatId, text, ms) ->
+                let! messageId = Api.sendMessage chatId text |> apiMapResponse _.MessageId
 
-        | TgApi.SendVideoReply (chatId, video, replyToMessageId) ->
-            do! Api.sendVideoReply chatId video replyToMessageId |> api
+                %Task
+                    .Delay(ms)
+                    .ContinueWith(fun _ ->
+                        tryWriteToChannel
+                            (fun msgId -> TgApi.TelegramSendingMessage.DeleteMessage(chatId, msgId))
+                            messageId)
 
-        | TgApi.SendPhotoReply (chatId, animation, replyToMessageId) ->
-            do! Api.sendPhotoReply chatId animation replyToMessageId |> api
+            | TgApi.SendMarkupMessageReplyAndDeleteAfter(chatId, text, mode, replyToMessageId, ms) ->
+                let! messageId =
+                    Api.sendTextMarkupReply chatId text replyToMessageId mode
+                    |> apiMapResponse _.MessageId
 
-        | TgApi.SendVoiceReply(chatId, inputFile, replyToMessageId) ->
-            do! Api.sendVoiceReply chatId inputFile replyToMessageId |> api
+                %Task
+                    .Delay(ms)
+                    .ContinueWith(fun _ ->
+                        tryWriteToChannel
+                            (fun msgId -> TgApi.TelegramSendingMessage.DeleteMessage(chatId, msgId))
+                            messageId)
 
-        | TgApi.SendAudioReply(chatId, inputFile, replyToMessageId) ->
-            do! Api.sendAudioReply chatId inputFile replyToMessageId |> api
+            | TgApi.SetConfig botConfig -> &cfg <-? botConfig
 
-        return! loop()
-    }
+            | TgApi.SendAnimationReply(chatId, animation, replyToMessageId) ->
+                do! Api.sendAnimationReply chatId animation replyToMessageId |> api
 
-    loop()
+            | TgApi.SendVideoReply(chatId, video, replyToMessageId) ->
+                do! Api.sendVideoReply chatId video replyToMessageId |> api
 
-let mutable thread : Thread = null
+            | TgApi.SendPhotoReply(chatId, animation, replyToMessageId) ->
+                do! Api.sendPhotoReply chatId animation replyToMessageId |> api
 
-let runChannel() =
+            | TgApi.SendVoiceReply(chatId, inputFile, replyToMessageId) ->
+                do! Api.sendVoiceReply chatId inputFile replyToMessageId |> api
+
+            | TgApi.SendAudioReply(chatId, inputFile, replyToMessageId) ->
+                do! Api.sendAudioReply chatId inputFile replyToMessageId |> api
+
+            return! loop ()
+        }
+
+    loop ()
+
+let mutable thread: Thread = null
+
+let runChannel () =
     let worker = channelWorker().GetAwaiter().GetResult
 
     let thread' = Thread(worker)
