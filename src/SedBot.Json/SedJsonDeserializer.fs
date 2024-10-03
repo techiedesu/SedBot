@@ -11,16 +11,16 @@ let wrapObjAux (t: Type) (o: obj) : obj =
 
     if isOption then
         if o = null then
-            box ^ None
+            None
         else
-            box ^ Some o
+            Some o
     elif isValueOption then
         if o = null then
-            box ^ ValueNone
+            ValueNone
         else
-            box ^ ValueSome o
+            ValueSome o
     else
-        o |> box
+        o
 
 let optTypeWrapperAux<'T> isOption isValueOption (v: 'T) : obj =
     if isOption then
