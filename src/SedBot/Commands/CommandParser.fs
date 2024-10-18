@@ -51,6 +51,41 @@ let handleSed (item: CommandPipelineItem) : CommandPipelineItem =
         |> Option.defaultValue item
     | _ -> item
 
+let handleAwk (item: CommandPipelineItem) : CommandPipelineItem =
+    match item with
+    | ChatId(Some chatId) & MessageId(Some srcMsgId) & Message { Text = Some expression } & ReplyMessage(Some { Text = text
+                                                                                                                MessageId = msgId
+                                                                                                                Caption = caption }) ->
+        let tryGetValidExpression (expression: string) =
+            let isValidExpression expression =
+                Process.getStatusCode "awk" [| expression |] "data" = 0
+
+            if isValidExpression expression then
+                Some expression
+            else
+                None
+        maybe {
+            let! expression = tryGetValidExpression expression
+
+            let! text =
+                maybe {
+                    return! text
+                    return! caption
+                }
+
+            let res =
+                CommandType.Awk(
+                    { TelegramOmniMessageId = (chatId, msgId)
+                      SrcMsgId = srcMsgId
+                      Expression = expression
+                      Text = text }
+                )
+
+            return item.SetCommand(res)
+        }
+        |> Option.defaultValue item
+    | _ -> item
+
 let handleZov (item: CommandPipelineItem) : CommandPipelineItem =
     match item with
     | IsCommand "zov" & ChatId(Some chatId) & MessageId(Some srcMsgId) & ReplyMessage(Some { Text = text
@@ -237,6 +272,7 @@ let handleJq (item: CommandPipelineItem) =
 let private processMessageAux message botUsername inlineHelp =
     (message, botUsername, inlineHelp) |> CommandPipelineItem.Create
     |%> handleSed
+    |%> handleAwk
     |%> handleZov
     |%> handleJq
     |%> handleClown

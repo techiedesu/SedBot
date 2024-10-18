@@ -53,6 +53,15 @@ let private updateArrivedInternal botUsername (ctx: UpdateContext) (message: Mes
             | Some res -> do! TgApi.sendMessageReply omniMsgId res
             | _ -> do! TgApi.sendMessageAndDeleteAfter (fst omniMsgId) (placeholder "Sed") 35000
 
+        | Awk { TelegramOmniMessageId = omniMsgId
+                Expression = exp
+                Text = text } ->
+            let! res = Handlers.sed text exp
+
+            match res with
+            | Some res -> do! TgApi.sendMessageReply omniMsgId res
+            | _ -> do! TgApi.sendMessageAndDeleteAfter (fst omniMsgId) (placeholder "Awk") 35000
+
         | Zov { TelegramOmniMessageId = omniMsgId
                 Text = text } ->
             let! res = Handlers.zov text

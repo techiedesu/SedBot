@@ -9,6 +9,7 @@ type MessageId = int64
 
 type CommandType =
     | Sed of args: SedArgs
+    | Awk of args: AwkArgs
     | Zov of args: ZovArgs
     | VerticalFlip of args: FileManipulationArgs
     | HorizontalFlip of args: FileManipulationArgs
@@ -26,6 +27,12 @@ and FileManipulationArgs =
       File: SourceFile }
 
 and SedArgs =
+    { TelegramOmniMessageId: TelegramSourceOmniMessageId
+      SrcMsgId: int64
+      Expression: string
+      Text: string }
+
+and AwkArgs =
     { TelegramOmniMessageId: TelegramSourceOmniMessageId
       SrcMsgId: int64
       Expression: string
