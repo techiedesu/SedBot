@@ -56,7 +56,7 @@ let private updateArrivedInternal botUsername (ctx: UpdateContext) (message: Mes
         | Awk { TelegramOmniMessageId = omniMsgId
                 Expression = exp
                 Text = text } ->
-            let! res = Handlers.sed text exp
+            let! res = Handlers.awk text exp
 
             match res with
             | Some res -> do! TgApi.sendMessageReply omniMsgId res
