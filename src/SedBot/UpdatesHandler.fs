@@ -59,7 +59,7 @@ let private updateArrivedInternal botUsername (ctx: UpdateContext) (message: Mes
             let! res = Handlers.awk text exp
 
             match res with
-            | Some res -> do! TgApi.sendMessageReply omniMsgId res
+            | Some res -> do! TgApi.sendMarkupMessageReply omniMsgId $"```\n{res}\n```" ParseMode.Markdown
             | _ -> do! TgApi.sendMessageAndDeleteAfter (fst omniMsgId) (placeholder "Awk") 35000
 
         | Zov { TelegramOmniMessageId = omniMsgId

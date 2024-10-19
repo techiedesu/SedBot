@@ -9,7 +9,7 @@ let sed data expression =
     Process.runTextProcess "sed" [| "-E"; expression |] data
 
 let awk data expression =
-    Process.runTextProcess "awk" [| expression |] data
+    Process.runTextProcess "awk" [| "--sandbox"; expression |] data
 
 let jq data expression =
     Process.runTextProcessResult "jq" [| "-M"; expression |] data

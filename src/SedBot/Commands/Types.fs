@@ -36,6 +36,7 @@ and AwkArgs =
     { TelegramOmniMessageId: TelegramSourceOmniMessageId
       SrcMsgId: int64
       Expression: string
+      Multiline: bool
       Text: string }
 
 and ZovArgs =
