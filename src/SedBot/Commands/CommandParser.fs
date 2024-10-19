@@ -9,26 +9,44 @@ open SedBot.Telegram.BotApi.Types
 let handleSed (item: CommandPipelineItem) : CommandPipelineItem =
     // Too many valid expressions. For example ":)", "q"...
     // Let's limit the range of valid expressions
-    let hasValidPrefix (expression: string) =
-        let startWith = String.startsWith expression
-
-        item.Message.Chat.Id <> -1001373811109L
-        && String.isNotNulOfWhiteSpace expression
-        && (startWith "s/" || startWith "s@")
 
     let tryGetValidExpression (expression: string) =
         let isValidExpression expression =
             Process.getStatusCode "sed" [| "-E"; expression |] "data" = 0
 
-        if hasValidPrefix expression && isValidExpression expression then
-            Some expression
-        else
-            None
+        let startWith =
+            String.startsWith expression
+
+
+        let expression =
+            match item.Message.Chat.Id with
+            | -1001373811109L ->
+                let expression =
+                    if startWith "t/" then
+                        Some ("s/" + expression[2..])
+                    elif startWith "t@" then
+                        Some ("s@" + expression[2..])
+                    else
+                        None
+
+                expression
+
+            | _ ->
+                if (startWith "s/" || startWith "s@") && isValidExpression expression then
+                    Some expression
+                else
+                    None
+
+        match expression with
+        | None -> None
+        | Some expression -> if isValidExpression expression then Some expression else None
 
     match item with
-    | ChatId(Some chatId) & MessageId(Some srcMsgId) & Message { Text = Some expression } & ReplyMessage(Some { Text = text
-                                                                                                                MessageId = msgId
-                                                                                                                Caption = caption }) ->
+    | ChatId(Some chatId)
+        & MessageId (Some srcMsgId)
+        & Message { Text = Some expression }
+        & ReplyMessage (Some { Text = text; MessageId = msgId; Caption = caption }) ->
+
         maybe {
             let! expression = tryGetValidExpression expression
 
@@ -57,13 +75,16 @@ let handleAwk (item: CommandPipelineItem) : CommandPipelineItem =
                                                                                                                 MessageId = msgId
                                                                                                                 Caption = caption }) ->
         let tryGetValidExpression (expression: string) =
-            let isValidExpression expression =
-                Process.getStatusCode "awk" [| expression |] "data" = 0
+            let isValidExpression (expression: string) =
+                expression <> null
+                && (expression.StartsWith("{") || expression.StartsWith("BEGIN"))
+                && Process.getStatusCode "awk" [| "--sandbox"; expression |] "data" = 0
 
             if isValidExpression expression then
                 Some expression
             else
                 None
+
         maybe {
             let! expression = tryGetValidExpression expression
 
@@ -78,6 +99,7 @@ let handleAwk (item: CommandPipelineItem) : CommandPipelineItem =
                     { TelegramOmniMessageId = (chatId, msgId)
                       SrcMsgId = srcMsgId
                       Expression = expression
+                      Multiline = expression.StartsWith("BEGIN")
                       Text = text }
                 )
 
