@@ -1,12 +1,9 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
-    <GenerateDocumentationFile>true</GenerateDocumentationFile>
-    <OutputType>Library</OutputType>
-    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <RootNamespace>SedBot.Tests</RootNamespace>
+    <IsPackable>false</IsPackable>
   </PropertyGroup>
+  
   <ItemGroup>
     <Compile Include="FFmpegChannelTests.fs" />
     <Compile Include="CommandHandlerTests.fs" />

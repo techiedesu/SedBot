@@ -2,12 +2,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>net8.0</TargetFramework>
     <RootNamespace>SedBot</RootNamespace>
-    <GenerateProgramFile>false</GenerateProgramFile>
-    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-    <PublishAot>false</PublishAot>
   </PropertyGroup>
+  
   <ItemGroup>
     <Compile Include="TgApi.fs" />
     <Compile Include="ChannelProcessors.fs" />
@@ -19,10 +16,12 @@
     <Compile Include="Program.fs" />
     <Content Include="paket.references" />
   </ItemGroup>
+  
   <ItemGroup>
     <ProjectReference Include="..\SedBot.Common\SedBot.Common.fsproj" />
     <ProjectReference Include="..\ContentProcessing\ContentProcessing.fsproj" />
     <ProjectReference Include="..\BotApi\BotApi.fsproj" />
   </ItemGroup>
+  
   <Import Project="..\.paket\Paket.Restore.targets" />
 </Project>

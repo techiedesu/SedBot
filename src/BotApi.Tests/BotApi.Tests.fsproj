@@ -1,12 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <TargetFramework>net8.0</TargetFramework>
-
         <IsPackable>false</IsPackable>
-        <GenerateProgramFile>true</GenerateProgramFile>
         <IsTestProject>true</IsTestProject>
-        <PublishAot>false</PublishAot>
         <RootNamespace>SedBot.Telegram.BotApi.Tests</RootNamespace>
     </PropertyGroup>
 
