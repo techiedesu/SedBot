@@ -200,29 +200,31 @@ let execute (data: FFmpegObjectState) =
             | _, true -> " -an"
             | _, _ -> ""
 
+        let normalizeSize = ",scale=iw:ih:force_original_aspect_ratio=increase:force_divisible_by=2"
+
         let videoReverse =
             match data.VideoReverse with
-            | true -> " -vf reverse -color_range 2 -pix_fmt yuvj420p"
+            | true -> $" -vf \"reverse{normalizeSize}\" -color_range 2 -pix_fmt yuvj420p"
             | _ -> ""
 
         let vFlip =
             match data.VerticalFlip with
-            | true -> " -vf vflip -q:v 0 -color_range 2 -pix_fmt yuvj420p"
+            | true -> $" -vf \"vflip{normalizeSize}\" -q:v 0 -color_range 2 -pix_fmt yuvj420p"
             | _ -> ""
 
         let hFlip =
             match data.HorizontalFlip with
-            | true -> " -vf hflip -q:v 0 -color_range 2 -pix_fmt yuvj420p"
+            | true -> $" -vf \"hflip{normalizeSize}\" -q:v 0 -color_range 2 -pix_fmt yuvj420p"
             | _ -> ""
 
         let clock =
             match data.Clock with
-            | true -> " -vf \"transpose=clock\" -color_range 2 -pix_fmt yuvj420p"
+            | true -> $" -vf \"transpose=clock{normalizeSize}\" -color_range 2 -pix_fmt yuvj420p"
             | _ -> ""
 
         let cClock =
             match data.CClock with
-            | true -> " -vf \"transpose=cclock\" -color_range 2 -pix_fmt yuvj420p"
+            | true -> $" -vf \"transpose=cclock{normalizeSize}\" -color_range 2 -pix_fmt yuvj420p"
             | _ -> ""
 
         // FFmpeg can't read moov (MPEG headers) at the end of a file when using a pipe. Have to "dump" to a filesystem.
